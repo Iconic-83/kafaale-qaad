@@ -166,6 +166,87 @@ const Btn = ({ children, variant = "primary", size = "md", ...props }) => {
   );
 };
 
+// ─── FILE UPLOAD ZONE ──────────────────────────────────────────────────────
+const FileUploadZone = ({ label, accept, multiple = true, files, onAdd, onRemove, note, required, color = COLORS.primary }) => {
+  const inputRef = useRef(null);
+
+  const getIcon = (f) => {
+    if (f.preview) return null;
+    if (f.name.match(/\.(mp4|mov|avi|webm|mkv)$/i)) return "🎥";
+    if (f.name.match(/\.pdf$/i)) return "📄";
+    if (f.name.match(/\.(doc|docx)$/i)) return "📝";
+    if (f.name.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) return "🖼️";
+    return "📎";
+  };
+
+  const formatSize = (b) => b > 1048576 ? (b / 1048576).toFixed(1) + " MB" : (b / 1024).toFixed(0) + " KB";
+
+  const handleChange = (e) => {
+    const selected = Array.from(e.target.files).map(f => ({
+      name: f.name, type: f.type, size: f.size,
+      preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+    }));
+    onAdd(selected);
+    e.target.value = "";
+  };
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      {label && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>{label}</label>
+          {required && <span style={{ background: "#FEE2E2", color: "#991B1B", borderRadius: 20, padding: "1px 8px", fontSize: 10, fontWeight: 700 }}>Required</span>}
+          {files.length > 0 && <span style={{ background: color + "15", color, borderRadius: 20, padding: "1px 8px", fontSize: 10, fontWeight: 700 }}>{files.length} file{files.length > 1 ? "s" : ""}</span>}
+        </div>
+      )}
+
+      {/* Drop zone */}
+      <div onClick={() => inputRef.current?.click()}
+        style={{ border: `2px dashed ${files.length > 0 ? color + "60" : COLORS.border}`, borderRadius: 12, padding: "18px", textAlign: "center", cursor: "pointer", background: files.length > 0 ? color + "06" : "#FAFAFA", transition: "all .15s" }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = color + "08"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = files.length > 0 ? color + "60" : COLORS.border; e.currentTarget.style.background = files.length > 0 ? color + "06" : "#FAFAFA"; }}>
+        <div style={{ fontSize: 26, marginBottom: 6 }}>📁</div>
+        <div style={{ fontSize: 13, color, fontWeight: 700 }}>Click to upload {multiple ? "files" : "file"}</div>
+        <div style={{ fontSize: 11, color: COLORS.muted, marginTop: 3 }}>{note || "Photos · Videos · Documents"}</div>
+      </div>
+      <input ref={inputRef} type="file" accept={accept} multiple={multiple} onChange={handleChange} style={{ display: "none" }} />
+
+      {/* Previews */}
+      {files.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+          {files.map((f, i) => (
+            <div key={i} style={{ position: "relative", borderRadius: 10, overflow: "hidden", border: `1px solid ${COLORS.border}`, background: "#F8FAFC" }}>
+              {f.preview ? (
+                <img src={f.preview} alt={f.name} style={{ width: 80, height: 80, objectFit: "cover", display: "block" }} />
+              ) : (
+                <div style={{ width: 80, height: 80, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, padding: 4 }}>
+                  <span style={{ fontSize: 26 }}>{getIcon(f)}</span>
+                  <span style={{ fontSize: 8, color: COLORS.muted, textAlign: "center", maxWidth: 72, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                  <span style={{ fontSize: 8, color: COLORS.muted }}>{formatSize(f.size)}</span>
+                </div>
+              )}
+              {/* Remove button */}
+              <button onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+                style={{ position: "absolute", top: 3, right: 3, background: "rgba(239,68,68,.85)", border: "none", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontSize: 12, color: "#fff", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+                ×
+              </button>
+              {/* Image overlay with name */}
+              {f.preview && (
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(0,0,0,.5)", padding: "2px 4px", fontSize: 8, color: "#fff", textOverflow: "ellipsis", whiteSpace: "nowrap", overflow: "hidden" }}>{f.name}</div>
+              )}
+            </div>
+          ))}
+          {/* Add more */}
+          <div onClick={() => inputRef.current?.click()}
+            style={{ width: 80, height: 80, border: `2px dashed ${COLORS.border}`, borderRadius: 10, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: COLORS.muted, fontSize: 11, fontWeight: 700, gap: 4 }}>
+            <span style={{ fontSize: 22 }}>+</span>Add
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── CASE TIMELINE ───────────────────────────────────────────────────────────
 const CaseTimeline = ({ c }) => {
   const events = [
@@ -210,8 +291,17 @@ const CaseTimeline = ({ c }) => {
 
 // ─── CASE DETAIL MODAL ─────────────────────────────────────────────────────
 const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) => {
-  const [findings, setFindings]   = useState(c.findings);
-  const [activeTab, setActiveTab] = useState("details");
+  const [findings,      setFindings]      = useState(c.findings);
+  const [activeTab,     setActiveTab]     = useState("details");
+  // Evidence files (field investigation)
+  const [evidencePhotos, setEvidencePhotos] = useState([]);
+  const [evidenceVideos, setEvidenceVideos] = useState([]);
+  const [evidenceDocs,   setEvidenceDocs]   = useState([]);
+  // Delivery proof files
+  const [proofPhotos,  setProofPhotos]  = useState([]);
+  const [proofVideos,  setProofVideos]  = useState([]);
+  const [proofReceipts,setProofReceipts]= useState([]);
+
   const stepIdx = WORKFLOW_STEPS.findIndex(s => s.status === c.status);
 
   const canAdvance = () => {
@@ -225,10 +315,40 @@ const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) =
   };
   const nextStatus = canAdvance();
 
+  // For field investigation — require at least 1 photo before submitting
+  const isInvestigating = c.status === "Investigating" && currentUser.role === "field_team";
+  const isDelivering    = c.status === "Sponsored"     && currentUser.role === "field_team";
+  const canSubmitInvestigation = evidencePhotos.length > 0 && findings.trim().length > 0;
+  const canSubmitDelivery      = proofPhotos.length > 0;
+
+  const handleAdvance = () => {
+    const allEvidenceFiles = [
+      ...evidencePhotos.map(f => f.name),
+      ...evidenceVideos.map(f => f.name),
+      ...evidenceDocs.map(f => f.name),
+    ];
+    const allProofFiles = [
+      ...proofPhotos.map(f => f.name),
+      ...proofVideos.map(f => f.name),
+      ...proofReceipts.map(f => f.name),
+    ];
+    onUpdateCase(c.id, {
+      status: nextStatus,
+      findings: findings || c.findings,
+      ...(allEvidenceFiles.length > 0 && { media_files: [...c.media_files, ...allEvidenceFiles] }),
+      ...(allProofFiles.length > 0    && { proof_files: [...c.proof_files, ...allProofFiles] }),
+    });
+    onClose();
+  };
+
+  const totalMedia = c.media_files.length + evidencePhotos.length + evidenceVideos.length + evidenceDocs.length;
+  const totalProof = c.proof_files.length + proofPhotos.length + proofVideos.length + proofReceipts.length;
+
   const tabs = [
     { id: "details",  label: "📋 Details"  },
     { id: "timeline", label: "🕐 Timeline" },
-    { id: "media",    label: `📎 Media (${c.media_files.length})` },
+    { id: "media",    label: `📎 Media (${totalMedia})` },
+    ...(totalProof > 0 ? [{ id: "proof", label: `✅ Proof (${totalProof})` }] : []),
   ];
 
   return (
@@ -265,7 +385,7 @@ const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) =
         ))}
       </div>
 
-      {/* Tab content */}
+      {/* ── DETAILS TAB ── */}
       {activeTab === "details" && (
         <div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
@@ -280,10 +400,92 @@ const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) =
             <div style={{ fontSize: 12, color: COLORS.muted, fontWeight: 600, marginBottom: 6 }}>DESCRIPTION</div>
             <p style={{ margin: 0, fontSize: 14, color: COLORS.text, lineHeight: 1.6 }}>{c.description}</p>
           </div>
-          {currentUser.role === "field_team" && c.status === "Investigating" && (
-            <Textarea label="Field Findings" value={findings} onChange={e => setFindings(e.target.value)} placeholder="Enter investigation findings..." />
+
+          {/* ── FIELD INVESTIGATION SECTION ── */}
+          {isInvestigating && (
+            <div style={{ background: "#FFFBEB", border: "2px solid #FCD34D", borderRadius: 14, padding: 20, marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#92400E", marginBottom: 4 }}>🔍 Field Investigation Report</div>
+              <div style={{ fontSize: 12, color: "#B45309", marginBottom: 16 }}>Document your findings. At least 1 photo + written findings required before submitting.</div>
+              <Textarea label="Investigation Findings *" value={findings} onChange={e => setFindings(e.target.value)} placeholder="Describe what you found on site — confirm or deny the case details, note any important observations..." style={{ minHeight: 90 }} />
+              <FileUploadZone
+                label="📸 Photos (Required — min. 1)"
+                accept="image/*"
+                files={evidencePhotos}
+                onAdd={f => setEvidencePhotos(p => [...p, ...f])}
+                onRemove={i => setEvidencePhotos(p => p.filter((_, idx) => idx !== i))}
+                note="Take photos at the location as evidence"
+                required
+                color="#F59E0B"
+              />
+              <FileUploadZone
+                label="🎥 Videos (Optional)"
+                accept="video/*"
+                files={evidenceVideos}
+                onAdd={f => setEvidenceVideos(p => [...p, ...f])}
+                onRemove={i => setEvidenceVideos(p => p.filter((_, idx) => idx !== i))}
+                note="Short video clips of the situation"
+                color="#8B5CF6"
+              />
+              <FileUploadZone
+                label="📄 Documents (Optional)"
+                accept=".pdf,.doc,.docx,image/*"
+                files={evidenceDocs}
+                onAdd={f => setEvidenceDocs(p => [...p, ...f])}
+                onRemove={i => setEvidenceDocs(p => p.filter((_, idx) => idx !== i))}
+                note="Medical records, IDs, official documents"
+                color="#3B82F6"
+              />
+              {!canSubmitInvestigation && (
+                <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: 12, fontSize: 12, color: "#991B1B" }}>
+                  ⚠️ You must add <strong>written findings</strong> and at least <strong>1 photo</strong> before submitting.
+                </div>
+              )}
+            </div>
           )}
-          {c.findings && c.status !== "Investigating" && (
+
+          {/* ── AID DELIVERY SECTION ── */}
+          {isDelivering && (
+            <div style={{ background: "#F0FDF4", border: "2px solid #86EFAC", borderRadius: 14, padding: 20, marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#065F46", marginBottom: 4 }}>📦 Aid Delivery Proof</div>
+              <div style={{ fontSize: 12, color: "#047857", marginBottom: 16 }}>Upload proof that aid was delivered. At least 1 photo is required. Receipts and videos are optional but encouraged.</div>
+              <FileUploadZone
+                label="📸 Delivery Photos (Required — min. 1)"
+                accept="image/*"
+                files={proofPhotos}
+                onAdd={f => setProofPhotos(p => [...p, ...f])}
+                onRemove={i => setProofPhotos(p => p.filter((_, idx) => idx !== i))}
+                note="Photo of aid being handed to beneficiary"
+                required
+                color="#10B981"
+              />
+              <FileUploadZone
+                label="🎥 Delivery Video (Optional)"
+                accept="video/*"
+                files={proofVideos}
+                onAdd={f => setProofVideos(p => [...p, ...f])}
+                onRemove={i => setProofVideos(p => p.filter((_, idx) => idx !== i))}
+                note="Short video of the delivery moment"
+                color="#06B6D4"
+              />
+              <FileUploadZone
+                label="🧾 Receipt / Document (Optional)"
+                accept=".pdf,.doc,.docx,image/*"
+                files={proofReceipts}
+                onAdd={f => setProofReceipts(p => [...p, ...f])}
+                onRemove={i => setProofReceipts(p => p.filter((_, idx) => idx !== i))}
+                note="Payment receipt, signed acknowledgement, or any document"
+                color="#F59E0B"
+              />
+              {!canSubmitDelivery && (
+                <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, padding: 12, fontSize: 12, color: "#991B1B" }}>
+                  ⚠️ At least <strong>1 delivery photo</strong> is required before marking as Aid Delivered.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Existing findings display */}
+          {c.findings && !isInvestigating && (
             <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 10, padding: 16, marginBottom: 16 }}>
               <div style={{ fontSize: 12, color: COLORS.secondary, fontWeight: 700, marginBottom: 6 }}>✅ FIELD FINDINGS</div>
               <p style={{ margin: 0, fontSize: 14, color: COLORS.text }}>{c.findings}</p>
@@ -292,30 +494,84 @@ const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) =
         </div>
       )}
 
+      {/* ── TIMELINE TAB ── */}
       {activeTab === "timeline" && <CaseTimeline c={c} />}
 
+      {/* ── MEDIA TAB ── */}
       {activeTab === "media" && (
         <div>
-          {c.media_files.length === 0 ? (
-            <div style={{ padding: 32, textAlign: "center", color: COLORS.muted }}>No media files attached to this case.</div>
+          {c.media_files.length === 0 && evidencePhotos.length === 0 && evidenceVideos.length === 0 && evidenceDocs.length === 0 ? (
+            <div style={{ padding: 32, textAlign: "center", color: COLORS.muted }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
+              No media files attached to this case yet.
+            </div>
           ) : (
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {c.media_files.map(f => (
-                <div key={f} style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: "16px 20px", fontSize: 13, color: COLORS.primary, fontWeight: 600, textAlign: "center", minWidth: 120 }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>{f.endsWith(".pdf") ? "📄" : f.endsWith(".jpg") || f.endsWith(".png") ? "🖼️" : "📎"}</div>
-                  {f}
+            <div>
+              {/* Existing files */}
+              {c.media_files.length > 0 && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, marginBottom: 10 }}>EXISTING FILES</div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {c.media_files.map(f => (
+                      <div key={f} style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: "16px 20px", fontSize: 13, color: COLORS.primary, fontWeight: 600, textAlign: "center", minWidth: 100 }}>
+                        <div style={{ fontSize: 28, marginBottom: 6 }}>{f.endsWith(".pdf") ? "📄" : f.match(/\.(mp4|mov|avi)$/) ? "🎥" : "🖼️"}</div>
+                        {f}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              )}
+              {/* Newly added files preview */}
+              {(evidencePhotos.length > 0 || evidenceVideos.length > 0 || evidenceDocs.length > 0) && (
+                <div style={{ background: "#FFFBEB", border: "1px solid #FCD34D", borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#92400E", marginBottom: 10 }}>🆕 NEW UPLOADS (not saved yet)</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {[...evidencePhotos, ...evidenceVideos, ...evidenceDocs].map((f, i) => (
+                      <div key={i} style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #FCD34D" }}>
+                        {f.preview ? <img src={f.preview} alt={f.name} style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} /> :
+                          <div style={{ width: 64, height: 64, background: "#FEF3C7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                            {f.name.match(/\.(mp4|mov)$/i) ? "🎥" : f.name.endsWith(".pdf") ? "📄" : "📎"}
+                          </div>
+                        }
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── PROOF TAB ── */}
+      {activeTab === "proof" && (
+        <div>
           {c.proof_files.length > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.secondary, marginBottom: 10 }}>✅ Proof of Delivery</div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary, marginBottom: 10 }}>✅ DELIVERY PROOF</div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 {c.proof_files.map(f => (
-                  <div key={f} style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 12, padding: "16px 20px", fontSize: 13, color: COLORS.secondary, fontWeight: 600, textAlign: "center", minWidth: 120 }}>
-                    <div style={{ fontSize: 28, marginBottom: 8 }}>📸</div>
+                  <div key={f} style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 12, padding: "16px 20px", fontSize: 13, color: COLORS.secondary, fontWeight: 600, textAlign: "center", minWidth: 100 }}>
+                    <div style={{ fontSize: 28, marginBottom: 6 }}>
+                      {f.match(/\.(mp4|mov|avi)$/i) ? "🎥" : f.match(/\.(pdf|doc)$/i) ? "🧾" : "📸"}
+                    </div>
                     {f}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {(proofPhotos.length > 0 || proofVideos.length > 0 || proofReceipts.length > 0) && (
+            <div style={{ background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 12, padding: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#065F46", marginBottom: 10 }}>🆕 NEW PROOF (not saved yet)</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[...proofPhotos, ...proofVideos, ...proofReceipts].map((f, i) => (
+                  <div key={i} style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #86EFAC" }}>
+                    {f.preview ? <img src={f.preview} alt={f.name} style={{ width: 64, height: 64, objectFit: "cover", display: "block" }} /> :
+                      <div style={{ width: 64, height: 64, background: "#D1FAE5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                        {f.name.match(/\.(mp4|mov)$/i) ? "🎥" : f.name.endsWith(".pdf") ? "🧾" : "📎"}
+                      </div>
+                    }
                   </div>
                 ))}
               </div>
@@ -324,11 +580,21 @@ const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) =
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* ── ACTION BUTTONS ── */}
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 24, paddingTop: 20, borderTop: `1px solid ${COLORS.border}` }}>
-        {nextStatus && (
-          <Btn variant="success" onClick={() => { onUpdateCase(c.id, { status: nextStatus, findings: findings || c.findings }); onClose(); }}>
-            ➜ Advance: {nextStatus}
+        {nextStatus && !isInvestigating && !isDelivering && (
+          <Btn variant="success" onClick={handleAdvance}>➜ Advance: {nextStatus}</Btn>
+        )}
+        {isInvestigating && (
+          <Btn variant="success" onClick={handleAdvance} style={{ opacity: canSubmitInvestigation ? 1 : 0.4, cursor: canSubmitInvestigation ? "pointer" : "not-allowed" }}
+            {...(!canSubmitInvestigation ? { onClick: () => alert("Add written findings + at least 1 photo before submitting.") } : {})}>
+            ✅ Submit Investigation → Verified
+          </Btn>
+        )}
+        {isDelivering && (
+          <Btn variant="teal" onClick={handleAdvance} style={{ opacity: canSubmitDelivery ? 1 : 0.4, cursor: canSubmitDelivery ? "pointer" : "not-allowed" }}
+            {...(!canSubmitDelivery ? { onClick: () => alert("Add at least 1 delivery photo before submitting.") } : {})}>
+            📦 Confirm Aid Delivered
           </Btn>
         )}
         {c.status === "Waiting Sponsor" && currentUser.role === "donor" && (
@@ -340,6 +606,9 @@ const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) =
         {(currentUser.role === "verification_office" || currentUser.role === "super_admin") && c.status === "Under Review" && (
           <Btn variant="primary" onClick={() => { onUpdateCase(c.id, { status: "Investigating", team_id: "T01" }); onClose(); }}>Assign Field Team</Btn>
         )}
+        {(currentUser.role === "verification_office" || currentUser.role === "super_admin") && c.status === "Aid Delivered" && (
+          <Btn variant="success" onClick={handleAdvance}>🏁 Mark as Completed</Btn>
+        )}
         <Btn variant="muted" onClick={onClose}>Close</Btn>
       </div>
     </Modal>
@@ -349,6 +618,8 @@ const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) =
 // ─── REPORT CASE MODAL ─────────────────────────────────────────────────────
 const ReportCaseModal = ({ onClose, onSubmit, currentUser }) => {
   const [form, setForm] = useState({ victim_name: "", age: "", gender: "Female", description: "", location: "", urgency_level: "Medium" });
+  const [reportPhotos, setReportPhotos] = useState([]);
+  const [reportVideos, setReportVideos] = useState([]);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = () => {
@@ -359,12 +630,19 @@ const ReportCaseModal = ({ onClose, onSubmit, currentUser }) => {
       status: "Pending Verification",
       created_at: new Date().toISOString().split("T")[0],
       reporter_id: currentUser.id, team_id: null,
-      findings: "", media_files: [], investigation_date: null,
+      findings: "",
+      media_files: [
+        ...reportPhotos.map(f => f.name),
+        ...reportVideos.map(f => f.name),
+      ],
+      investigation_date: null,
       sponsor_id: null, donation_amount: 0, proof_files: [],
     };
     onSubmit(newCase);
     onClose();
   };
+
+  const totalFiles = reportPhotos.length + reportVideos.length;
 
   return (
     <Modal title="📝 Report New Case" onClose={onClose}>
@@ -380,6 +658,36 @@ const ReportCaseModal = ({ onClose, onSubmit, currentUser }) => {
         <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
       </Select>
       <Textarea label="Description *" value={form.description} onChange={e => set("description", e.target.value)} placeholder="Describe the situation in detail..." style={{ minHeight: 100 }} />
+
+      {/* ── FILE UPLOADS ── */}
+      <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 12, padding: 16, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: COLORS.primary, marginBottom: 4 }}>📎 Attach Supporting Evidence (Optional)</div>
+        <div style={{ fontSize: 12, color: COLORS.muted, marginBottom: 14 }}>Photos or videos that support the case — family situation, shelter, documents etc.</div>
+        <FileUploadZone
+          label="📸 Photos"
+          accept="image/*"
+          files={reportPhotos}
+          onAdd={f => setReportPhotos(p => [...p, ...f])}
+          onRemove={i => setReportPhotos(p => p.filter((_, idx) => idx !== i))}
+          note="Case photos — shelter, family, situation"
+          color={COLORS.primary}
+        />
+        <FileUploadZone
+          label="🎥 Videos (Optional)"
+          accept="video/*"
+          files={reportVideos}
+          onAdd={f => setReportVideos(p => [...p, ...f])}
+          onRemove={i => setReportVideos(p => p.filter((_, idx) => idx !== i))}
+          note="Short video showing the situation"
+          color="#8B5CF6"
+        />
+        {totalFiles > 0 && (
+          <div style={{ fontSize: 12, color: COLORS.secondary, fontWeight: 600, marginTop: 4 }}>
+            ✅ {totalFiles} file{totalFiles > 1 ? "s" : ""} ready to attach
+          </div>
+        )}
+      </div>
+
       <div style={{ background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 13, color: "#92400E" }}>
         📋 After submission, Verification Office will review the case. Status: <strong>Pending Verification</strong>
       </div>
