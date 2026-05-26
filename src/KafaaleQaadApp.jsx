@@ -2,6 +2,19 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext.jsx";
 import { cases as casesApi, admin as adminApi, field as fieldApi, notifications as notifsApi, donations, impact } from "./api/client.js";
+import "./responsive.css";
+
+// ─── Responsive hook ──────────────────────────────────────────────────────────
+const useIsMobile = (bp = 600) => {
+  const [mob, setMob] = useState(() => window.innerWidth <= bp);
+  useEffect(() => {
+    const h = () => setMob(window.innerWidth <= bp);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
+  }, [bp]);
+  return mob;
+};
+const useIsTablet = () => useIsMobile(900);
 
 // ─── Color Palette & Globals ───────────────────────────────────────────────
 const COLORS = {
@@ -117,17 +130,20 @@ const StatCard = ({ label, value, icon, color, sub }) => (
   </div>
 );
 
-const Modal = ({ title, children, onClose, wide }) => (
-  <div style={{ position: "fixed", inset: 0, background: "#0006", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
-    <div style={{ background: "#fff", borderRadius: 18, padding: 32, maxWidth: wide ? 900 : 640, width: "100%", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px #0003" }} onClick={e => e.stopPropagation()}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: COLORS.text }}>{title}</h2>
-        <button onClick={onClose} style={{ background: "#F3F4F6", border: "none", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 20, color: COLORS.muted }}>×</button>
+const Modal = ({ title, children, onClose, wide }) => {
+  const isMob = useIsMobile();
+  return (
+    <div className="kf-modal-outer" style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 1000, display: "flex", alignItems: isMob ? "flex-end" : "center", justifyContent: "center", padding: isMob ? 0 : 16 }} onClick={onClose}>
+      <div className="kf-modal-inner" style={{ maxWidth: wide ? 900 : 640, borderRadius: isMob ? "18px 18px 0 0" : 18 }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ margin: 0, fontSize: isMob ? 18 : 22, fontWeight: 800, color: COLORS.text }}>{title}</h2>
+          <button onClick={onClose} style={{ background: "#F3F4F6", border: "none", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 20, color: COLORS.muted, flexShrink: 0 }}>×</button>
+        </div>
+        {children}
       </div>
-      {children}
     </div>
-  </div>
-);
+  );
+};
 
 const Input = ({ label, ...props }) => (
   <div style={{ marginBottom: 16 }}>
@@ -2118,7 +2134,7 @@ const AnalyticsDashboard = ({ cases, donations }) => {
 
 // ─── CASE TABLE ─────────────────────────────────────────────────────────────
 const CaseTable = ({ cases, onView, compact, onReport }) => (
-  <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
+  <div className="kf-table-wrap">
     {cases.length === 0 ? (
       <div style={{ padding: 32, textAlign: "center", color: COLORS.muted, fontSize: 14 }}>No cases found</div>
     ) : (
@@ -2864,7 +2880,7 @@ const UsersTab = ({ users, isSuperAdmin, onDeleteUser, onChangeRole }) => {
   };
 
   return (
-    <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
+    <div className="kf-table-wrap">
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ background: "#F8FAFC" }}>
@@ -2954,22 +2970,22 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <div className="kf-action-row">
         <div>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>🛡️ Admin Command Center</h2>
-          <p style={{ margin: "4px 0 0", color: COLORS.muted }}>Full system oversight & management</p>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>🛡️ Admin Command Center</h2>
+          <p style={{ margin: "4px 0 0", color: COLORS.muted, fontSize: 13 }}>Full system oversight & management</p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Btn variant="teal" onClick={onExport}>📥 Export Data</Btn>
+        <div className="kf-action-btns">
+          <Btn variant="teal" onClick={onExport}>📥 Export</Btn>
           <Btn variant="primary" onClick={onAddUser}>+ Add User</Btn>
         </div>
       </div>
 
-      {/* Tab bar */}
-      <div style={{ display: "flex", gap: 4, borderBottom: `2px solid ${COLORS.border}`, marginBottom: 28 }}>
+      {/* Tab bar — scrollable on mobile */}
+      <div className="kf-tabs">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: "10px 20px", fontSize: 14, fontWeight: 700, border: "none", background: "none", cursor: "pointer", color: tab === t.id ? COLORS.primary : COLORS.muted, borderBottom: tab === t.id ? `2px solid ${COLORS.primary}` : "2px solid transparent", marginBottom: -2 }}>
+            style={{ padding: "10px 16px", fontSize: 13, fontWeight: 700, border: "none", background: "none", cursor: "pointer", color: tab === t.id ? COLORS.primary : COLORS.muted, borderBottom: tab === t.id ? `2px solid ${COLORS.primary}` : "2px solid transparent", marginBottom: -2 }}>
             {t.label}
           </button>
         ))}
@@ -2977,7 +2993,7 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
 
       {tab === "overview" && (
         <div>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 28 }}>
+          <div className="kf-stats-row">
             <StatCard label="Total Cases"   value={cases.length}    icon="📋" color={COLORS.primary} />
             <StatCard label="Total Users"   value={users.length}    icon="👥" color="#8B5CF6" />
             <StatCard label="Total Donated" value={`$${totalDonated.toLocaleString()}`} icon="💰" color={COLORS.secondary} />
@@ -3003,20 +3019,20 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
           )}
 
           {/* Case Pipeline */}
-          <div style={{ background: "#fff", borderRadius: 14, padding: 24, boxShadow: "0 2px 8px #0001", marginBottom: 24 }}>
-            <h3 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700 }}>📊 Live Case Pipeline</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          <div style={{ background: "#fff", borderRadius: 14, padding: "20px 16px", boxShadow: "0 2px 8px #0001", marginBottom: 24 }}>
+            <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700 }}>📊 Live Case Pipeline</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10 }}>
               {WORKFLOW_STEPS.map(s => (
-                <div key={s.num} style={{ textAlign: "center", background: s.color + "12", borderRadius: 12, padding: "16px 8px", border: `1px solid ${s.color}30` }}>
-                  <div style={{ fontSize: 24 }}>{s.icon}</div>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: s.color, marginTop: 4 }}>{byStatus[s.status] || 0}</div>
+                <div key={s.num} style={{ textAlign: "center", background: s.color + "12", borderRadius: 12, padding: "14px 8px", border: `1px solid ${s.color}30` }}>
+                  <div style={{ fontSize: 22 }}>{s.icon}</div>
+                  <div style={{ fontSize: 24, fontWeight: 800, color: s.color, marginTop: 4 }}>{byStatus[s.status] || 0}</div>
                   <div style={{ fontSize: 10, color: s.color, fontWeight: 700, marginTop: 2, lineHeight: 1.3 }}>{s.label}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <div className="kf-grid-2">
             <div>
               <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 700 }}>🚨 Needs Attention</h3>
               <CaseTable cases={pendingCases.slice(0,4)} onView={onViewCase} compact />
@@ -3071,7 +3087,7 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
       {tab === "donations" && (
         <div>
           {/* Summary cards */}
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
+          <div className="kf-stats-row">
             <StatCard label="Total Received"   value={`$${totalDonated.toLocaleString()}`}   icon="💵" color={COLORS.secondary} />
             <StatCard label="Confirmed"        value={`$${confirmedTotal.toLocaleString()}`}  icon="✅" color="#10B981" />
             <StatCard label="Pending Confirm"  value={`$${pendingTotal.toLocaleString()}`}    icon="⏳" color="#F59E0B" />
@@ -3090,7 +3106,7 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
           </div>
 
           {/* Donations table */}
-          <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
+          <div className="kf-table-wrap">
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#F8FAFC" }}>
@@ -3464,31 +3480,35 @@ export default function KafaaleQaadApp() {
     ),
   };
 
+  const isMobile = useIsMobile();
+
   return (
     <div style={{ minHeight: "100vh", background: COLORS.bg, fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
       {/* ── Header ── */}
-      <div style={{ background: COLORS.primary, color: "#fff", padding: "0 16px", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px #0003" }}>
-        <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 60, gap: 12 }}>
+      <div className="kf-header">
+        <div className="kf-header-inner">
           {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-            <span style={{ fontSize: 24 }}>🤝</span>
-            <div style={{ display: "none", lineHeight: 1.2 }} className="hide-mobile">
-              <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: -0.5 }}>KAFAALE QAAD</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <span style={{ fontSize: 22 }}>🤝</span>
+            <div className="kf-hide-mobile" style={{ lineHeight: 1.2 }}>
+              <div style={{ fontSize: 14, fontWeight: 900, letterSpacing: -0.5 }}>KAFAALE QAAD</div>
               <div style={{ fontSize: 8, opacity: 0.65, letterSpacing: 1 }}>HUMANITARIAN AID</div>
             </div>
           </div>
 
-          {/* Search bar — hidden on very small screens */}
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, maxWidth: 420, margin: "0 8px" }}>
+          {/* Search bar */}
+          <div className="kf-search" style={{ margin: "0 8px" }}>
             <input value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
-              placeholder="🔍 Search cases…"
+              placeholder="🔍 Search…"
               style={{ flex: 1, padding: "7px 12px", borderRadius: 10, border: "none", background: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 13, outline: "none", minWidth: 0 }} />
-            <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-              style={{ padding: "7px 8px", borderRadius: 10, border: "none", background: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 11, outline: "none", maxWidth: 110 }}>
-              <option value="All">All</option>
-              {Object.keys(STATUS_MAP).map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            {!isMobile && (
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
+                style={{ padding: "7px 8px", borderRadius: 10, border: "none", background: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 11, outline: "none", maxWidth: 110 }}>
+                <option value="All">All</option>
+                {Object.keys(STATUS_MAP).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
           </div>
 
           {/* Right: notifications + user + logout */}
@@ -3509,22 +3529,24 @@ export default function KafaaleQaadApp() {
               )}
             </div>
 
-            <div style={{ textAlign: "right", display: window.innerWidth > 480 ? "block" : "none" }}>
+            <div className="kf-hide-mobile" style={{ textAlign: "right" }}>
               <div style={{ fontSize: 12, fontWeight: 700 }}>{currentUser.fullname}</div>
               <div style={{ fontSize: 9, opacity: 0.65, letterSpacing: 0.5 }}>{roleInfo.icon} {roleInfo.label}</div>
             </div>
 
             <UserAvatar name={currentUser.fullname} size={34} />
 
-            <Btn variant="muted" size="sm" onClick={handleLogout} style={{ padding: "6px 10px", fontSize: 12 }}>Exit</Btn>
+            <Btn variant="muted" size="sm" onClick={handleLogout} style={{ padding: "6px 10px", fontSize: 12 }}>
+              {isMobile ? "⏻" : "Exit"}
+            </Btn>
           </div>
         </div>
       </div>
 
       {/* ── Pipeline Banner (admin/field only) ── */}
       {["verification_office","super_admin","field_team"].includes(internalRole) && (
-        <div style={{ background: "#fff", borderBottom: `1px solid ${COLORS.border}`, padding: "8px 16px", overflowX: "auto" }}>
-          <div style={{ maxWidth: 1400, margin: "0 auto", display: "flex", gap: 5, alignItems: "center" }}>
+        <div style={{ background: "#fff", borderBottom: `1px solid ${COLORS.border}`, padding: "8px 16px" }}>
+          <div className="kf-pipeline" style={{ maxWidth: 1400, margin: "0 auto" }}>
             <span style={{ fontSize: 10, color: COLORS.muted, fontWeight: 700, marginRight: 6, whiteSpace: "nowrap" }}>PIPELINE:</span>
             {WORKFLOW_STEPS.map((s, i) => {
               const count = cases.filter(c => c.status === s.status).length;
@@ -3544,7 +3566,7 @@ export default function KafaaleQaadApp() {
       )}
 
       {/* ── Main Content ── */}
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 16px" }}>
+      <div className="kf-main">
         {ROLE_DASHBOARDS[internalRole] || ROLE_DASHBOARDS.observer}
       </div>
 

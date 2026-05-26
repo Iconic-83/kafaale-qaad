@@ -1,0 +1,201 @@
+/* ── Kafaale Qaad — Responsive / Mobile-first stylesheet ─────────────────── */
+
+/* ── Reset & base ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* ── Responsive table wrapper ─────────────────────────────────────────────── */
+.kf-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.kf-table-wrap table {
+  min-width: 600px;
+}
+
+/* ── Responsive stat-cards row ────────────────────────────────────────────── */
+.kf-stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+/* ── Responsive 2-col grid → single col on mobile ─────────────────────────── */
+.kf-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+/* ── Responsive 4-col → auto-fit ─────────────────────────────────────────── */
+.kf-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* ── Horizontal scrolling tab bar ─────────────────────────────────────────── */
+.kf-tabs {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 4px;
+  border-bottom: 2px solid #E2E8F0;
+  margin-bottom: 24px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.kf-tabs::-webkit-scrollbar { display: none; }
+.kf-tabs button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Modal — full screen on mobile ───────────────────────────────────────── */
+.kf-modal-inner {
+  background: #fff;
+  border-radius: 18px;
+  padding: 32px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+}
+
+/* ── Dashboard card ───────────────────────────────────────────────────────── */
+.kf-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* ── Pipeline step labels ─────────────────────────────────────────────────── */
+.kf-pipeline {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  gap: 5px;
+  align-items: center;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.kf-pipeline::-webkit-scrollbar { display: none; }
+
+/* ── Header / top bar ─────────────────────────────────────────────────────── */
+.kf-header {
+  background: #0B3D91;
+  color: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+}
+.kf-header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  gap: 10px;
+  padding: 0 16px;
+}
+
+/* ── Main content wrapper ─────────────────────────────────────────────────── */
+.kf-main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 16px;
+}
+
+/* ── Action button row ────────────────────────────────────────────────────── */
+.kf-action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.kf-action-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Search bar ───────────────────────────────────────────────────────────── */
+.kf-search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  max-width: 420px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/* BREAKPOINTS                                                                 */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* Tablet  ≤ 900px */
+@media (max-width: 900px) {
+  .kf-grid-2  { grid-template-columns: 1fr; }
+  .kf-grid-4  { grid-template-columns: repeat(2, 1fr); }
+  .kf-search  { max-width: 260px; }
+  .kf-card    { padding: 16px; }
+  .kf-modal-inner { padding: 24px; }
+}
+
+/* Mobile  ≤ 600px */
+@media (max-width: 600px) {
+  .kf-grid-4   { grid-template-columns: repeat(2, 1fr); }
+  .kf-stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kf-modal-inner {
+    border-radius: 14px 14px 0 0;
+    padding: 20px 16px;
+    max-height: 92vh;
+  }
+  .kf-main     { padding: 12px 10px; }
+  .kf-card     { padding: 14px 12px; }
+  .kf-action-row { flex-direction: column; align-items: stretch; }
+  .kf-action-btns { justify-content: stretch; }
+  .kf-action-btns button { flex: 1; }
+  /* Hide secondary columns in tables on very small screens */
+  .kf-hide-xs  { display: none !important; }
+  /* Full-width modal on phone */
+  .kf-modal-outer {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+}
+
+/* Extra small ≤ 400px */
+@media (max-width: 400px) {
+  .kf-stats-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kf-header-inner { height: 54px; }
+}
+
+/* ── Utility helpers ──────────────────────────────────────────────────────── */
+.kf-hide-mobile { display: block; }
+.kf-show-mobile { display: none; }
+
+@media (max-width: 600px) {
+  .kf-hide-mobile { display: none !important; }
+  .kf-show-mobile { display: block !important; }
+}
+
+/* ── Smooth scrolling everywhere ──────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+/* ── Better touch targets ─────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  button, select, input, textarea {
+    min-height: 40px;
+  }
+}
+
+/* ── Prevent horizontal overflow ─────────────────────────────────────────── */
+body { overflow-x: hidden; }
