@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext.jsx";
-import { cases as casesApi, admin as adminApi, field as fieldApi, notifications as notifsApi, impact } from "./api/client.js";
+import { cases as casesApi, admin as adminApi, field as fieldApi, notifications as notifsApi, donations, impact } from "./api/client.js";
 
 // ─── Color Palette & Globals ───────────────────────────────────────────────
 const COLORS = {
@@ -758,40 +758,173 @@ const ReportCaseModal = ({ onClose, onSubmit, currentUser }) => {
 
 // ─── SPONSOR MODAL ─────────────────────────────────────────────────────────
 const SponsorModal = ({ c, onClose, onConfirm, currentUser }) => {
-  const [type,   setType]   = useState("Full Support");
-  const [method, setMethod] = useState("Bank Transfer");
-  const [amount, setAmount] = useState("");
-  const AMOUNTS = { "Full Support": 800, "Partial Help": 400, "Sponsor Now": 200 };
+  const targetGoal  = c.target_goal  || c._raw?.targetGoal  || 0;
+  const totalRaised = c.donation_amount || c._raw?.totalRaised || 0;
+  const remaining   = Math.max(0, targetGoal - totalRaised);
+  const pct         = targetGoal > 0 ? Math.min(100, Math.round((totalRaised / targetGoal) * 100)) : 0;
+
+  const METHODS = [
+    { value: "mobile_money",  label: "📱 Mobile Money (EVC / Zaad / Sahal)" },
+    { value: "bank_transfer", label: "🏦 Bank Transfer" },
+    { value: "card",          label: "💳 Debit / Credit Card" },
+    { value: "wallet",        label: "💰 Digital Wallet" },
+  ];
+
+  // Tier presets based on actual remaining amount
+  const tiers = [
+    { label: "Full Sponsor 🏆",   amount: remaining || targetGoal,           desc: "Cover the entire remaining need" },
+    { label: "Half Support 🤝",   amount: Math.round((remaining || targetGoal) / 2), desc: "Cover half of what's still needed" },
+    { label: "Quick Help ❤️",     amount: Math.min(100, Math.round((remaining || targetGoal) / 4) || 50), desc: "Any help makes a difference" },
+  ].filter(t => t.amount > 0);
+
+  const [selectedTier, setSelectedTier] = useState(0);
+  const [amount,       setAmount]       = useState(String(tiers[0]?.amount || ""));
+  const [method,       setMethod]       = useState("mobile_money");
+  const [message,      setMessage]      = useState("");
+  const [anonymous,    setAnonymous]    = useState(false);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState("");
+  const [done,         setDone]         = useState(false);
+
+  const pickTier = (i) => {
+    setSelectedTier(i);
+    setAmount(String(tiers[i].amount));
+  };
+
+  const handleConfirm = async () => {
+    setError("");
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) return setError("Please enter a valid amount");
+    setLoading(true);
+    try {
+      await donations.donate({
+        caseId:       c.id,
+        amount:       amt,
+        method,
+        isAnonymous:  anonymous,
+        donorMessage: message.trim() || undefined,
+      });
+      setDone(true);
+      // update parent state optimistically
+      onConfirm(c.id, { type: tiers[selectedTier]?.label || "Donation", method, amount: amt });
+    } catch (e) {
+      setError(e.message || "Donation failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Success screen ──
+  if (done) {
+    return (
+      <Modal title="❤️ Thank You!" onClose={onClose}>
+        <div style={{ textAlign: "center", padding: "20px 0 32px" }}>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
+          <h3 style={{ margin: "0 0 8px", fontSize: 22, fontWeight: 800, color: COLORS.secondary }}>Donation Received!</h3>
+          <p style={{ color: COLORS.muted, fontSize: 14, lineHeight: 1.6, maxWidth: 360, margin: "0 auto 24px" }}>
+            Your donation of <strong style={{ color: COLORS.secondary }}>${parseFloat(amount).toLocaleString()}</strong> has been submitted.
+            Our team will confirm and process the payment. You will receive a notification once confirmed.
+          </p>
+          <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 14, padding: "16px 20px", marginBottom: 24, fontSize: 13, color: "#065F46", textAlign: "left" }}>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>What happens next:</div>
+            <div>1️⃣ Admin confirms your payment</div>
+            <div style={{ marginTop: 4 }}>2️⃣ Field agent delivers aid to the family</div>
+            <div style={{ marginTop: 4 }}>3️⃣ Proof of delivery uploaded — you see it</div>
+          </div>
+          <Btn variant="success" onClick={onClose} style={{ minWidth: 160 }}>Close ✓</Btn>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
-    <Modal title={`❤️ Sponsor: ${c.victim_name}`} onClose={onClose}>
-      <div style={{ background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 12, padding: 16, marginBottom: 20 }}>
-        <div style={{ fontSize: 14, color: COLORS.secondary, lineHeight: 1.7 }}>
-          <strong>{c.victim_name}</strong> · {c.age} yrs · {c.location}<br />{c.description}
+    <Modal title={`❤️ Sponsor This Case`} onClose={onClose} wide>
+      {/* Case summary card */}
+      <div style={{ background: "linear-gradient(135deg, #0B3D91 0%, #1A6B3C 100%)", borderRadius: 16, padding: 20, marginBottom: 24, color: "#fff" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{c.victim_name}</div>
+            <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 10 }}>📍 {c.location}</div>
+            <p style={{ fontSize: 13, opacity: 0.9, lineHeight: 1.5, margin: 0, maxWidth: 420 }}>
+              {(c.description || "").slice(0, 140)}{c.description?.length > 140 ? "…" : ""}
+            </p>
+          </div>
+          <UrgencyBadge level={c.urgency_level} />
         </div>
-        <div style={{ marginTop: 8 }}><UrgencyBadge level={c.urgency_level} /></div>
+
+        {/* Funding progress */}
+        {targetGoal > 0 && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.85, marginBottom: 6 }}>
+              <span>💰 Raised: <strong>${totalRaised.toLocaleString()}</strong></span>
+              <span>🎯 Goal: <strong>${targetGoal.toLocaleString()}</strong></span>
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 20, height: 10, overflow: "hidden" }}>
+              <div style={{ background: pct >= 100 ? "#10B981" : "#FCD34D", borderRadius: 20, height: "100%", width: `${pct}%`, transition: "width 0.5s" }} />
+            </div>
+            <div style={{ marginTop: 6, fontSize: 12, opacity: 0.85 }}>
+              {pct}% funded · <strong style={{ color: "#FCD34D" }}>${remaining.toLocaleString()} still needed</strong>
+            </div>
+          </div>
+        )}
       </div>
-      <Select label="Sponsorship Type" value={type} onChange={e => { setType(e.target.value); setAmount(AMOUNTS[e.target.value]); }}>
-        <option>Full Support</option><option>Partial Help</option><option>Sponsor Now</option>
+
+      {/* Tier buttons */}
+      {tiers.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, marginBottom: 10 }}>Choose a sponsorship tier</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+            {tiers.map((t, i) => (
+              <button key={i} onClick={() => pickTier(i)}
+                style={{ padding: "12px 10px", borderRadius: 12, border: `2px solid ${selectedTier === i ? COLORS.secondary : COLORS.border}`, background: selectedTier === i ? "#F0FDF4" : "#fff", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.secondary }}>${t.amount.toLocaleString()}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.text, marginTop: 2 }}>{t.label}</div>
+                <div style={{ fontSize: 10, color: COLORS.muted, marginTop: 2 }}>{t.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Custom amount */}
+      <Input label="Donation Amount (USD) *" type="number" value={amount}
+        onChange={e => { setAmount(e.target.value); setSelectedTier(-1); }}
+        placeholder={remaining > 0 ? `Remaining needed: $${remaining}` : "Enter amount"} />
+
+      {/* Payment method */}
+      <Select label="Payment Method *" value={method} onChange={e => setMethod(e.target.value)}>
+        {METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
       </Select>
-      <Input label="Amount (USD)" type="number" value={amount || AMOUNTS[type]} onChange={e => setAmount(e.target.value)} />
-      <Select label="Payment Method" value={method} onChange={e => setMethod(e.target.value)}>
-        <option>Bank Transfer</option><option>PayPal</option><option>Stripe</option><option>Ama Gateway</option>
-      </Select>
-      <div style={{ background: "#EFF6FF", borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 13, color: COLORS.primary }}>
-        <strong>Sponsorship Routes:</strong><br />
-        <strong>A. Direct:</strong> Donation goes directly to the beneficiary<br />
-        <strong>B. Office Managed:</strong> Office handles distribution with proof
+
+      {/* Optional message */}
+      <Textarea label="Message to the family (optional — shown anonymously)" value={message}
+        onChange={e => setMessage(e.target.value)}
+        placeholder="e.g. You are in our prayers, stay strong…" />
+
+      {/* Anonymous toggle */}
+      <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, cursor: "pointer", userSelect: "none" }}>
+        <input type="checkbox" checked={anonymous} onChange={e => setAnonymous(e.target.checked)}
+          style={{ width: 18, height: 18, cursor: "pointer" }} />
+        <span style={{ fontSize: 13 }}>Keep my donation anonymous (name hidden from public)</span>
+      </label>
+
+      {/* Process note */}
+      <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 12, color: COLORS.primary }}>
+        <strong>How it works:</strong><br />
+        1. Submit your pledge here → 2. Admin contacts you to confirm payment → 3. Field team delivers aid → 4. Proof of delivery shared with you
       </div>
-      <Select label="Sponsorship Route">
-        <option value="direct">A. Direct Sponsorship</option>
-        <option value="office">B. Office Managed (Recommended)</option>
-      </Select>
+
+      {error && (
+        <div style={{ background: "#FEF2F2", color: COLORS.danger, borderRadius: 10, padding: "10px 14px", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
+          ⚠️ {error}
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 10 }}>
-        <Btn variant="accent" onClick={() => { onConfirm(c.id, { type, method, amount: parseInt(amount) || AMOUNTS[type], sponsor_id: currentUser.id }); onClose(); }} style={{ flex: 1 }}>
-          ❤️ Confirm Sponsorship
+        <Btn variant="muted" onClick={onClose} style={{ flex: 1 }} disabled={loading}>Cancel</Btn>
+        <Btn variant="accent" onClick={handleConfirm} disabled={loading || !amount} style={{ flex: 2 }}>
+          {loading ? "Processing…" : `❤️ Confirm $${parseFloat(amount || 0).toLocaleString()} Donation`}
         </Btn>
-        <Btn variant="muted" onClick={onClose}>Cancel</Btn>
       </div>
     </Modal>
   );
@@ -1701,74 +1834,146 @@ const FieldTeamDashboard = ({ cases, currentUser, onViewCase, onInvestigate }) =
   );
 };
 
-const DonorDashboard = ({ cases, donations, sponsors, currentUser, onViewCase, onSponsor }) => {
-  const available  = cases.filter(c => c.status === "Waiting Sponsor");
-  const mySponsors = sponsors.filter(s => s.user_id === currentUser.id);
-  const myDonations = donations.filter(d => d.sponsor_id === currentUser.id);
-  const myTotal    = myDonations.reduce((a, d) => a + d.amount, 0);
+const DonorDashboard = ({ cases, currentUser, onViewCase, onSponsor }) => {
+  const [myDonations, setMyDonations] = useState([]);
+  const [loadingDonations, setLoadingDonations] = useState(true);
+
+  useEffect(() => {
+    donations.my().then(data => {
+      if (Array.isArray(data)) setMyDonations(data);
+    }).catch(() => {}).finally(() => setLoadingDonations(false));
+  }, []);
+
+  const available = cases.filter(c => ["Waiting Sponsor","Sponsored"].includes(c.status));
+  const waitingCases = cases.filter(c => c.status === "Waiting Sponsor");
+  const myTotal = myDonations.reduce((a, d) => a + (d.amount || 0), 0);
+  const confirmedTotal = myDonations.filter(d => d.status === "confirmed").reduce((a, d) => a + (d.amount || 0), 0);
+
+  const STATUS_COLORS = {
+    pending:   { bg: "#FEF3C7", color: "#92400E",  label: "⏳ Pending"   },
+    confirmed: { bg: "#D1FAE5", color: "#065F46",  label: "✅ Confirmed" },
+    failed:    { bg: "#FEE2E2", color: COLORS.danger, label: "❌ Failed" },
+  };
+
+  const METHOD_LABELS = {
+    mobile_money:  "📱 Mobile Money",
+    bank_transfer: "🏦 Bank Transfer",
+    card:          "💳 Card",
+    wallet:        "💰 Wallet",
+  };
+
   return (
     <div>
-      <h2 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 800 }}>❤️ Donor Dashboard</h2>
-      <p style={{ margin: "0 0 24px", color: COLORS.muted }}>Make a difference — sponsor a case today</p>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 28 }}>
-        <StatCard label="Available Cases"  value={available.length}    icon="📋" color={COLORS.primary} />
-        <StatCard label="My Sponsorships"  value={mySponsors.length}   icon="❤️" color="#EC4899" />
-        <StatCard label="Total Donated"    value={`$${myTotal}`}       icon="💰" color={COLORS.secondary} />
-        <StatCard label="Impact Reports"   value={mySponsors.filter(s => s.status === "completed").length} icon="📊" color={COLORS.accent} />
+      <h2 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 800 }}>❤️ Donor Dashboard</h2>
+      <p style={{ margin: "0 0 20px", color: COLORS.muted }}>Welcome, {currentUser.fullname} — your support changes lives</p>
+
+      {/* Stats */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 28 }}>
+        <StatCard label="Cases to Sponsor" value={waitingCases.length}                    icon="🤝" color={COLORS.primary} />
+        <StatCard label="My Donations"      value={myDonations.length}                    icon="❤️" color="#EC4899" />
+        <StatCard label="Total Pledged"     value={`$${myTotal.toLocaleString()}`}        icon="💸" color={COLORS.accent} />
+        <StatCard label="Confirmed"         value={`$${confirmedTotal.toLocaleString()}`} icon="✅" color={COLORS.secondary} />
       </div>
 
-      <h3 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: "#EC4899" }}>💝 Cases Awaiting Your Support</h3>
-      {available.length === 0 ? (
-        <div style={{ background: "#fff", borderRadius: 14, padding: 40, textAlign: "center", color: COLORS.muted, boxShadow: "0 2px 8px #0001" }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
-          All cases are currently sponsored! Check back soon.
+      {/* Cases grid */}
+      <h3 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: "#EC4899" }}>💝 Cases Waiting for a Sponsor</h3>
+      {waitingCases.length === 0 ? (
+        <div style={{ background: "#fff", borderRadius: 16, padding: 48, textAlign: "center", color: COLORS.muted, boxShadow: "0 2px 8px #0001", marginBottom: 32 }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>All cases are currently sponsored!</div>
+          <div style={{ fontSize: 13, marginTop: 6 }}>Check back soon — new verified cases are added regularly.</div>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginBottom: 32 }}>
-          {available.map(c => (
-            <div key={c.id} style={{ background: "#fff", borderRadius: 14, padding: 20, boxShadow: "0 2px 12px #0001", border: "1px solid #FCE7F3" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 800 }}>{c.victim_name}</div>
-                  <div style={{ fontSize: 12, color: COLORS.muted }}>{c.age} yrs · {c.gender} · 📍 {c.location}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 18, marginBottom: 36 }}>
+          {waitingCases.map(c => {
+            const goal    = c.target_goal  || c._raw?.targetGoal  || 0;
+            const raised  = c.donation_amount || c._raw?.totalRaised || 0;
+            const remain  = Math.max(0, goal - raised);
+            const pct     = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
+            return (
+              <div key={c.id} style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 16px #0002", border: "1px solid #FCE7F3", display: "flex", flexDirection: "column" }}>
+                {/* Top color bar by urgency */}
+                <div style={{ height: 5, background: c.urgency_level === "Critical" ? "#7C3AED" : c.urgency_level === "High" ? "#EF4444" : c.urgency_level === "Medium" ? "#F59E0B" : "#10B981" }} />
+                <div style={{ padding: 20, flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, flex: 1, marginRight: 8 }}>{c.victim_name}</div>
+                    <UrgencyBadge level={c.urgency_level} />
+                  </div>
+                  <div style={{ fontSize: 12, color: COLORS.muted, marginBottom: 10 }}>📍 {c.location}</div>
+                  <p style={{ fontSize: 13, color: COLORS.text, lineHeight: 1.6, margin: "0 0 16px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}>
+                    {c.description}
+                  </p>
+
+                  {/* Funding progress */}
+                  {goal > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 5 }}>
+                        <span style={{ color: COLORS.muted }}>Raised: <strong style={{ color: COLORS.secondary }}>${raised.toLocaleString()}</strong></span>
+                        <span style={{ color: COLORS.muted }}>Goal: <strong>${goal.toLocaleString()}</strong></span>
+                      </div>
+                      <div style={{ background: "#F3F4F6", borderRadius: 20, height: 8, overflow: "hidden" }}>
+                        <div style={{ background: pct >= 100 ? COLORS.secondary : COLORS.accent, borderRadius: 20, height: "100%", width: `${pct}%`, transition: "width 0.5s" }} />
+                      </div>
+                      <div style={{ marginTop: 5, fontSize: 12, color: remain > 0 ? COLORS.danger : COLORS.secondary, fontWeight: 700 }}>
+                        {remain > 0 ? `💔 $${remain.toLocaleString()} still needed` : "🎉 Fully funded!"}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <UrgencyBadge level={c.urgency_level} />
+
+                <div style={{ padding: "0 20px 20px", display: "flex", gap: 8 }}>
+                  <Btn variant="ghost" size="sm" onClick={() => onViewCase(c)} style={{ flex: 1 }}>View Details</Btn>
+                  <Btn variant="accent" size="sm" onClick={() => onSponsor(c)} style={{ flex: 2 }}>
+                    ❤️ {remain > 0 ? `Sponsor $${remain.toLocaleString()}` : "Contribute"}
+                  </Btn>
+                </div>
               </div>
-              <p style={{ fontSize: 13, color: COLORS.text, lineHeight: 1.5, margin: "0 0 16px" }}>{c.description.slice(0, 100)}…</p>
-              <div style={{ display: "flex", gap: 8 }}>
-                <Btn variant="ghost" size="sm" onClick={() => onViewCase(c)} style={{ flex: 1 }}>View Details</Btn>
-                <Btn variant="accent" size="sm" onClick={() => onSponsor(c)} style={{ flex: 1 }}>❤️ Sponsor</Btn>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      <h3 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700 }}>My Donation History</h3>
-      <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#F8FAFC" }}>
-              {["Date","Case","Amount","Method","Status"].map(h => (
-                <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {myDonations.map(d => (
-              <tr key={d.id} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
-                <td style={{ padding: "12px 16px", fontSize: 13 }}>{d.paid_at}</td>
-                <td style={{ padding: "12px 16px", fontSize: 13, fontWeight: 700, color: COLORS.primary }}>{d.case_id}</td>
-                <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 800, color: COLORS.secondary }}>${d.amount}</td>
-                <td style={{ padding: "12px 16px", fontSize: 13 }}>{d.payment_method}</td>
-                <td style={{ padding: "12px 16px" }}><span style={{ background: "#D1FAE5", color: "#065F46", borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>{d.transaction_status}</span></td>
+      {/* Donation history */}
+      <h3 style={{ margin: "0 0 14px", fontSize: 18, fontWeight: 700 }}>💰 My Donation History</h3>
+      <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
+        {loadingDonations ? (
+          <div style={{ padding: 32, textAlign: "center", color: COLORS.muted }}>Loading donations…</div>
+        ) : myDonations.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", color: COLORS.muted }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>💝</div>
+            <div style={{ fontWeight: 700 }}>No donations yet</div>
+            <div style={{ fontSize: 13, marginTop: 6 }}>Sponsor a case above to get started!</div>
+          </div>
+        ) : (
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "#F8FAFC" }}>
+                {["Date","Case","Amount","Method","Status"].map(h => (
+                  <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+                ))}
               </tr>
-            ))}
-            {myDonations.length === 0 && (
-              <tr><td colSpan={5} style={{ padding: 24, textAlign: "center", color: COLORS.muted, fontSize: 14 }}>No donations yet. Sponsor a case to get started! 💝</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {myDonations.map((d, i) => {
+                const s = STATUS_COLORS[d.status] || STATUS_COLORS.pending;
+                return (
+                  <tr key={d.id} style={{ borderBottom: i < myDonations.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
+                    <td style={{ padding: "12px 16px", fontSize: 13, color: COLORS.muted }}>{d.createdAt?.slice(0,10) || "—"}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13 }}>
+                      <div style={{ fontWeight: 700, color: COLORS.primary }}>{d.case?.publicTitle?.slice(0,35) || d.caseId?.slice(0,16) || "—"}</div>
+                      {d.case?.publicCity && <div style={{ fontSize: 11, color: COLORS.muted }}>📍 {d.case.publicCity}</div>}
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: 16, fontWeight: 800, color: COLORS.secondary }}>${d.amount?.toLocaleString()}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 13 }}>{METHOD_LABELS[d.method] || d.method || "—"}</td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.label}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
@@ -2052,11 +2257,13 @@ export default function KafaaleQaadApp() {
   };
 
   const handleSponsor = (caseId, details) => {
-    const caseItem = cases.find(c => c.id === caseId);
-    setDonations(d => [...d, { id: "D" + Date.now(), case_id: caseId, sponsor_id: currentUser.id, amount: details.amount, payment_method: details.method, transaction_status: "completed", paid_at: new Date().toISOString().split("T")[0] }]);
-    setSponsors(s => [...s, { id: "S" + Date.now(), user_id: currentUser.id, case_id: caseId, sponsorship_type: details.type, start_date: new Date().toISOString().split("T")[0], end_date: "", status: "active" }]);
-    setCases(cs => cs.map(c => c.id === caseId ? { ...c, status: "Sponsored", donation_amount: details.amount } : c));
-    showToast(`🎉 Thank you! ${caseItem?.victim_name} is now sponsored.`);
+    // Optimistic update — show donated amount on the case card immediately
+    setCases(cs => cs.map(c => c.id === caseId
+      ? { ...c, donation_amount: (c.donation_amount || 0) + details.amount }
+      : c
+    ));
+    // Reload cases from server after a short delay to get real totals
+    setTimeout(reloadCases, 1500);
   };
 
   const handleLogout = () => { logout(); navigate("/"); };
@@ -2135,7 +2342,7 @@ export default function KafaaleQaadApp() {
         onViewCase={setSelectedCase} onInvestigate={setInvestigateCase} />
     ),
     donor: (
-      <DonorDashboard cases={filteredCases} donations={donations} sponsors={sponsors}
+      <DonorDashboard cases={filteredCases}
         currentUser={currentUser} onViewCase={setSelectedCase} onSponsor={setSponsorCase} />
     ),
     super_admin: (
