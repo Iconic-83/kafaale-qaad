@@ -140,8 +140,9 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: IS_PROD ? 'Internal server error' : err.message });
 });
 
-// Only start the HTTP server when run directly (not imported as serverless function)
-if (require.main === module) {
+// Only start the HTTP server when run directly (not when imported as serverless)
+const isMain = process.env.NODE_ENV !== 'production' || process.env.START_SERVER === 'true';
+if (isMain) {
   server.listen(PORT, () => {
     console.log(`🚀 Kafaale API running → http://localhost:${PORT}`);
     console.log(`📡 Health check: http://localhost:${PORT}/health`);

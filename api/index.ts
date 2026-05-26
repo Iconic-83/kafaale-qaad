@@ -1,2 +1,2 @@
-// Vercel serverless entry point — wraps the Express app
-export { default } from '../backend/src/server';
+// Vercel serverless entry point — imports compiled backend
+export { default } from '../backend/dist/server.js';
