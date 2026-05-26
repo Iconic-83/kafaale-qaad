@@ -29,7 +29,7 @@ CREATE TABLE "Case" (
     "privateFamilySize" INTEGER,
     "privateVictimAge" INTEGER,
     "privateVictimGender" TEXT,
-    "privateDescription" TEXT NOT NULL,
+    "privateDescription" TEXT,
     "privateNotes" TEXT,
     "category" TEXT NOT NULL DEFAULT 'other',
     "emergencyLevel" TEXT NOT NULL DEFAULT 'medium',
@@ -201,10 +201,88 @@ CREATE TABLE "IdempotencyKey" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "User_role_idx" ON "User"("role");
+
+-- CreateIndex
+CREATE INDEX "User_email_idx" ON "User"("email");
+
+-- CreateIndex
+CREATE INDEX "User_isActive_idx" ON "User"("isActive");
+
+-- CreateIndex
+CREATE INDEX "Case_status_idx" ON "Case"("status");
+
+-- CreateIndex
+CREATE INDEX "Case_reporterId_idx" ON "Case"("reporterId");
+
+-- CreateIndex
+CREATE INDEX "Case_assignedAgentId_idx" ON "Case"("assignedAgentId");
+
+-- CreateIndex
+CREATE INDEX "Case_emergencyLevel_idx" ON "Case"("emergencyLevel");
+
+-- CreateIndex
+CREATE INDEX "Case_createdAt_idx" ON "Case"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "Case_status_createdAt_idx" ON "Case"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "CaseMedia_caseId_idx" ON "CaseMedia"("caseId");
+
+-- CreateIndex
+CREATE INDEX "CaseMedia_isPublic_idx" ON "CaseMedia"("isPublic");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "FieldInvestigation_caseId_key" ON "FieldInvestigation"("caseId");
+
+-- CreateIndex
+CREATE INDEX "FieldInvestigation_agentId_idx" ON "FieldInvestigation"("agentId");
+
+-- CreateIndex
+CREATE INDEX "FieldInvestigation_verificationStatus_idx" ON "FieldInvestigation"("verificationStatus");
+
+-- CreateIndex
+CREATE INDEX "FieldInvestigation_fraudRiskLevel_idx" ON "FieldInvestigation"("fraudRiskLevel");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AiPublicData_caseId_key" ON "AiPublicData"("caseId");
 
 -- CreateIndex
+CREATE INDEX "Donation_donorId_idx" ON "Donation"("donorId");
+
+-- CreateIndex
+CREATE INDEX "Donation_caseId_idx" ON "Donation"("caseId");
+
+-- CreateIndex
+CREATE INDEX "Donation_status_idx" ON "Donation"("status");
+
+-- CreateIndex
+CREATE INDEX "Donation_donorId_status_idx" ON "Donation"("donorId", "status");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "DeliveryProof_caseId_key" ON "DeliveryProof"("caseId");
+
+-- CreateIndex
+CREATE INDEX "DeliveryProof_adminConfirmed_idx" ON "DeliveryProof"("adminConfirmed");
+
+-- CreateIndex
+CREATE INDEX "AdminAuditLog_adminId_idx" ON "AdminAuditLog"("adminId");
+
+-- CreateIndex
+CREATE INDEX "AdminAuditLog_caseId_idx" ON "AdminAuditLog"("caseId");
+
+-- CreateIndex
+CREATE INDEX "AdminAuditLog_action_idx" ON "AdminAuditLog"("action");
+
+-- CreateIndex
+CREATE INDEX "AdminAuditLog_timestamp_idx" ON "AdminAuditLog"("timestamp");
+
+-- CreateIndex
+CREATE INDEX "Notification_userId_idx" ON "Notification"("userId");
+
+-- CreateIndex
+CREATE INDEX "Notification_userId_isRead_idx" ON "Notification"("userId", "isRead");
+
+-- CreateIndex
+CREATE INDEX "Notification_createdAt_idx" ON "Notification"("createdAt");
