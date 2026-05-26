@@ -145,14 +145,14 @@ export async function runAiSanitizationForCase(caseId: string): Promise<AiPublic
 
   const fieldData: FieldData = {
     caseId,
-    victimDescription: kase.privateDescription,
+    victimDescription: kase.privateDescription || '',
     victimLocation: kase.privateAddress || 'Location withheld',
-    victimSituation: inv.situationNotes || kase.privateDescription,
+    victimSituation: inv.situationNotes || kase.privateDescription || '',
     category: kase.category,
     emergencyLevel: kase.emergencyLevel,
     estimatedAmount: Number(inv.estimatedAmountNeeded),
     agentNotes: inv.officialNotes || '',
-    witnessStatements: inv.witnessStatements || undefined,
+    // witnessStatements removed — not in current schema
     mediaUrls: kase.mediaFiles.map((m) => m.url),
   };
 
@@ -176,51 +176,54 @@ export async function runAiSanitizationForCase(caseId: string): Promise<AiPublic
     }
   }
 
+  // Serialize arrays as JSON strings (SQLite/PG stores them as String fields)
+  const safeMediaUrlsJson  = JSON.stringify(result.safeMediaUrls);
+  const piiRemovedJson     = JSON.stringify(result.piiRemoved);
+  const mediaFlaggedJson   = JSON.stringify(result.mediaFlagged);
+
   // Upsert AI public data
   const aiData = await prisma.aiPublicData.upsert({
     where: { caseId },
     update: {
-      generatedTitle: result.generatedTitle,
-      generatedStory: result.generatedStory,
+      generatedTitle:    result.generatedTitle,
+      generatedStory:    result.generatedStory,
       generatedCategory: result.generatedCategory,
-      generatedCity: result.generatedCity,
-      generatedUrgency: result.generatedUrgency,
-      safeMediaUrls: result.safeMediaUrls,
-      piiDetected: result.piiDetected,
-      piiRemoved: result.piiRemoved,
-      mediaFlagged: result.mediaFlagged,
-      confidenceScore: result.confidenceScore,
-      tokensUsed: result.tokensUsed,
-      processingMs: result.processingMs,
-      updatedAt: new Date(),
+      generatedCity:     result.generatedCity,
+      generatedUrgency:  result.generatedUrgency,
+      safeMediaUrls:     safeMediaUrlsJson,
+      piiDetected:       result.piiDetected,
+      piiRemoved:        piiRemovedJson,
+      mediaFlagged:      mediaFlaggedJson,
+      confidenceScore:   result.confidenceScore,
+      tokensUsed:        result.tokensUsed,
+      updatedAt:         new Date(),
     },
     create: {
       caseId,
-      generatedTitle: result.generatedTitle,
-      generatedStory: result.generatedStory,
+      generatedTitle:    result.generatedTitle,
+      generatedStory:    result.generatedStory,
       generatedCategory: result.generatedCategory,
-      generatedCity: result.generatedCity,
-      generatedUrgency: result.generatedUrgency,
-      safeMediaUrls: result.safeMediaUrls,
-      piiDetected: result.piiDetected,
-      piiRemoved: result.piiRemoved,
-      mediaFlagged: result.mediaFlagged,
-      confidenceScore: result.confidenceScore,
-      tokensUsed: result.tokensUsed,
-      processingMs: result.processingMs,
+      generatedCity:     result.generatedCity,
+      generatedUrgency:  result.generatedUrgency,
+      safeMediaUrls:     safeMediaUrlsJson,
+      piiDetected:       result.piiDetected,
+      piiRemoved:        piiRemovedJson,
+      mediaFlagged:      mediaFlaggedJson,
+      confidenceScore:   result.confidenceScore,
+      tokensUsed:        result.tokensUsed,
     },
   });
 
-  // Update case status
+  // Update case status (publicMediaUrls is also a JSON string field)
   await prisma.case.update({
     where: { id: caseId },
     data: {
-      status: 'ai_sanitized',
-      aiSanitizedAt: new Date(),
-      publicTitle: result.generatedTitle,
-      publicStory: result.generatedStory,
-      publicCity: result.generatedCity,
-      publicMediaUrls: result.safeMediaUrls,
+      status:          'ai_sanitized',
+      aiSanitizedAt:   new Date(),
+      publicTitle:     result.generatedTitle,
+      publicStory:     result.generatedStory,
+      publicCity:      result.generatedCity,
+      publicMediaUrls: safeMediaUrlsJson,
     },
   });
 

@@ -13,7 +13,14 @@ async function req(path, opts = {}) {
   const token = getToken();
   const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) };
   const res = await fetch(`${API}${path}`, { ...opts, headers });
-  if (res.status === 401) { clearAuth(); window.location.href = '/login.html'; return; }
+  if (res.status === 401) {
+    clearAuth();
+    // Avoid infinite redirect loop if already on /login
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
+    return;
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
   return data;
@@ -36,14 +43,18 @@ export const cases = {
 
 // ── Admin endpoints ───────────────────────────────────────────────
 export const admin = {
-  stats:        ()                        => req('/admin/stats'),
-  cases:        (params = {})             => req('/admin/cases?' + new URLSearchParams(params)),
-  getCase:      (id)                      => req(`/admin/cases/${id}`),
-  updateStatus: (id, status, notes, rejectionReason) => req(`/admin/cases/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, notes, rejectionReason }) }),
-  assign:       (id, agentId)             => req(`/admin/cases/${id}/assign`, { method: 'PATCH', body: JSON.stringify({ agentId }) }),
-  publish:      (id, data)                => req(`/admin/cases/${id}/publish`, { method: 'PATCH', body: JSON.stringify(data) }),
-  users:        ()                        => req('/admin/users'),
-  audit:        ()                        => req('/admin/audit'),
+  stats:            ()                        => req('/admin/stats'),
+  cases:            (params = {})             => req('/admin/cases?' + new URLSearchParams(params)),
+  getCase:          (id)                      => req(`/admin/cases/${id}`),
+  updateStatus:     (id, status, notes, rejectionReason) => req(`/admin/cases/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status, notes, rejectionReason }) }),
+  assign:           (id, agentId)             => req(`/admin/cases/${id}/assign`, { method: 'PATCH', body: JSON.stringify({ agentId }) }),
+  publish:          (id, data)                => req(`/admin/cases/${id}/publish`, { method: 'PATCH', body: JSON.stringify(data) }),
+  users:            ()                        => req('/admin/users'),
+  audit:            ()                        => req('/admin/audit'),
+  donations:        ()                        => req('/admin/donations'),
+  confirmDonation:  (id)                      => req(`/admin/donations/${id}/confirm`,         { method: 'PATCH' }),
+  assignDelivery:   (id, agentId)             => req(`/admin/cases/${id}/assign-delivery`,     { method: 'PATCH', body: JSON.stringify({ agentId }) }),
+  completeCase:     (id, notes)               => req(`/admin/cases/${id}/complete`,            { method: 'PATCH', body: JSON.stringify({ adminNotes: notes }) }),
 };
 
 // ── Donations endpoints ───────────────────────────────────────────
@@ -56,6 +67,7 @@ export const donations = {
 export const field = {
   assignments: ()     => req('/field/assignments'),
   investigate: (data) => req('/field/investigate', { method: 'POST', body: JSON.stringify(data) }),
+  delivery:    (data) => req('/field/delivery',    { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // ── Notifications endpoints ───────────────────────────────────────

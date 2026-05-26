@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  // ── LOCAL DEV:    provider = "sqlite"     +  DATABASE_URL="file:./dev.db"
-  // ── PRODUCTION:   provider = "postgresql" +  DATABASE_URL=<Railway/Supabase URL>
+  // ── LOCAL DEV:  keep provider = "sqlite"  +  DATABASE_URL="file:./dev.db"
+  // ── PRODUCTION: change provider to "postgresql" + set DATABASE_URL to Supabase URL
   //    (Prisma doesn't support env() for provider — edit this line before deploying)
   provider = "sqlite"
   url      = env("DATABASE_URL")

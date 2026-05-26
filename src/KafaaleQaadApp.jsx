@@ -27,6 +27,8 @@ const STATUS_MAP = {
   "Waiting Sponsor":      { color: "#F59E0B", bg: "#FEF3C7", icon: "🤝" },
   "Sponsored":            { color: "#EF4444", bg: "#FEE2E2", icon: "❤️" },
   "Aid Delivered":        { color: "#06B6D4", bg: "#CFFAFE", icon: "📦" },
+  "Delivering":           { color: "#0891B2", bg: "#CFFAFE", icon: "🚚" },
+  "Proof Submitted":      { color: "#10B981", bg: "#D1FAE5", icon: "📤" },
   "Completed":            { color: "#6B7280", bg: "#F3F4F6", icon: "🏁" },
   "Archived":             { color: "#374151", bg: "#E5E7EB", icon: "📁" },
 };
@@ -1086,6 +1088,57 @@ const AssignAgentModal = ({ caseItem, agents, onClose, onDone, showToast }) => {
   );
 };
 
+// ─── ASSIGN DELIVERY MODAL ─────────────────────────────────────────────────
+const AssignDeliveryModal = ({ caseItem, agents, onClose, onDone, showToast }) => {
+  const [selectedAgent, setSelectedAgent] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handle = async () => {
+    if (!selectedAgent) return;
+    setLoading(true);
+    try {
+      await adminApi.assignDelivery(caseItem.id, selectedAgent);
+      showToast(`🚚 Delivery agent assigned to ${caseItem.id} — they've been notified!`);
+      onDone();
+      onClose();
+    } catch (e) { showToast(e.message || "Failed to assign", "error"); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <Modal title={`🚚 Assign Delivery Agent — ${caseItem.id || caseItem._caseId}`} onClose={onClose}>
+      <div style={{ background: "#F0FDF4", borderRadius: 12, padding: "14px 18px", marginBottom: 16, border: "1px solid #BBF7D0" }}>
+        <div style={{ fontWeight: 800, fontSize: 14, color: "#166534" }}>💰 Donation Confirmed — Ready for Delivery</div>
+        <div style={{ fontSize: 13, color: COLORS.text, marginTop: 6 }}>{caseItem.victim_name || caseItem._caseTitle}</div>
+        <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 4 }}>📍 {caseItem.location || caseItem._caseCity}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.secondary, marginTop: 6 }}>
+          Amount to deliver: ${(caseItem.donation_amount || caseItem._amount || 0).toLocaleString()}
+        </div>
+      </div>
+      <p style={{ fontSize: 13, color: COLORS.muted, marginBottom: 16, lineHeight: 1.6 }}>
+        Pick a field agent to carry out the aid delivery. They will be notified immediately and must submit a delivery proof document when done.
+      </p>
+      <Select label="Select Delivery Agent *" value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)}>
+        <option value="">— Choose an agent —</option>
+        {agents.map(a => (
+          <option key={a.id} value={a.id}>{a.name} ({a.email})</option>
+        ))}
+      </Select>
+      {agents.length === 0 && (
+        <div style={{ background: "#FEF2F2", color: COLORS.danger, borderRadius: 10, padding: "10px 14px", fontSize: 13, marginBottom: 16 }}>
+          ⚠️ No field agents available. Please register a field_agent account first.
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+        <Btn variant="ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</Btn>
+        <Btn variant="teal" onClick={handle} disabled={!selectedAgent || loading} style={{ flex: 2 }}>
+          {loading ? "Assigning…" : "🚚 Start Delivery & Notify Agent"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
 // ─── REJECT CASE MODAL ──────────────────────────────────────────────────────
 const RejectCaseModal = ({ caseItem, onClose, onDone, showToast }) => {
   const [reason, setReason] = useState("");
@@ -1354,6 +1407,611 @@ const FieldReportModal = ({ caseItem, onClose }) => {
   );
 };
 
+// ─── DELIVERY PROOF MODAL (Field Agent) ───────────────────────────────────
+const DeliveryProofModal = ({ caseItem, onClose, onDone, showToast }) => {
+  const [form, setForm] = useState({
+    deliveryMethod:  "cash",
+    amountDelivered: caseItem.donation_amount || caseItem.target_goal || "",
+    recipientName:   caseItem.victim_name || "",
+    deliveryNotes:   "",
+    extraProof:      "",   // optional extra observations / proof description
+    deliveryDate:    new Date().toISOString().slice(0, 10),
+  });
+  const [loading, setLoading] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const canSubmit = form.deliveryNotes.trim().length >= 10 && form.amountDelivered > 0;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setLoading(true);
+    try {
+      const combinedNotes = form.extraProof
+        ? `${form.deliveryNotes}\n\n--- Additional Proof ---\n${form.extraProof}`
+        : form.deliveryNotes;
+      await fieldApi.delivery({
+        caseId:          caseItem.id,
+        deliveryMethod:  form.deliveryMethod,
+        amountDelivered: parseFloat(form.amountDelivered),
+        recipientName:   form.recipientName || undefined,
+        deliveryNotes:   combinedNotes,
+        deliveryDate:    new Date(form.deliveryDate).toISOString(),
+      });
+      showToast("✅ Delivery proof submitted! Admin will verify and close the case.", "success");
+      onDone();
+      onClose();
+    } catch (e) {
+      showToast("Failed: " + e.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const METHOD_OPTIONS = [
+    { val: "cash",              label: "💵 Cash handover" },
+    { val: "food_package",      label: "🍱 Food package" },
+    { val: "medical_supplies",  label: "💊 Medical supplies" },
+    { val: "clothing",          label: "👗 Clothing / blankets" },
+    { val: "goods",             label: "📦 General goods" },
+    { val: "mixed",             label: "🎁 Mixed (cash + items)" },
+  ];
+
+  return (
+    <Modal title={`📦 Submit Delivery Proof — ${caseItem.id}`} onClose={onClose}>
+      {/* Case summary */}
+      <div style={{ background: "#F0F9FF", borderRadius: 10, padding: "12px 16px", marginBottom: 20, border: "1px solid #BAE6FD" }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.primary }}>
+          {caseItem.victim_name} · 📍 {caseItem.location}
+        </div>
+        <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
+          Donation confirmed: <strong>${(caseItem.donation_amount || 0).toLocaleString()}</strong> of goal <strong>${(caseItem.target_goal || 0).toLocaleString()}</strong>
+        </div>
+      </div>
+
+      {/* Delivery date */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, display: "block", marginBottom: 6 }}>📅 DELIVERY DATE</label>
+        <input type="date" value={form.deliveryDate} onChange={e => set("deliveryDate", e.target.value)}
+          max={new Date().toISOString().slice(0,10)}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14, boxSizing: "border-box" }} />
+      </div>
+
+      {/* Delivery method */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, display: "block", marginBottom: 6 }}>📦 WHAT WAS DELIVERED</label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+          {METHOD_OPTIONS.map(opt => (
+            <button key={opt.val} onClick={() => set("deliveryMethod", opt.val)}
+              style={{ padding: "10px 12px", borderRadius: 10, border: `2px solid ${form.deliveryMethod === opt.val ? COLORS.secondary : COLORS.border}`, background: form.deliveryMethod === opt.val ? COLORS.secondary + "10" : "#fff", cursor: "pointer", fontSize: 13, fontWeight: form.deliveryMethod === opt.val ? 700 : 500, textAlign: "left", color: form.deliveryMethod === opt.val ? COLORS.secondary : COLORS.text }}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Amount delivered */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, display: "block", marginBottom: 6 }}>💵 AMOUNT / VALUE DELIVERED ($)</label>
+        <input type="number" min="0" step="0.01" value={form.amountDelivered} onChange={e => set("amountDelivered", e.target.value)}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14, boxSizing: "border-box" }} />
+      </div>
+
+      {/* Recipient name */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, display: "block", marginBottom: 6 }}>👤 RECIPIENT NAME (who signed / received)</label>
+        <input type="text" placeholder="e.g. Amina Hassan or family member name" value={form.recipientName} onChange={e => set("recipientName", e.target.value)}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14, boxSizing: "border-box" }} />
+      </div>
+
+      {/* Delivery notes */}
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, display: "block", marginBottom: 6 }}>📝 DELIVERY NOTES <span style={{ color: COLORS.danger }}>*</span></label>
+        <textarea rows={4} placeholder="Describe the delivery: what happened, how the family reacted, any challenges, family's current condition after receiving aid…"
+          value={form.deliveryNotes} onChange={e => set("deliveryNotes", e.target.value)}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${form.deliveryNotes.length < 10 && form.deliveryNotes.length > 0 ? COLORS.danger : COLORS.border}`, fontSize: 14, resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+        {form.deliveryNotes.length < 10 && form.deliveryNotes.length > 0 && (
+          <div style={{ fontSize: 11, color: COLORS.danger, marginTop: 4 }}>⚠️ Please write at least 10 characters</div>
+        )}
+      </div>
+
+      {/* Extra proof (optional) */}
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, display: "block", marginBottom: 6 }}>
+          📎 EXTRA PROOF / OBSERVATIONS <span style={{ color: COLORS.secondary, fontWeight: 400 }}>(optional)</span>
+        </label>
+        <textarea rows={3} placeholder="Any extra observations, GPS location description, witness names, family feedback, physical condition after receiving aid…"
+          value={form.extraProof} onChange={e => set("extraProof", e.target.value)}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 13, resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", color: COLORS.muted }} />
+        <div style={{ fontSize: 11, color: COLORS.muted, marginTop: 4 }}>This will be appended to your delivery report and shown to the donor.</div>
+      </div>
+
+      {/* Info banner */}
+      <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 12, color: "#166534" }}>
+        ℹ️ After submission, the case moves to <strong>"Proof Submitted"</strong>. Admin reviews → marks complete → donor and reporter notified automatically.
+      </div>
+
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
+        <Btn variant="teal" onClick={handleSubmit} disabled={!canSubmit || loading}>
+          {loading ? "Submitting…" : "📤 Submit Delivery Proof"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
+// ─── COMPLETE CASE MODAL (Admin — after delivery proof) ───────────────────
+const CompleteCaseModal = ({ caseItem, onClose, onDone, showToast }) => {
+  const [adminNotes,   setAdminNotes]  = useState("");
+  const [completing,   setCompleting]  = useState(false);
+  const [fullCase,     setFullCase]    = useState(null);
+  const [fetching,     setFetching]    = useState(true);
+
+  // Always fetch the full case on open — list endpoint may not include deliveryProof
+  useEffect(() => {
+    adminApi.getCase(caseItem.id)
+      .then(data => setFullCase(data))
+      .catch(() => setFullCase(caseItem._raw || null))
+      .finally(() => setFetching(false));
+  }, [caseItem.id]);
+
+  const proof = fullCase?.deliveryProof;
+
+  const handleComplete = async () => {
+    setCompleting(true);
+    try {
+      await adminApi.completeCase(caseItem.id, adminNotes);
+      showToast("🏁 Case completed! Donor and reporter have been notified.", "success");
+      onDone();
+      onClose();
+    } catch (e) {
+      showToast("Failed: " + e.message, "error");
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  const ProofRow = ({ label, val, wide }) => (
+    <div style={{ background: "#fff", borderRadius: 8, padding: "10px 14px", ...(wide ? { gridColumn: "1 / -1" } : {}) }}>
+      <div style={{ fontSize: 10, color: COLORS.muted, fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, lineHeight: 1.5 }}>{val || "—"}</div>
+    </div>
+  );
+
+  return (
+    <Modal title={`🏁 Review & Complete — ${caseItem.id}`} onClose={onClose} wide>
+
+      {/* Case header */}
+      <div style={{ background: "#F8FAFC", borderRadius: 10, padding: "12px 16px", marginBottom: 20, display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 800 }}>{caseItem.victim_name}</div>
+          <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 3 }}>📍 {caseItem.location} · {caseItem.urgency_level} Priority</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: COLORS.secondary }}>${(caseItem.donation_amount || 0).toLocaleString()}</div>
+          <div style={{ fontSize: 11, color: COLORS.muted }}>donated</div>
+        </div>
+      </div>
+
+      {/* Delivery proof block */}
+      {fetching ? (
+        <div style={{ background: "#F8FAFC", borderRadius: 12, padding: "28px 16px", marginBottom: 20, textAlign: "center", color: COLORS.muted }}>
+          <div style={{ fontSize: 28, marginBottom: 8 }}>⏳</div>
+          Loading delivery proof…
+        </div>
+      ) : proof ? (
+        <div style={{ background: "#F0FDF4", borderRadius: 14, padding: 18, marginBottom: 20, border: "1px solid #BBF7D0" }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: "#166534", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+            📦 Delivery Proof
+            <span style={{ fontSize: 11, background: "#D1FAE5", color: "#065F46", borderRadius: 20, padding: "2px 10px", fontWeight: 700 }}>Submitted by Field Agent</span>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, marginBottom: 10 }}>
+            <ProofRow label="Delivery Date"    val={proof.deliveryDate ? new Date(proof.deliveryDate).toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" }) : null} />
+            <ProofRow label="Method"           val={(proof.deliveryMethod || "").replace(/_/g," ")} />
+            <ProofRow label="Amount Delivered" val={`$${(proof.amountDelivered || 0).toLocaleString()}`} />
+            <ProofRow label="Recipient"        val={proof.recipientName || "Confirmed on-site"} />
+          </div>
+
+          {proof.deliveryNotes && (() => {
+            // Split notes from extra proof if "--- Additional Proof ---" separator exists
+            const parts = proof.deliveryNotes.split("\n\n--- Additional Proof ---\n");
+            return (
+              <>
+                <div style={{ background: "#fff", borderRadius: 8, padding: "12px 14px", marginBottom: parts[1] ? 8 : 0 }}>
+                  <div style={{ fontSize: 10, color: COLORS.muted, fontWeight: 700, marginBottom: 6 }}>FIELD AGENT DELIVERY NOTES</div>
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: COLORS.text, whiteSpace: "pre-wrap" }}>{parts[0]}</p>
+                </div>
+                {parts[1] && (
+                  <div style={{ background: "#EFF6FF", borderRadius: 8, padding: "12px 14px", border: "1px solid #BFDBFE" }}>
+                    <div style={{ fontSize: 10, color: COLORS.primary, fontWeight: 700, marginBottom: 6 }}>📎 ADDITIONAL PROOF / OBSERVATIONS</div>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.7, color: COLORS.text, whiteSpace: "pre-wrap" }}>{parts[1]}</p>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      ) : (
+        <div style={{ background: "#FEF3C7", borderRadius: 12, padding: "18px 20px", marginBottom: 20, border: "1px solid #FDE68A" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#92400E", marginBottom: 6 }}>⚠️ No Delivery Proof Yet</div>
+          <div style={{ fontSize: 13, color: "#92400E", lineHeight: 1.6 }}>
+            The field agent has not submitted a delivery proof document yet.<br />
+            You can still mark the case complete if you have confirmed delivery through other means — use the notes below to document it.
+          </div>
+        </div>
+      )}
+
+      {/* Admin closing notes */}
+      <div style={{ marginBottom: 18 }}>
+        <label style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, display: "block", marginBottom: 6 }}>
+          📝 YOUR CONFIRMATION NOTES {!proof && <span style={{ color: COLORS.danger }}>*</span>}
+        </label>
+        <textarea rows={4}
+          placeholder={proof
+            ? "Optional: confirm delivery, add feedback, note any follow-up needed…"
+            : "Required when no proof submitted: describe how you confirmed delivery (phone call, field visit, witness, etc.)"}
+          value={adminNotes} onChange={e => setAdminNotes(e.target.value)}
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${!proof && !adminNotes.trim() ? "#FCA5A5" : COLORS.border}`, fontSize: 14, resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
+        {!proof && !adminNotes.trim() && (
+          <div style={{ fontSize: 11, color: COLORS.danger, marginTop: 4 }}>⚠️ Please describe how you confirmed delivery before completing</div>
+        )}
+      </div>
+
+      <div style={{ background: "#EFF6FF", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 12, color: COLORS.primary }}>
+        ℹ️ Marking complete notifies the <strong>reporter</strong> and all <strong>donors</strong> automatically. This action cannot be undone.
+      </div>
+
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <Btn variant="ghost" onClick={onClose}>Cancel</Btn>
+        <Btn variant="success" onClick={handleComplete}
+          disabled={completing || fetching || (!proof && !adminNotes.trim())}>
+          {completing ? "Completing…" : "🏁 Mark Case Complete"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
+// ─── FULL CASE REPORT MODAL (super_admin only) ────────────────────────────
+const CaseFullReportModal = ({ caseId, onClose }) => {
+  const [data,    setData]    = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+
+  useEffect(() => {
+    adminApi.getCase(caseId)
+      .then(d => setData(d))
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [caseId]);
+
+  const fmt = (iso) => iso ? new Date(iso).toLocaleString("en-GB", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "—";
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString("en-GB", { day:"2-digit", month:"long", year:"numeric" }) : "—";
+  const money = (n) => n != null ? `$${Number(n).toLocaleString()}` : "—";
+
+  const Section = ({ title, color = COLORS.primary, children }) => (
+    <div style={{ marginBottom: 24 }}>
+      <div style={{ background: color, color: "#fff", borderRadius: "10px 10px 0 0", padding: "10px 18px", fontSize: 13, fontWeight: 800, letterSpacing: 0.5 }}>
+        {title}
+      </div>
+      <div style={{ border: `1px solid ${color}30`, borderTop: "none", borderRadius: "0 0 10px 10px", padding: 16 }}>
+        {children}
+      </div>
+    </div>
+  );
+
+  const Row = ({ label, val, mono, danger, success }) => (
+    <div style={{ display: "flex", gap: 12, padding: "6px 0", borderBottom: `1px solid ${COLORS.border}` }}>
+      <div style={{ fontSize: 12, color: COLORS.muted, fontWeight: 700, minWidth: 170, flexShrink: 0 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: danger ? COLORS.danger : success ? COLORS.secondary : COLORS.text, fontFamily: mono ? "monospace" : "inherit", wordBreak: "break-all" }}>
+        {val ?? "—"}
+      </div>
+    </div>
+  );
+
+  const handlePrint = () => {
+    const el = document.getElementById("kf-full-report");
+    if (!el) return;
+    const w = window.open("", "_blank");
+    w.document.write(`
+      <html><head><title>Kafaale Case Report — ${caseId}</title>
+      <style>
+        body { font-family: 'Segoe UI', sans-serif; color: #1a202c; padding: 32px; max-width: 900px; margin: 0 auto; }
+        h1 { font-size: 22px; color: #0B3D91; margin-bottom: 4px; }
+        .sub { font-size: 13px; color: #6B7280; margin-bottom: 28px; }
+        .section-title { background: #0B3D91; color: #fff; padding: 8px 16px; font-size: 12px; font-weight: 800; border-radius: 6px 6px 0 0; letter-spacing: 0.5px; margin-top: 20px; }
+        .section-body { border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 6px 6px; padding: 12px 16px; }
+        .row { display: flex; gap: 12px; padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .label { color: #6B7280; font-weight: 700; min-width: 170px; }
+        .val { color: #1a202c; font-weight: 500; }
+        .green { color: #065F46; } .red { color: #C0392B; } .blue { color: #0B3D91; }
+        .notes { background: #f8fafc; border-radius: 6px; padding: 10px 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; margin-top: 6px; }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th { background: #f8fafc; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: #6B7280; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #f0f0f0; }
+        .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #9CA3AF; border-top: 1px solid #e2e8f0; padding-top: 16px; }
+        @media print { body { padding: 0; } }
+      </style></head><body>
+      ${el.innerHTML}
+      </body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 400);
+  };
+
+  if (loading) return (
+    <Modal title="📄 Full Case Report" onClose={onClose} wide>
+      <div style={{ padding: "60px 0", textAlign: "center", color: COLORS.muted }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>⏳</div>
+        Loading full case data…
+      </div>
+    </Modal>
+  );
+
+  if (error || !data) return (
+    <Modal title="📄 Full Case Report" onClose={onClose} wide>
+      <div style={{ padding: "40px 0", textAlign: "center", color: COLORS.danger }}>
+        <div style={{ fontSize: 36, marginBottom: 10 }}>❌</div>
+        Failed to load case: {error}
+      </div>
+    </Modal>
+  );
+
+  const fi    = data.fieldInvestigation;
+  const ai    = data.aiPublicData;
+  const dp    = data.deliveryProof;
+  const dons  = data.donations || [];
+  const audit = data.auditLogs  || [];
+  const confirmedDons = dons.filter(d => d.status === "confirmed");
+  const totalRaised   = confirmedDons.reduce((a, d) => a + (d.amount || 0), 0);
+
+  // Split delivery notes from extra proof
+  const proofParts = dp?.deliveryNotes?.split("\n\n--- Additional Proof ---\n") || [];
+
+  // Build timeline from audit + key dates
+  const timeline = [
+    data.createdAt            && { time: data.createdAt,              event: "📝 Case submitted by reporter" },
+    data.teamAssignedAt       && { time: data.teamAssignedAt,         event: "🗺️ Field team assigned" },
+    data.investigationCompletedAt && { time: data.investigationCompletedAt, event: "🔍 Field investigation completed" },
+    data.adminPublishedAt     && { time: data.adminPublishedAt,       event: "✅ Case approved & published for sponsorship" },
+    dons[0]?.createdAt        && { time: dons[0].createdAt,           event: `❤️ First donation received (${money(dons[0].amount)})` },
+    dp?.deliveryDate          && { time: dp.deliveryDate,             event: "📦 Aid delivered by field agent" },
+    data.completedAt          && { time: data.completedAt,            event: "🏁 Case completed & closed by admin" },
+  ].filter(Boolean).sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  return (
+    <Modal title={`📄 Full Case Report — ${data.id}`} onClose={onClose} wide>
+      {/* Toolbar */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ background: "#D1FAE5", color: "#065F46", borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 700 }}>🏁 {data.status?.replace(/_/g," ").toUpperCase()}</span>
+          <span style={{ background: COLORS.primary + "15", color: COLORS.primary, borderRadius: 20, padding: "4px 14px", fontSize: 12, fontWeight: 700 }}>🔐 SUPER ADMIN ONLY</span>
+        </div>
+        <Btn variant="primary" onClick={handlePrint}>🖨️ Print / Export PDF</Btn>
+      </div>
+
+      <div id="kf-full-report">
+        {/* Print header (visible on print) */}
+        <div style={{ marginBottom: 24, borderBottom: `3px solid ${COLORS.primary}`, paddingBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: COLORS.primary }}>🤝 KAFAALE QAAD — Humanitarian Case Report</div>
+              <div style={{ fontSize: 13, color: COLORS.muted, marginTop: 4 }}>Case ID: <strong>{data.id}</strong> · Generated: {fmt(new Date().toISOString())} · CONFIDENTIAL — Super Admin Only</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: COLORS.secondary }}>{money(totalRaised)}</div>
+              <div style={{ fontSize: 11, color: COLORS.muted }}>total raised</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── 1. Case Overview ── */}
+        <Section title="1. CASE OVERVIEW" color={COLORS.primary}>
+          <Row label="Case ID"           val={data.id} mono />
+          <Row label="Status"            val={data.status?.replace(/_/g," ").toUpperCase()} />
+          <Row label="Category"          val={data.category || "—"} />
+          <Row label="Emergency Level"   val={data.emergencyLevel?.toUpperCase()} danger={data.emergencyLevel === "critical"} />
+          <Row label="Date Submitted"    val={fmt(data.createdAt)} />
+          <Row label="Date Completed"    val={fmt(data.completedAt)} success={!!data.completedAt} />
+          <Row label="Public Title"      val={data.publicTitle || "Not published"} />
+          <Row label="Public City"       val={data.publicCity  || "—"} />
+          <Row label="Target Goal"       val={money(data.targetGoal)} />
+          <Row label="Total Raised"      val={money(data.totalRaised)} success />
+        </Section>
+
+        {/* ── 2. Victim (Private) ── */}
+        <Section title="2. VICTIM — PRIVATE INFORMATION" color="#7C3AED">
+          <Row label="Full Name"         val={data.privateVictimName || "—"} />
+          <Row label="Age"               val={data.privateVictimAge  || "—"} />
+          <Row label="Gender"            val={data.privateVictimGender || "—"} />
+          <Row label="Private Address"   val={data.privateAddress    || "—"} />
+          <Row label="Phone / Contact"   val={data.privatePhone      || "—"} />
+          <Row label="Description"       val="" />
+          {data.privateDescription && (
+            <div style={{ background: "#F5F3FF", borderRadius: 8, padding: "12px 14px", marginTop: 6, fontSize: 13, lineHeight: 1.7, color: COLORS.text, whiteSpace: "pre-wrap" }}>
+              {data.privateDescription}
+            </div>
+          )}
+        </Section>
+
+        {/* ── 3. Reporter ── */}
+        <Section title="3. REPORTED BY" color="#0E7490">
+          <Row label="Name"              val={data.reporter?.name  || "—"} />
+          <Row label="Email"             val={data.reporter?.email || "—"} />
+          <Row label="Phone"             val={data.reporter?.phone || "—"} />
+          <Row label="Reporter ID"       val={data.reporter?.id    || "—"} mono />
+        </Section>
+
+        {/* ── 4. Field Investigation ── */}
+        <Section title="4. FIELD INVESTIGATION REPORT" color="#D97706">
+          {fi ? (
+            <>
+              <Row label="Assigned Agent"    val={data.assignedAgent?.name  || "—"} />
+              <Row label="Agent Email"       val={data.assignedAgent?.email || "—"} />
+              <Row label="Agent Phone"       val={data.assignedAgent?.phone || "—"} />
+              <Row label="Completed At"      val={fmt(data.investigationCompletedAt)} />
+              <Row label="Victim Verified"   val={fi.victimVerified    ? "✅ YES" : "❌ NO"} success={fi.victimVerified}    danger={!fi.victimVerified} />
+              <Row label="Situation Accurate"val={fi.situationAccurate ? "✅ YES" : "❌ NO"} success={fi.situationAccurate} danger={!fi.situationAccurate} />
+              <Row label="Delivery Feasible" val={fi.deliveryFeasible  ? "✅ YES" : "❌ NO"} success={fi.deliveryFeasible}  danger={!fi.deliveryFeasible} />
+              <Row label="Verification"      val={fi.verificationStatus?.toUpperCase()} success={fi.verificationStatus === "verified"} danger={fi.verificationStatus === "rejected"} />
+              <Row label="Urgency Confirmed" val={fi.urgencyConfirmed?.toUpperCase()} />
+              <Row label="Est. Amount Needed"val={money(fi.estimatedAmountNeeded)} />
+              <Row label="Delivery Method"   val={fi.deliveryMethod || "—"} />
+              <Row label="Fraud Risk Level"  val={`${fi.fraudRiskLevel?.toUpperCase()} (${fi.fraudRiskScore}/100)`} danger={fi.fraudRiskLevel === "high"} />
+              {fi.situationNotes && <>
+                <div style={{ fontSize: 11, color: COLORS.muted, fontWeight: 700, marginTop: 10, marginBottom: 4 }}>FIELD NOTES</div>
+                <div style={{ background: "#FEF3C7", borderRadius: 8, padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{fi.situationNotes}</div>
+              </>}
+              {fi.officialNotes && <>
+                <div style={{ fontSize: 11, color: COLORS.muted, fontWeight: 700, marginTop: 10, marginBottom: 4 }}>OFFICIAL REPORT</div>
+                <div style={{ background: "#EFF6FF", borderRadius: 8, padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", border: "1px solid #BFDBFE" }}>{fi.officialNotes}</div>
+              </>}
+              {fi.fraudRiskNotes && <>
+                <div style={{ fontSize: 11, color: COLORS.danger, fontWeight: 700, marginTop: 10, marginBottom: 4 }}>⚠️ FRAUD RISK NOTES</div>
+                <div style={{ background: "#FEF2F2", borderRadius: 8, padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", border: "1px solid #FECACA" }}>{fi.fraudRiskNotes}</div>
+              </>}
+            </>
+          ) : (
+            <div style={{ color: COLORS.muted, fontSize: 13, padding: "8px 0" }}>No field investigation on record.</div>
+          )}
+        </Section>
+
+        {/* ── 5. AI Sanitization ── */}
+        {ai && (
+          <Section title="5. AI SANITIZATION DATA" color="#6B21A8">
+            <Row label="Generated Title"   val={ai.generatedTitle || "—"} />
+            <Row label="Confidence Score"  val={ai.confidenceScore != null ? `${ai.confidenceScore}%` : "—"} />
+            {ai.publicStory && <>
+              <div style={{ fontSize: 11, color: COLORS.muted, fontWeight: 700, marginTop: 10, marginBottom: 4 }}>AI-GENERATED PUBLIC STORY</div>
+              <div style={{ background: "#F5F3FF", borderRadius: 8, padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{ai.publicStory}</div>
+            </>}
+          </Section>
+        )}
+
+        {/* ── 6. Sponsorship & Donations ── */}
+        <Section title="6. SPONSORSHIP & DONATIONS" color={COLORS.secondary}>
+          <Row label="Published for Sponsors" val={fmt(data.adminPublishedAt)} />
+          <Row label="Target Goal"         val={money(data.targetGoal)} />
+          <Row label="Total Raised"        val={money(totalRaised)} success />
+          <Row label="Number of Donors"    val={confirmedDons.length} />
+          {dons.length > 0 && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 11, color: COLORS.muted, fontWeight: 700, marginBottom: 8 }}>ALL DONATIONS</div>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                <thead>
+                  <tr style={{ background: "#F8FAFC" }}>
+                    {["Donor","Amount","Method","Date","Status"].map(h => (
+                      <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}`, fontSize: 11 }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {dons.map((d, i) => (
+                    <tr key={d.id} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
+                      <td style={{ padding: "8px 10px" }}>{d.isAnonymous ? "Anonymous" : (d.donor?.name || "—")}</td>
+                      <td style={{ padding: "8px 10px", fontWeight: 700, color: COLORS.secondary }}>{money(d.amount)}</td>
+                      <td style={{ padding: "8px 10px", color: COLORS.muted }}>{(d.method || "—").replace(/_/g," ")}</td>
+                      <td style={{ padding: "8px 10px", color: COLORS.muted }}>{fmtDate(d.createdAt)}</td>
+                      <td style={{ padding: "8px 10px" }}>
+                        <span style={{ background: d.status === "confirmed" ? "#D1FAE5" : "#FEF3C7", color: d.status === "confirmed" ? "#065F46" : "#92400E", borderRadius: 20, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
+                          {d.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Section>
+
+        {/* ── 7. Delivery Proof ── */}
+        <Section title="7. DELIVERY PROOF" color="#0891B2">
+          {dp ? (
+            <>
+              <Row label="Delivered By (Agent ID)" val={dp.deliveredBy} mono />
+              <Row label="Delivery Date"       val={fmtDate(dp.deliveryDate)} success />
+              <Row label="Delivery Method"     val={(dp.deliveryMethod || "—").replace(/_/g," ")} />
+              <Row label="Amount Delivered"    val={money(dp.amountDelivered)} success />
+              <Row label="Recipient Name"      val={dp.recipientName || "Confirmed on-site"} />
+              <Row label="Admin Confirmed"     val={dp.adminConfirmed ? `✅ Yes — ${fmtDate(dp.adminConfirmedAt)}` : "Pending"} success={dp.adminConfirmed} />
+              {proofParts[0] && <>
+                <div style={{ fontSize: 11, color: COLORS.muted, fontWeight: 700, marginTop: 10, marginBottom: 4 }}>AGENT DELIVERY NOTES</div>
+                <div style={{ background: "#ECFDF5", borderRadius: 8, padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", border: "1px solid #BBF7D0" }}>{proofParts[0]}</div>
+              </>}
+              {proofParts[1] && <>
+                <div style={{ fontSize: 11, color: COLORS.primary, fontWeight: 700, marginTop: 10, marginBottom: 4 }}>📎 ADDITIONAL PROOF / OBSERVATIONS</div>
+                <div style={{ background: "#EFF6FF", borderRadius: 8, padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", border: "1px solid #BFDBFE" }}>{proofParts[1]}</div>
+              </>}
+              {dp.adminNotes && <>
+                <div style={{ fontSize: 11, color: COLORS.muted, fontWeight: 700, marginTop: 10, marginBottom: 4 }}>ADMIN CLOSING NOTES</div>
+                <div style={{ background: "#F8FAFC", borderRadius: 8, padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{dp.adminNotes}</div>
+              </>}
+            </>
+          ) : (
+            <div style={{ color: COLORS.muted, fontSize: 13, padding: "8px 0" }}>No delivery proof on record.</div>
+          )}
+        </Section>
+
+        {/* ── 8. Case Timeline ── */}
+        <Section title="8. CASE TIMELINE" color="#374151">
+          <div style={{ position: "relative", paddingLeft: 24 }}>
+            <div style={{ position: "absolute", left: 8, top: 0, bottom: 0, width: 2, background: COLORS.border }} />
+            {timeline.map((t, i) => (
+              <div key={i} style={{ position: "relative", marginBottom: 14 }}>
+                <div style={{ position: "absolute", left: -24, top: 3, width: 12, height: 12, borderRadius: "50%", background: i === timeline.length - 1 ? COLORS.secondary : COLORS.primary, border: "2px solid #fff", boxShadow: "0 0 0 2px " + (i === timeline.length - 1 ? COLORS.secondary : COLORS.primary) }} />
+                <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>{t.event}</div>
+                <div style={{ fontSize: 11, color: COLORS.muted, marginTop: 2 }}>{fmt(t.time)}</div>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* ── 9. Admin Audit Log ── */}
+        <Section title="9. ADMIN AUDIT LOG" color="#4B5563">
+          {audit.length === 0 ? (
+            <div style={{ color: COLORS.muted, fontSize: 13 }}>No audit entries.</div>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: "#F8FAFC" }}>
+                  {["Timestamp","Admin","Action","Notes"].map(h => (
+                    <th key={h} style={{ padding: "8px 10px", textAlign: "left", fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}`, fontSize: 11 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...audit].reverse().map((log, i) => (
+                  <tr key={log.id} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
+                    <td style={{ padding: "8px 10px", color: COLORS.muted, whiteSpace: "nowrap" }}>{fmt(log.timestamp)}</td>
+                    <td style={{ padding: "8px 10px", fontWeight: 700 }}>{log.admin?.name || "—"}</td>
+                    <td style={{ padding: "8px 10px" }}>
+                      <span style={{ background: COLORS.primary + "15", color: COLORS.primary, borderRadius: 20, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{log.action}</span>
+                    </td>
+                    <td style={{ padding: "8px 10px", color: COLORS.muted }}>{log.notes || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Section>
+
+        {/* Footer */}
+        <div style={{ textAlign: "center", marginTop: 28, paddingTop: 16, borderTop: `1px solid ${COLORS.border}`, fontSize: 11, color: COLORS.muted }}>
+          <strong style={{ color: COLORS.primary }}>KAFAALE QAAD</strong> · Confidential Case Report · {fmt(new Date().toISOString())} · Document generated for Super Admin review only
+        </div>
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 24, paddingTop: 16, borderTop: `1px solid ${COLORS.border}` }}>
+        <Btn variant="ghost"   onClick={onClose}>Close</Btn>
+        <Btn variant="primary" onClick={handlePrint}>🖨️ Print / Save as PDF</Btn>
+      </div>
+    </Modal>
+  );
+};
+
 // ─── ANALYTICS DASHBOARD ───────────────────────────────────────────────────
 const AnalyticsDashboard = ({ cases, donations }) => {
   const totalCases     = cases.length;
@@ -1459,7 +2117,7 @@ const AnalyticsDashboard = ({ cases, donations }) => {
 };
 
 // ─── CASE TABLE ─────────────────────────────────────────────────────────────
-const CaseTable = ({ cases, onView, compact }) => (
+const CaseTable = ({ cases, onView, compact, onReport }) => (
   <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
     {cases.length === 0 ? (
       <div style={{ padding: 32, textAlign: "center", color: COLORS.muted, fontSize: 14 }}>No cases found</div>
@@ -1485,7 +2143,12 @@ const CaseTable = ({ cases, onView, compact }) => (
               <td style={{ padding: compact ? "10px 12px" : "12px 16px" }}><UrgencyBadge level={c.urgency_level} /></td>
               <td style={{ padding: compact ? "10px 12px" : "12px 16px" }}><Badge status={c.status} /></td>
               <td style={{ padding: compact ? "10px 12px" : "12px 16px" }}>
-                <Btn variant="ghost" size="sm" onClick={() => onView(c)}>View →</Btn>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <Btn variant="ghost" size="sm" onClick={() => onView(c)}>View →</Btn>
+                  {onReport && c.status === "Completed" && (
+                    <Btn variant="primary" size="sm" onClick={() => onReport(c.id)}>📄 Report</Btn>
+                  )}
+                </div>
               </td>
             </tr>
           ))}
@@ -1606,19 +2269,24 @@ const ObserverDashboard = ({ cases, currentUser, onReport, onViewCase }) => {
   );
 };
 
-const VerificationDashboard = ({ cases, agents, onViewCase, onAssign, onReject, onPublish, onViewReport }) => {
+const VerificationDashboard = ({ cases, agents, donations = [], onViewCase, onAssign, onReject, onPublish, onViewReport, onConfirmDonation, onComplete, onStartDelivery }) => {
   const [tab, setTab] = useState("workflow");
+  const [donFilter, setDonFilter] = useState("all");
 
   // Workflow lanes
   const newReports     = cases.filter(c => c.status === "Pending Verification");
   const inField        = cases.filter(c => ["Under Review", "Investigating"].includes(c.status));
   const reviewReady    = cases.filter(c => c.status === "Awaiting Approval");
-  const publishReady   = cases.filter(c => c.status === "Awaiting Approval"); // same, admin decides
+  const proofReady     = cases.filter(c => c.status === "Proof Submitted");
   const allActive      = cases.filter(c => c.status !== "Archived");
+  const pendingDons    = donations.filter(d => d.status === "pending");
+  const filteredDons   = donFilter === "all" ? donations : donations.filter(d => d.status === donFilter);
+  const alertCount     = newReports.length + proofReady.length + pendingDons.length;
 
   const TABS = [
-    { id: "workflow", label: "🔄 Workflow" },
-    { id: "all",      label: `📋 All Cases (${cases.length})` },
+    { id: "workflow",  label: `🔄 Workflow${alertCount > 0 ? ` (${alertCount})` : ""}` },
+    { id: "all",       label: `📋 All Cases (${cases.length})` },
+    { id: "donations", label: `💰 Donations${pendingDons.length > 0 ? ` (${pendingDons.length})` : ""}` },
   ];
 
   const WorkflowCard = ({ c }) => (
@@ -1650,6 +2318,10 @@ const VerificationDashboard = ({ cases, agents, onViewCase, onAssign, onReject, 
         {["Under Review","Investigating"].includes(c.status) && (
           <span style={{ fontSize: 12, color: COLORS.muted, alignSelf: "center" }}>⏳ Awaiting field investigation…</span>
         )}
+        {c.status === "Aid Delivered" && onComplete && <>
+          <Btn variant="ghost" size="sm" onClick={() => onViewCase(c)}>🔍 View Proof</Btn>
+          <Btn variant="success" size="sm" onClick={() => onComplete(c)}>🏁 Mark Complete</Btn>
+        </>}
       </div>
     </div>
   );
@@ -1718,6 +2390,20 @@ const VerificationDashboard = ({ cases, agents, onViewCase, onAssign, onReject, 
               : reviewReady.map(c => <WorkflowCard key={c.id} c={c} />)
             }
           </div>
+
+          {/* Lane 4 — Delivery Proof Review */}
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ background: "#CFFAFE", borderRadius: 10, padding: "8px 14px", fontWeight: 800, fontSize: 13, color: "#0E7490", position: "relative" }}>
+                📦 Proof Uploaded ({proofReady.length})
+                {proofReady.length > 0 && <span style={{ position: "absolute", top: -6, right: -6, background: COLORS.danger, color: "#fff", borderRadius: "50%", width: 18, height: 18, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{proofReady.length}</span>}
+              </div>
+            </div>
+            {proofReady.length === 0
+              ? <div style={{ background: "#F9FAFB", borderRadius: 12, padding: 24, textAlign: "center", color: COLORS.muted, fontSize: 13 }}>No delivery proofs to review 🎉</div>
+              : proofReady.map(c => <WorkflowCard key={c.id} c={c} />)
+            }
+          </div>
         </div>
       )}
 
@@ -1727,23 +2413,112 @@ const VerificationDashboard = ({ cases, agents, onViewCase, onAssign, onReject, 
           <CaseTable cases={cases} onView={onViewCase} />
         </div>
       )}
+
+      {tab === "donations" && (
+        <div>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 20 }}>
+            <StatCard label="Total Received"  value={`$${donations.reduce((a,d)=>a+(d.amount||0),0).toLocaleString()}`} icon="💵" color={COLORS.secondary} />
+            <StatCard label="Confirmed"       value={`$${donations.filter(d=>d.status==="confirmed").reduce((a,d)=>a+(d.amount||0),0).toLocaleString()}`} icon="✅" color="#10B981" />
+            <StatCard label="Needs Confirm"   value={pendingDons.length} icon="⏳" color="#F59E0B" />
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {["all","pending","confirmed"].map(f => (
+              <button key={f} onClick={() => setDonFilter(f)}
+                style={{ padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 700, border: `1.5px solid ${donFilter === f ? COLORS.primary : COLORS.border}`, background: donFilter === f ? COLORS.primary : "#fff", color: donFilter === f ? "#fff" : COLORS.muted, cursor: "pointer" }}>
+                {f === "all" ? `All (${donations.length})` : f.charAt(0).toUpperCase() + f.slice(1) + ` (${donations.filter(d=>d.status===f).length})`}
+              </button>
+            ))}
+          </div>
+          <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "#F8FAFC" }}>
+                  {["Donor","Amount","Case","Method","Date","Status","Action"].map(h => (
+                    <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 11, fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDons.length === 0 && (
+                  <tr><td colSpan={7} style={{ padding: "28px 14px", textAlign: "center", color: COLORS.muted, fontSize: 13 }}>No donations found</td></tr>
+                )}
+                {filteredDons.map((d, i) => (
+                  <tr key={d.id} style={{ borderBottom: i < filteredDons.length-1 ? `1px solid ${COLORS.border}` : "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"} onMouseLeave={e => e.currentTarget.style.background = ""}>
+                    <td style={{ padding: "10px 14px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{d.isAnonymous ? "Anonymous" : (d.donor?.name || "—")}</div>
+                      {!d.isAnonymous && <div style={{ fontSize: 11, color: COLORS.muted }}>{d.donor?.email || ""}</div>}
+                    </td>
+                    <td style={{ padding: "10px 14px", fontSize: 15, fontWeight: 800, color: COLORS.secondary }}>${(d.amount||0).toLocaleString()}</td>
+                    <td style={{ padding: "10px 14px" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700 }}>{d.case?.publicTitle || `Case #${(d.caseId||"").slice(-6)}`}</div>
+                    </td>
+                    <td style={{ padding: "10px 14px", fontSize: 12, color: COLORS.muted }}>{(d.method||"—").replace(/_/g," ")}</td>
+                    <td style={{ padding: "10px 14px", fontSize: 12, color: COLORS.muted }}>{d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "—"}</td>
+                    <td style={{ padding: "10px 14px" }}>
+                      <span style={{ background: d.status==="confirmed" ? "#D1FAE5" : "#FEF3C7", color: d.status==="confirmed" ? "#065F46" : "#92400E", borderRadius: 20, padding: "3px 8px", fontSize: 11, fontWeight: 700 }}>
+                        {d.status==="confirmed" ? "✅ Confirmed" : "⏳ Pending"}
+                      </span>
+                    </td>
+                    <td style={{ padding: "10px 14px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {d.status === "pending" && onConfirmDonation && (
+                          <button onClick={() => onConfirmDonation(d.id)}
+                            style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#10B981", color: "#fff", border: "none", cursor: "pointer" }}>
+                            ✓ Confirm
+                          </button>
+                        )}
+                        {d.status === "confirmed" && ["sponsored","waiting_for_sponsor"].includes(d.case?.status) && onStartDelivery && (
+                          <button onClick={() => onStartDelivery({
+                            id: d.caseId, victim_name: d.case?.publicTitle || `Case #${(d.caseId||"").slice(-6)}`,
+                            location: d.case?.publicCity || "", donation_amount: d.amount,
+                            _amount: d.amount, _caseTitle: d.case?.publicTitle, _caseCity: d.case?.publicCity, _caseId: d.caseId,
+                          })}
+                            style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#0891B2", color: "#fff", border: "none", cursor: "pointer" }}>
+                            🚚 Start Delivery
+                          </button>
+                        )}
+                        {d.status === "confirmed" && d.case?.status === "delivering" && (
+                          <span style={{ fontSize: 11, color: "#0891B2", fontWeight: 700 }}>🚚 En Route</span>
+                        )}
+                        {d.status === "confirmed" && d.case?.status === "proof_uploaded" && onComplete && (
+                          <button onClick={() => { const c = cases.find(x => x.id === d.caseId); if(c) onComplete(c); }}
+                            style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: COLORS.secondary, color: "#fff", border: "none", cursor: "pointer" }}>
+                            🏁 Complete
+                          </button>
+                        )}
+                        {d.status === "confirmed" && d.case?.status === "completed" && (
+                          <span style={{ fontSize: 11, color: COLORS.secondary, fontWeight: 700 }}>🏁 Done</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-const FieldTeamDashboard = ({ cases, currentUser, onViewCase, onInvestigate }) => {
-  const active    = cases.filter(c => ["Under Review","Investigating"].includes(c.status));
-  const submitted = cases.filter(c => c.status === "Awaiting Approval");
-  const delivering = cases.filter(c => ["Aid Delivered","Sponsored"].includes(c.status));
-  const completed = cases.filter(c => c.status === "Completed");
+const FieldTeamDashboard = ({ cases, currentUser, onViewCase, onInvestigate, onDeliver }) => {
+  const active      = cases.filter(c => ["Under Review","Investigating"].includes(c.status));
+  const submitted   = cases.filter(c => c.status === "Awaiting Approval");
+  const toDeliver   = cases.filter(c => ["Sponsored","Delivering"].includes(c.status));
+  const proofSent   = cases.filter(c => c.status === "Proof Submitted");
+  const completed   = cases.filter(c => c.status === "Completed");
+  const delivering  = [...toDeliver, ...proofSent];
 
   const MissionCard = ({ c }) => {
     const statusColors = {
       "Under Review": { bg: "#EDE9FE", color: "#6B21A8", label: "🆕 Just Assigned" },
       "Investigating": { bg: "#DBEAFE", color: "#1E40AF", label: "🔍 Investigating" },
       "Awaiting Approval": { bg: "#D1FAE5", color: "#065F46", label: "✅ Report Submitted" },
-      "Aid Delivered": { bg: "#CFFAFE", color: "#0E7490", label: "📦 Delivering Aid" },
-      "Sponsored": { bg: "#FCE7F3", color: "#9D174D", label: "❤️ Sponsored — Deliver Aid" },
+      "Delivering":    { bg: "#CFFAFE", color: "#0891B2", label: "🚚 Active Delivery" },
+      "Sponsored":     { bg: "#FCE7F3", color: "#9D174D", label: "❤️ Funded — Deliver Aid" },
+      "Proof Submitted":{ bg: "#D1FAE5", color: "#065F46", label: "📤 Proof Sent to Admin" },
     };
     const s = statusColors[c.status] || { bg: "#F3F4F6", color: COLORS.muted, label: c.status };
     return (
@@ -1774,10 +2549,15 @@ const FieldTeamDashboard = ({ cases, currentUser, onViewCase, onInvestigate }) =
               ✅ Report submitted — awaiting admin approval
             </span>
           )}
-          {["Sponsored","Aid Delivered"].includes(c.status) && (
-            <Btn variant="teal" size="sm" onClick={() => onViewCase(c)} style={{ flex: 1 }}>
-              📦 Manage Aid Delivery
+          {["Sponsored","Delivering"].includes(c.status) && (
+            <Btn variant="teal" size="sm" onClick={() => onDeliver ? onDeliver(c) : onViewCase(c)} style={{ flex: 1 }}>
+              📤 Submit Delivery Proof
             </Btn>
+          )}
+          {c.status === "Proof Submitted" && (
+            <span style={{ fontSize: 12, color: "#065F46", background: "#D1FAE5", borderRadius: 8, padding: "4px 10px", alignSelf: "center" }}>
+              ✅ Proof submitted — waiting for admin to close case
+            </span>
           )}
         </div>
       </div>
@@ -1805,11 +2585,20 @@ const FieldTeamDashboard = ({ cases, currentUser, onViewCase, onInvestigate }) =
         </>
       )}
 
-      {delivering.length > 0 && (
+      {toDeliver.length > 0 && (
         <>
-          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: "#EC4899" }}>📦 Aid Delivery in Progress</h3>
+          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: "#9D174D" }}>🚚 Aid Delivery — Submit Your Proof</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16, marginBottom: 28 }}>
-            {delivering.map(c => <MissionCard key={c.id} c={c} />)}
+            {toDeliver.map(c => <MissionCard key={c.id} c={c} />)}
+          </div>
+        </>
+      )}
+
+      {proofSent.length > 0 && (
+        <>
+          <h3 style={{ margin: "0 0 14px", fontSize: 16, fontWeight: 700, color: "#065F46" }}>📤 Proof Submitted — Waiting for Admin to Close</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16, marginBottom: 28 }}>
+            {proofSent.map(c => <MissionCard key={c.id} c={c} />)}
           </div>
         </>
       )}
@@ -1934,62 +2723,121 @@ const DonorDashboard = ({ cases, currentUser, onViewCase, onSponsor }) => {
       )}
 
       {/* Donation history */}
-      <h3 style={{ margin: "0 0 14px", fontSize: 18, fontWeight: 700 }}>💰 My Donation History</h3>
-      <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
+      <h3 style={{ margin: "0 0 14px", fontSize: 18, fontWeight: 700 }}>💰 My Sponsorship History</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {loadingDonations ? (
-          <div style={{ padding: 32, textAlign: "center", color: COLORS.muted }}>Loading donations…</div>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 32, textAlign: "center", color: COLORS.muted }}>Loading…</div>
         ) : myDonations.length === 0 ? (
-          <div style={{ padding: 40, textAlign: "center", color: COLORS.muted }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 40, textAlign: "center", color: COLORS.muted, boxShadow: "0 2px 8px #0001" }}>
             <div style={{ fontSize: 40, marginBottom: 10 }}>💝</div>
-            <div style={{ fontWeight: 700 }}>No donations yet</div>
+            <div style={{ fontWeight: 700 }}>No sponsorships yet</div>
             <div style={{ fontSize: 13, marginTop: 6 }}>Sponsor a case above to get started!</div>
           </div>
-        ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#F8FAFC" }}>
-                {["Date","Case","Amount","Method","Status"].map(h => (
-                  <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {myDonations.map((d, i) => {
-                const s = STATUS_COLORS[d.status] || STATUS_COLORS.pending;
-                return (
-                  <tr key={d.id} style={{ borderBottom: i < myDonations.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
-                    <td style={{ padding: "12px 16px", fontSize: 13, color: COLORS.muted }}>{d.createdAt?.slice(0,10) || "—"}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13 }}>
-                      <div style={{ fontWeight: 700, color: COLORS.primary }}>{d.case?.publicTitle?.slice(0,35) || d.caseId?.slice(0,16) || "—"}</div>
-                      {d.case?.publicCity && <div style={{ fontSize: 11, color: COLORS.muted }}>📍 {d.case.publicCity}</div>}
-                    </td>
-                    <td style={{ padding: "12px 16px", fontSize: 16, fontWeight: 800, color: COLORS.secondary }}>${d.amount?.toLocaleString()}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 13 }}>{METHOD_LABELS[d.method] || d.method || "—"}</td>
-                    <td style={{ padding: "12px 16px" }}>
-                      <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.label}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
+        ) : myDonations.map((d) => {
+          const s = STATUS_COLORS[d.status] || STATUS_COLORS.pending;
+          const proof = d.case?.deliveryProof;
+          const caseStatus = d.case?.status;
+          const isDelivered = ["proof_uploaded","completed"].includes(caseStatus);
+          const isCompleted = caseStatus === "completed";
+
+          const caseStatusLabel = {
+            waiting_for_sponsor: { label: "⏳ Awaiting sponsor match", color: "#92400E", bg: "#FEF3C7" },
+            sponsored:           { label: "✅ Donation received — starting delivery", color: "#065F46", bg: "#D1FAE5" },
+            delivering:          { label: "🚚 Aid en route to beneficiary", color: "#0891B2", bg: "#CFFAFE" },
+            proof_uploaded:      { label: "📦 Aid delivered — admin reviewing", color: "#6D28D9", bg: "#EDE9FE" },
+            completed:           { label: "🏁 Completed — aid confirmed delivered", color: "#065F46", bg: "#D1FAE5" },
+          }[caseStatus] || { label: caseStatus || "—", color: COLORS.muted, bg: "#F3F4F6" };
+
+          return (
+            <div key={d.id} style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 8px #0001", border: isCompleted ? "1.5px solid #10B981" : `1px solid ${COLORS.border}` }}>
+              {/* Top bar — case progress */}
+              <div style={{ background: caseStatusLabel.bg, padding: "10px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: caseStatusLabel.color }}>{caseStatusLabel.label}</span>
+                <span style={{ fontSize: 11, color: COLORS.muted }}>{d.createdAt?.slice(0,10)}</span>
+              </div>
+
+              <div style={{ padding: "16px 18px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: COLORS.primary }}>{d.case?.publicTitle || `Case #${d.caseId?.slice(-8)}`}</div>
+                    {d.case?.publicCity && <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>📍 {d.case.publicCity}</div>}
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.secondary }}>${d.amount?.toLocaleString()}</div>
+                    <div style={{ fontSize: 11, color: COLORS.muted }}>{METHOD_LABELS[d.method] || d.method}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                  <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.label}</span>
+                </div>
+
+                {/* Delivery proof — shown once field agent submits */}
+                {isDelivered && proof && (
+                  <div style={{ marginTop: 14, background: "#F0FDF4", borderRadius: 12, padding: "14px 16px", border: "1px solid #BBF7D0" }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: "#166534", marginBottom: 10 }}>
+                      📦 Delivery Proof — {isCompleted ? "✅ Admin Confirmed" : "⏳ Pending Admin Review"}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8 }}>
+                      {[
+                        { label: "Delivery Date",    val: proof.deliveryDate ? new Date(proof.deliveryDate).toLocaleDateString() : "—" },
+                        { label: "Method",           val: (proof.deliveryMethod || "—").replace(/_/g," ") },
+                        { label: "Amount Delivered", val: `$${(proof.amountDelivered||0).toLocaleString()}` },
+                        { label: "Recipient",        val: proof.recipientName || "Confirmed on-site" },
+                      ].map((item, i) => (
+                        <div key={i} style={{ background: "#fff", borderRadius: 8, padding: "8px 12px" }}>
+                          <div style={{ fontSize: 10, color: COLORS.muted, fontWeight: 700 }}>{item.label.toUpperCase()}</div>
+                          <div style={{ fontSize: 13, fontWeight: 700, marginTop: 2 }}>{item.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {proof.deliveryNotes && (
+                      <div style={{ marginTop: 10, background: "#fff", borderRadius: 8, padding: "10px 12px" }}>
+                        <div style={{ fontSize: 10, color: COLORS.muted, fontWeight: 700, marginBottom: 4 }}>FIELD AGENT NOTES</div>
+                        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: COLORS.text }}>{proof.deliveryNotes}</p>
+                      </div>
+                    )}
+                    {isCompleted && (
+                      <div style={{ marginTop: 10, background: "#065F46", color: "#fff", borderRadius: 8, padding: "10px 14px", fontSize: 12, fontWeight: 700, textAlign: "center" }}>
+                        🏁 Case fully completed on {d.case?.completedAt ? new Date(d.case.completedAt).toLocaleDateString() : "—"} — Thank you for your generosity!
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Waiting message if not yet delivered */}
+                {!isDelivered && d.status === "confirmed" && (
+                  <div style={{ marginTop: 10, background: "#EFF6FF", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: COLORS.primary }}>
+                    ℹ️ Your donation is confirmed. The field team is preparing to deliver aid. You'll see proof of delivery here once it's done.
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
-const AdminDashboard = ({ cases, users, donations, sponsors, onViewCase, onAddUser, onExport }) => {
+const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase, onAddUser, onExport, onConfirmDonation, onComplete, onStartDelivery, onFullReport }) => {
   const [tab, setTab] = useState("overview");
-  const totalDonated = donations.reduce((a, d) => a + d.amount, 0);
+  const [donFilter, setDonFilter] = useState("all");
+  const totalDonated = donations.reduce((a, d) => a + (d.amount || 0), 0);
+  const confirmedTotal = donations.filter(d => d.status === "confirmed").reduce((a, d) => a + (d.amount || 0), 0);
+  const pendingTotal   = donations.filter(d => d.status === "pending").reduce((a, d) => a + (d.amount || 0), 0);
   const byStatus = WORKFLOW_STEPS.reduce((acc, s) => { acc[s.status] = cases.filter(c => c.status === s.status).length; return acc; }, {});
-  const pendingCases = cases.filter(c => ["Pending Verification","Under Review","Investigating"].includes(c.status));
+  const pendingCases   = cases.filter(c => ["Pending Verification","Under Review","Investigating"].includes(c.status));
+  const proofPending   = cases.filter(c => c.status === "Proof Submitted"); // awaiting admin complete
+  const recentDonations = donations.slice(0, 5);
+  const filteredDonations = donFilter === "all" ? donations : donations.filter(d => d.status === donFilter);
 
   const TABS = [
-    { id: "overview",  label: "🏠 Overview"  },
-    { id: "analytics", label: "📊 Analytics" },
-    { id: "users",     label: "👥 Users"     },
-    { id: "cases",     label: "📋 All Cases" },
+    { id: "overview",   label: "🏠 Overview"   },
+    { id: "analytics",  label: "📊 Analytics"  },
+    { id: "users",      label: "👥 Users"      },
+    { id: "cases",      label: "📋 All Cases"  },
+    { id: "donations",  label: "💰 Donations"  },
   ];
 
   return (
@@ -2024,6 +2872,24 @@ const AdminDashboard = ({ cases, users, donations, sponsors, onViewCase, onAddUs
             <StatCard label="Completed"     value={cases.filter(c => c.status === "Completed").length} icon="🏁" color="#6B7280" />
           </div>
 
+          {/* Proof pending alert */}
+          {proofPending.length > 0 && (
+            <div style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 12, padding: "14px 18px", marginBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#065F46" }}>📦 {proofPending.length} case{proofPending.length > 1 ? "s" : ""} with delivery proof — needs your review</div>
+                <div style={{ fontSize: 12, color: "#047857", marginTop: 2 }}>Field agent has submitted proof. Review and mark complete to notify donors & reporter.</div>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {proofPending.map(c => (
+                  <button key={c.id} onClick={() => onComplete && onComplete(c)}
+                    style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: COLORS.secondary, color: "#fff", border: "none", cursor: "pointer" }}>
+                    🏁 Complete {c.id}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Case Pipeline */}
           <div style={{ background: "#fff", borderRadius: 14, padding: 24, boxShadow: "0 2px 8px #0001", marginBottom: 24 }}>
             <h3 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 700 }}>📊 Live Case Pipeline</h3>
@@ -2046,15 +2912,32 @@ const AdminDashboard = ({ cases, users, donations, sponsors, onViewCase, onAddUs
             <div>
               <h3 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 700 }}>💰 Recent Donations</h3>
               <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
-                {donations.map((d, i) => (
-                  <div key={d.id} style={{ padding: "12px 16px", borderBottom: i < donations.length - 1 ? `1px solid ${COLORS.border}` : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                {recentDonations.length === 0 && (
+                  <div style={{ padding: "20px 16px", color: COLORS.muted, fontSize: 13, textAlign: "center" }}>No donations yet</div>
+                )}
+                {recentDonations.map((d, i) => (
+                  <div key={d.id} style={{ padding: "12px 16px", borderBottom: i < recentDonations.length - 1 ? `1px solid ${COLORS.border}` : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700 }}>Case {d.case_id} · {d.payment_method}</div>
-                      <div style={{ fontSize: 11, color: COLORS.muted }}>{d.paid_at}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>
+                        {d.donor?.name || "Anonymous"} → {d.case?.publicTitle || `Case #${d.caseId?.slice(-6)}`}
+                      </div>
+                      <div style={{ fontSize: 11, color: COLORS.muted }}>
+                        {d.method?.replace(/_/g," ") || "—"} · {d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "—"}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.secondary }}>${d.amount}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: d.status === "confirmed" ? "#D1FAE5" : "#FEF3C7", color: d.status === "confirmed" ? "#065F46" : "#92400E" }}>
+                        {d.status}
+                      </span>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: COLORS.secondary }}>${d.amount?.toLocaleString()}</span>
+                    </div>
                   </div>
                 ))}
+                {donations.length > 5 && (
+                  <div style={{ padding: "10px 16px", textAlign: "center" }}>
+                    <button onClick={() => setTab("donations")} style={{ fontSize: 12, color: COLORS.primary, background: "none", border: "none", cursor: "pointer", fontWeight: 700 }}>View all {donations.length} donations →</button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2079,11 +2962,11 @@ const AdminDashboard = ({ cases, users, donations, sponsors, onViewCase, onAddUs
                   <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid ${COLORS.border}` : "none" }}
                     onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"} onMouseLeave={e => e.currentTarget.style.background = ""}>
                     <td style={{ padding: "12px 16px", fontSize: 12, fontWeight: 700, color: COLORS.muted }}>{u.id}</td>
-                    <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 700 }}>{u.fullname}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 14, fontWeight: 700 }}>{u.name || u.fullname || "—"}</td>
                     <td style={{ padding: "12px 16px", fontSize: 13, color: COLORS.muted }}>{u.email}</td>
                     <td style={{ padding: "12px 16px", fontSize: 13 }}>{u.phone}</td>
                     <td style={{ padding: "12px 16px" }}><span style={{ background: COLORS.primary + "15", color: COLORS.primary, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{u.role.replace(/_/g, " ")}</span></td>
-                    <td style={{ padding: "12px 16px" }}><span style={{ background: "#D1FAE5", color: "#065F46", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>● Active</span></td>
+                    <td style={{ padding: "12px 16px" }}><span style={{ background: u.isActive !== false ? "#D1FAE5" : "#FEE2E2", color: u.isActive !== false ? "#065F46" : "#991B1B", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>● {u.isActive !== false ? "Active" : "Inactive"}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -2094,7 +2977,105 @@ const AdminDashboard = ({ cases, users, donations, sponsors, onViewCase, onAddUs
 
       {tab === "cases" && (
         <div>
-          <CaseTable cases={cases} onView={onViewCase} />
+          <CaseTable cases={cases} onView={onViewCase} onReport={onFullReport} />
+        </div>
+      )}
+
+      {tab === "donations" && (
+        <div>
+          {/* Summary cards */}
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
+            <StatCard label="Total Received"   value={`$${totalDonated.toLocaleString()}`}   icon="💵" color={COLORS.secondary} />
+            <StatCard label="Confirmed"        value={`$${confirmedTotal.toLocaleString()}`}  icon="✅" color="#10B981" />
+            <StatCard label="Pending Confirm"  value={`$${pendingTotal.toLocaleString()}`}    icon="⏳" color="#F59E0B" />
+            <StatCard label="# Donations"      value={donations.length}                       icon="📊" color={COLORS.primary} />
+          </div>
+
+          {/* Filter bar */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+            {["all","pending","confirmed"].map(f => (
+              <button key={f} onClick={() => setDonFilter(f)}
+                style={{ padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: 700, border: `1.5px solid ${donFilter === f ? COLORS.primary : COLORS.border}`, background: donFilter === f ? COLORS.primary : "#fff", color: donFilter === f ? "#fff" : COLORS.muted, cursor: "pointer" }}>
+                {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                {f !== "all" && <span style={{ marginLeft: 6, background: "rgba(255,255,255,0.25)", borderRadius: 10, padding: "1px 6px" }}>{donations.filter(d => d.status === f).length}</span>}
+              </button>
+            ))}
+          </div>
+
+          {/* Donations table */}
+          <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "#F8FAFC" }}>
+                  {["Donor","Amount","Case","Method","Date","Status","Action"].map(h => (
+                    <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDonations.length === 0 && (
+                  <tr><td colSpan={7} style={{ padding: "32px 16px", textAlign: "center", color: COLORS.muted, fontSize: 14 }}>No donations found</td></tr>
+                )}
+                {filteredDonations.map((d, i) => (
+                  <tr key={d.id} style={{ borderBottom: i < filteredDonations.length - 1 ? `1px solid ${COLORS.border}` : "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"} onMouseLeave={e => e.currentTarget.style.background = ""}>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{d.isAnonymous ? "Anonymous" : (d.donor?.name || "—")}</div>
+                      {!d.isAnonymous && <div style={{ fontSize: 11, color: COLORS.muted }}>{d.donor?.email || ""}</div>}
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: 16, fontWeight: 800, color: COLORS.secondary }}>${(d.amount || 0).toLocaleString()}</td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700 }}>{d.case?.publicTitle || `Case #${(d.caseId || "").slice(-6)}`}</div>
+                      <div style={{ fontSize: 11, color: COLORS.muted }}>{d.case?.publicCity || ""}</div>
+                    </td>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: COLORS.muted }}>{(d.method || "—").replace(/_/g," ")}</td>
+                    <td style={{ padding: "12px 16px", fontSize: 12, color: COLORS.muted }}>{d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "—"}</td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span style={{ background: d.status === "confirmed" ? "#D1FAE5" : d.status === "pending" ? "#FEF3C7" : "#FEE2E2", color: d.status === "confirmed" ? "#065F46" : d.status === "pending" ? "#92400E" : "#991B1B", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                        {d.status === "confirmed" ? "✅ Confirmed" : d.status === "pending" ? "⏳ Pending" : d.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {d.status === "pending" && onConfirmDonation && (
+                        <button onClick={() => onConfirmDonation(d.id)}
+                          style={{ padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#10B981", color: "#fff", border: "none", cursor: "pointer" }}>
+                          ✓ Confirm
+                        </button>
+                      )}
+                      {d.status === "confirmed" && ["sponsored","waiting_for_sponsor"].includes(d.case?.status) && onStartDelivery && (
+                        <button onClick={() => onStartDelivery({
+                          id: d.caseId,
+                          victim_name: d.case?.publicTitle || `Case #${(d.caseId||"").slice(-6)}`,
+                          location: d.case?.publicCity || "",
+                          donation_amount: d.amount,
+                          _amount: d.amount,
+                          _caseTitle: d.case?.publicTitle,
+                          _caseCity: d.case?.publicCity,
+                          _caseId: d.caseId,
+                        })}
+                          style={{ padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#0891B2", color: "#fff", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
+                          🚚 Start Delivery
+                        </button>
+                      )}
+                      {d.status === "confirmed" && d.case?.status === "delivering" && (
+                        <span style={{ fontSize: 11, color: "#0891B2", fontWeight: 700 }}>🚚 En Route</span>
+                      )}
+                      {d.status === "confirmed" && d.case?.status === "proof_uploaded" && onComplete && (
+                        <button onClick={() => { const c = cases.find(x => x.id === d.caseId); if(c) onComplete(c); }}
+                          style={{ padding: "5px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: COLORS.secondary, color: "#fff", border: "none", cursor: "pointer" }}>
+                          🏁 Mark Complete
+                        </button>
+                      )}
+                      {d.status === "confirmed" && d.case?.status === "completed" && (
+                        <span style={{ fontSize: 11, color: COLORS.secondary, fontWeight: 700 }}>🏁 Completed</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
         </div>
       )}
     </div>
@@ -2136,8 +3117,8 @@ export default function KafaaleQaadApp() {
     ai_sanitized:            "Awaiting Approval",
     waiting_for_sponsor:     "Waiting Sponsor",
     sponsored:               "Sponsored",
-    delivering:              "Aid Delivered",
-    proof_uploaded:          "Aid Delivered",
+    delivering:              "Delivering",
+    proof_uploaded:          "Proof Submitted",
     completed:               "Completed",
     rejected:                "Archived",
   };
@@ -2184,6 +3165,10 @@ export default function KafaaleQaadApp() {
   const [publishCase,       setPublishCase]      = useState(null);
   const [rejectCase,        setRejectCase]       = useState(null);
   const [fieldReportCase,   setFieldReportCase]  = useState(null);
+  const [deliveryCase,      setDeliveryCase]     = useState(null);
+  const [deliveryAssign,    setDeliveryAssign]   = useState(null);
+  const [completeCase,      setCompleteCase]     = useState(null);
+  const [fullReportId,      setFullReportId]     = useState(null);
   const [toast,             setToast]            = useState(null);
   const [searchTerm,        setSearchTerm]       = useState("");
   const [filterStatus,      setFilterStatus]     = useState("All");
@@ -2216,11 +3201,15 @@ export default function KafaaleQaadApp() {
       if (["admin","super_admin"].includes(authUser.role)) {
         const data = await adminApi.cases({ limit: 100 });
         if (data?.cases) setCases(data.cases.map(c => mapCase(c, "admin")));
-        // Also load field agents list for the assign modal
+        // Load field agents for assign modal + real users for admin tab
         const usersData = await adminApi.users();
-        if (Array.isArray(usersData)) setAgents(usersData.filter(u => u.role === "field_agent" && u.isActive));
-        // Load real users for admin tab
-        setUsers(usersData || []);
+        if (Array.isArray(usersData)) {
+          setAgents(usersData.filter(u => u.role === "field_agent" && u.isActive));
+          setUsers(usersData);
+        }
+        // Load real donations for admin
+        const donData = await adminApi.donations();
+        if (donData?.donations) setDonations(donData.donations);
       } else if (authUser.role === "reporter") {
         const data = await casesApi.my();
         if (Array.isArray(data)) setCases(data.map(c => mapCase(c, "reporter")));
@@ -2271,6 +3260,16 @@ export default function KafaaleQaadApp() {
   const handleMarkAllNotifs = async () => {
     try { await notifsApi.readAll(); setNotifs(n => n.map(x => ({ ...x, read: true }))); } catch { /* ignore */ }
     setShowNotifs(false);
+  };
+
+  const handleConfirmDonation = async (donationId) => {
+    try {
+      await adminApi.confirmDonation(donationId);
+      showToast("Donation confirmed! Case totals updated.", "success");
+      setTimeout(reloadCases, 800);
+    } catch (e) {
+      showToast("Failed to confirm donation: " + e.message, "error");
+    }
   };
 
   const handleOpenNotifCase = async (caseId) => {
@@ -2333,21 +3332,26 @@ export default function KafaaleQaadApp() {
         onReport={() => setShowReport(true)} onViewCase={setSelectedCase} />
     ),
     verification_office: (
-      <VerificationDashboard cases={filteredCases} agents={agents} onViewCase={setSelectedCase}
-        onAssign={setAssignCase} onReject={setRejectCase}
-        onPublish={setPublishCase} onViewReport={setFieldReportCase} />
+      <VerificationDashboard cases={filteredCases} agents={agents} donations={donations}
+        onViewCase={setSelectedCase} onAssign={setAssignCase} onReject={setRejectCase}
+        onPublish={setPublishCase} onViewReport={setFieldReportCase}
+        onConfirmDonation={handleConfirmDonation} onComplete={setCompleteCase}
+        onStartDelivery={setDeliveryAssign} />
     ),
     field_team: (
       <FieldTeamDashboard cases={filteredCases} currentUser={currentUser}
-        onViewCase={setSelectedCase} onInvestigate={setInvestigateCase} />
+        onViewCase={setSelectedCase} onInvestigate={setInvestigateCase}
+        onDeliver={setDeliveryCase} />
     ),
     donor: (
       <DonorDashboard cases={filteredCases}
         currentUser={currentUser} onViewCase={setSelectedCase} onSponsor={setSponsorCase} />
     ),
     super_admin: (
-      <AdminDashboard cases={filteredCases} users={users} donations={donations} sponsors={sponsors}
-        onViewCase={setSelectedCase} onAddUser={() => setShowAddUser(true)} onExport={() => setShowExport(true)} />
+      <AdminDashboard cases={filteredCases} users={users} donations={donations} sponsors={sponsors} agents={agents}
+        onViewCase={setSelectedCase} onAddUser={() => setShowAddUser(true)} onExport={() => setShowExport(true)}
+        onConfirmDonation={handleConfirmDonation} onComplete={setCompleteCase}
+        onStartDelivery={setDeliveryAssign} onFullReport={setFullReportId} />
     ),
   };
 
@@ -2472,6 +3476,24 @@ export default function KafaaleQaadApp() {
       )}
       {fieldReportCase && (
         <FieldReportModal caseItem={fieldReportCase} onClose={() => setFieldReportCase(null)} />
+      )}
+      {deliveryAssign && (
+        <AssignDeliveryModal caseItem={deliveryAssign} agents={agents}
+          onClose={() => setDeliveryAssign(null)}
+          onDone={() => { setTimeout(reloadCases, 800); showToast("🚚 Delivery started! Field agent has been notified."); }}
+          showToast={showToast} />
+      )}
+      {deliveryCase && (
+        <DeliveryProofModal caseItem={deliveryCase} onClose={() => setDeliveryCase(null)}
+          onDone={() => { setTimeout(reloadCases, 800); }} showToast={showToast} />
+      )}
+      {completeCase && (
+        <CompleteCaseModal caseItem={completeCase} onClose={() => setCompleteCase(null)}
+          onDone={() => { const id = completeCase.id; setTimeout(reloadCases, 800); setTimeout(() => setFullReportId(id), 400); }}
+          showToast={showToast} />
+      )}
+      {fullReportId && internalRole === "super_admin" && (
+        <CaseFullReportModal caseId={fullReportId} onClose={() => setFullReportId(null)} />
       )}
 
       {/* ── Toast notification ── */}

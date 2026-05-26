@@ -33,7 +33,20 @@ router.get('/my', authenticate, async (req: AuthRequest, res: Response) => {
     const donations = await prisma.donation.findMany({
       where: { donorId: req.user!.id },
       orderBy: { createdAt: 'desc' },
-      include: { case: { select: { id: true, publicTitle: true, publicCity: true, status: true } } },
+      include: {
+        case: {
+          select: {
+            id: true, publicTitle: true, publicCity: true, status: true,
+            completedAt: true,
+            deliveryProof: {
+              select: {
+                deliveryDate: true, deliveryMethod: true, amountDelivered: true,
+                recipientName: true, deliveryNotes: true, adminConfirmed: true, adminConfirmedAt: true,
+              },
+            },
+          },
+        },
+      },
     });
     res.json(donations);
   } catch { res.status(500).json({ error: 'Failed to retrieve donations' }); }

@@ -63,7 +63,7 @@ router.get('/my', authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/cases/:id — Public case detail
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const kase = await prisma.case.findUnique({
       where: { id: req.params.id },

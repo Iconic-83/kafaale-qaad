@@ -22,6 +22,7 @@ router.get('/cases', async (req: AuthRequest, res: Response) => {
           assignedAgent: { select: { id: true, name: true, email: true } },
           fieldInvestigation: { select: { verificationStatus: true, estimatedAmountNeeded: true, fraudRiskLevel: true } },
           aiPublicData: { select: { generatedTitle: true, confidenceScore: true } },
+          deliveryProof: true,
           _count: { select: { donations: true, mediaFiles: true } },
         },
       }),
@@ -92,6 +93,34 @@ router.patch('/cases/:id/assign', async (req: AuthRequest, res: Response) => {
   } catch { res.status(500).json({ error: 'Failed to assign agent' }); }
 });
 
+// PATCH /api/admin/cases/:id/assign-delivery — Assign field agent for aid delivery
+router.patch('/cases/:id/assign-delivery', async (req: AuthRequest, res: Response) => {
+  try {
+    const { agentId } = req.body;
+    const agent = await prisma.user.findUnique({ where: { id: agentId } });
+    if (!agent || agent.role !== 'field_agent') return res.status(400).json({ error: 'Invalid field agent' });
+
+    const kase = await prisma.case.update({
+      where: { id: req.params.id },
+      data:  { assignedAgentId: agentId, status: 'delivering' },
+    });
+    await prisma.notification.create({
+      data: {
+        userId:  agentId,
+        caseId:  kase.id,
+        type:    'delivery_assigned',
+        title:   '🚚 Aid Delivery Assignment',
+        message: `You have been assigned to deliver aid for case ${kase.id}. Please proceed to the location and submit delivery proof when done.`,
+      },
+    });
+    await prisma.adminAuditLog.create({
+      data: { adminId: req.user!.id, caseId: kase.id, action: 'delivery_assigned', notes: `Delivery assigned to agent ${agent.name}` },
+    });
+    sysLog.info(`Admin ${req.user!.email} assigned delivery of case ${kase.id} to ${agent.name}`);
+    res.json({ message: 'Delivery agent assigned', caseId: kase.id });
+  } catch { res.status(500).json({ error: 'Failed to assign delivery agent' }); }
+});
+
 // PATCH /api/admin/cases/:id/publish — Publish case after AI sanitization
 router.patch('/cases/:id/publish', async (req: AuthRequest, res: Response) => {
   try {
@@ -134,6 +163,117 @@ router.get('/users', async (_req: AuthRequest, res: Response) => {
     });
     res.json(users);
   } catch { res.status(500).json({ error: 'Failed to retrieve users' }); }
+});
+
+// GET /api/admin/donations — All donations with full details
+router.get('/donations', async (_req: AuthRequest, res: Response) => {
+  try {
+    const [donationList, totals] = await Promise.all([
+      prisma.donation.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        include: {
+          donor: { select: { id: true, name: true, email: true } },
+          case:  { select: { id: true, publicTitle: true, publicCity: true, status: true, targetGoal: true, totalRaised: true, emergencyLevel: true } },
+        },
+      }),
+      prisma.donation.groupBy({ by: ['status'], _sum: { amount: true }, _count: true }),
+    ]);
+    const summary = { total: 0, confirmed: 0, pending: 0, count: 0 };
+    totals.forEach(t => {
+      summary.total += t._sum.amount || 0;
+      summary.count += t._count;
+      if (t.status === 'confirmed') summary.confirmed += t._sum.amount || 0;
+      if (t.status === 'pending')   summary.pending   += t._sum.amount || 0;
+    });
+    res.json({ donations: donationList, summary });
+  } catch { res.status(500).json({ error: 'Failed to retrieve donations' }); }
+});
+
+// PATCH /api/admin/donations/:id/confirm — Confirm a pending donation
+router.patch('/donations/:id/confirm', async (req: AuthRequest, res: Response) => {
+  try {
+    const donation = await prisma.donation.update({
+      where: { id: req.params.id },
+      data:  { status: 'confirmed' },
+      include: { case: { select: { id: true, status: true, targetGoal: true, totalRaised: true } } },
+    }) as any;
+    // Update case totalRaised
+    const newTotal = (donation.case?.totalRaised || 0) + donation.amount;
+    await prisma.case.update({ where: { id: donation.caseId }, data: { totalRaised: newTotal } });
+    // Update case status to 'sponsored' if it was waiting
+    if (donation.case?.status === 'waiting_for_sponsor') {
+      await prisma.case.update({ where: { id: donation.caseId }, data: { status: 'sponsored' } });
+    }
+    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, caseId: donation.caseId, action: 'donation_confirmed', notes: `Confirmed $${donation.amount} donation` } });
+    // Notify donor
+    await prisma.notification.create({ data: { userId: donation.donorId, caseId: donation.caseId, type: 'donation_confirmed', title: '✅ Donation Confirmed', message: `Your donation of $${donation.amount} has been confirmed. The field team will deliver aid shortly.` } });
+    res.json({ message: 'Donation confirmed', donationId: donation.id, newCaseTotal: newTotal });
+  } catch { res.status(500).json({ error: 'Failed to confirm donation' }); }
+});
+
+// PATCH /api/admin/cases/:id/complete — Mark case complete after delivery proof reviewed
+router.patch('/cases/:id/complete', async (req: AuthRequest, res: Response) => {
+  try {
+    const { adminNotes } = req.body;
+    const kase = await prisma.case.findUnique({
+      where: { id: req.params.id },
+      include: { deliveryProof: true },
+    }) as any;
+    if (!kase) return res.status(404).json({ error: 'Case not found' });
+    if (kase.status !== 'proof_uploaded') {
+      return res.status(400).json({ error: 'Case must be in proof_uploaded status to complete' });
+    }
+
+    // Mark delivery proof as admin-confirmed
+    if (kase.deliveryProof) {
+      await prisma.deliveryProof.update({
+        where:  { caseId: kase.id },
+        data:   { adminConfirmed: true, adminConfirmedAt: new Date(), adminNotes: adminNotes || null },
+      });
+    }
+
+    // Move case to completed
+    await prisma.case.update({
+      where: { id: kase.id },
+      data:  { status: 'completed', completedAt: new Date() },
+    });
+
+    await prisma.adminAuditLog.create({
+      data: { adminId: req.user!.id, caseId: kase.id, action: 'completed', notes: adminNotes || 'Case marked complete after delivery proof review' },
+    });
+
+    // Notify reporter — case is fully done
+    if (kase.reporterId) {
+      await prisma.notification.create({
+        data: {
+          userId:  kase.reporterId,
+          caseId:  kase.id,
+          type:    'case_completed',
+          title:   '🏁 Case Completed',
+          message: 'Your reported case has been fully completed. Aid was delivered and confirmed by admin. Thank you for helping Kafaale reach those in need.',
+        },
+      });
+    }
+
+    // Notify donors on this case
+    const caseDonors = await prisma.donation.findMany({
+      where:  { caseId: kase.id, status: 'confirmed' },
+      select: { donorId: true, amount: true },
+    });
+    await prisma.notification.createMany({
+      data: caseDonors.map(d => ({
+        userId:  d.donorId,
+        caseId:  kase.id,
+        type:    'case_completed',
+        title:   '🏁 Aid Delivered — Case Complete',
+        message: `The case you donated $${d.amount} to has been fully completed. The aid has been delivered and confirmed. Thank you for your generosity!`,
+      })),
+    });
+
+    sysLog.info(`Admin ${req.user!.email} completed case ${kase.id}`);
+    res.json({ message: 'Case completed', caseId: kase.id });
+  } catch { res.status(500).json({ error: 'Failed to complete case' }); }
 });
 
 // GET /api/admin/audit — Audit log

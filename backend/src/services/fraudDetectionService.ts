@@ -22,12 +22,17 @@ class FraudDetectionService {
     const flags: string[] = [];
     let riskScore = 0;
 
-    // 1. GPS mismatch signal
+    // 1. Field investigation signals
     const inv = kase.fieldInvestigation;
     if (inv) {
-      if (!inv.gpsMatchesReport) {
-        flags.push('GPS coordinates do not match reported location');
-        riskScore += 30;
+      // GPS verification mismatch (compare report vs verification coords)
+      if (kase.privateGpsLat && inv.gpsVerificationLat) {
+        const latDiff = Math.abs(kase.privateGpsLat - inv.gpsVerificationLat);
+        const lngDiff = Math.abs((kase.privateGpsLng || 0) - (inv.gpsVerificationLng || 0));
+        if (latDiff > 0.05 || lngDiff > 0.05) {  // ~5km
+          flags.push('GPS coordinates do not match reported location');
+          riskScore += 30;
+        }
       }
       if (inv.fraudRiskScore > 60) {
         flags.push(`Field agent flagged high risk: score ${inv.fraudRiskScore}`);
@@ -36,10 +41,6 @@ class FraudDetectionService {
       if (!inv.victimVerified) {
         flags.push('Victim identity not verified by field team');
         riskScore += 20;
-      }
-      if (!inv.victimIdConfirmed) {
-        flags.push('Victim ID document not confirmed');
-        riskScore += 10;
       }
       // Unreasonably high amount for category
       const amount = Number(inv.estimatedAmountNeeded);
@@ -127,10 +128,10 @@ class FraudDetectionService {
         fraudRiskScore: true,
         fraudRiskLevel: true,
         fraudRiskNotes: true,
-        gpsMatchesReport: true,
         victimVerified: true,
-        victimIdConfirmed: true,
         verificationStatus: true,
+        gpsVerificationLat: true,
+        gpsVerificationLng: true,
       },
     });
   }

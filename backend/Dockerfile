@@ -9,11 +9,17 @@ RUN apk add --no-cache libc6-compat
 COPY package*.json ./
 COPY prisma ./prisma/
 
+# ── Switch Prisma provider to postgresql for production build ──
+RUN sed -i 's/provider = "sqlite"/provider = "postgresql"/' /app/prisma/schema.prisma
+
 # Install dependencies (including devDependencies for tsc)
 RUN npm ci
 
 # Copy codebase and compile
 COPY . .
+# Re-apply the switch in case COPY . . overwrote it
+RUN sed -i 's/provider = "sqlite"/provider = "postgresql"/' /app/prisma/schema.prisma
+
 RUN npm run db:generate
 RUN npm run build
 
@@ -40,4 +46,5 @@ USER expressjs
 
 EXPOSE 5000
 
-CMD ["node", "dist/server.js"]
+# Run DB migrations then start the server
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

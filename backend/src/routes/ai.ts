@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import type { AuthRequest } from '../middleware/auth';
 import { prisma } from '../prisma/client';
 import { sysLog } from '../services/logger';
 
@@ -81,12 +82,12 @@ Keep responses to 2-4 sentences. Be warm and encouraging about the humanitarian 
 });
 
 // POST /api/ai/sanitize/:caseId — Admin triggers AI sanitization
-router.post('/sanitize/:caseId', async (req: Request, res: Response) => {
+router.post('/sanitize/:caseId', async (req: AuthRequest, res: Response) => {
   try {
     const kase = await prisma.case.findUnique({
       where: { id: req.params.caseId },
       include: { fieldInvestigation: true },
-    });
+    }) as any;
     if (!kase) return res.status(404).json({ error: 'Case not found' });
 
     const apiKey = process.env.ANTHROPIC_API_KEY;

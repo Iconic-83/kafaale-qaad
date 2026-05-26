@@ -1,12 +1,11 @@
 import { prisma } from '../prisma/client';
 import { socketService } from './socketService';
 import { sysLog } from './logger';
-import { NotificationType } from '@prisma/client';
 
 interface CreateNotificationInput {
   userId: string;
   caseId?: string;
-  type: NotificationType;
+  type: string;   // stored as plain string (not a Prisma enum)
   title: string;
   message: string;
 }
