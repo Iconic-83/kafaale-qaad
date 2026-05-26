@@ -1,4 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { impact } from "../api/client";
 
 const C = { primary: "#0B3D91", secondary: "#1A6B3C", accent: "#E8A020", danger: "#EF4444", muted: "#6B7280", bg: "#F0F4F8", border: "#E2E8F0" };
 

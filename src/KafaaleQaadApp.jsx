@@ -17,14 +17,15 @@ const COLORS = {
 
 const STATUS_MAP = {
   "Pending Verification": { color: "#F59E0B", bg: "#FEF3C7", icon: "⏳" },
-  "Under Review":        { color: "#3B82F6", bg: "#DBEAFE", icon: "🔍" },
-  "Investigating":       { color: "#8B5CF6", bg: "#EDE9FE", icon: "🕵️" },
-  "Verified":            { color: "#10B981", bg: "#D1FAE5", icon: "✅" },
-  "Waiting Sponsor":     { color: "#F59E0B", bg: "#FEF3C7", icon: "🤝" },
-  "Sponsored":           { color: "#EC4899", bg: "#FCE7F3", icon: "❤️" },
-  "Aid Delivered":       { color: "#06B6D4", bg: "#CFFAFE", icon: "📦" },
-  "Completed":           { color: "#6B7280", bg: "#F3F4F6", icon: "🏁" },
-  "Archived":            { color: "#374151", bg: "#E5E7EB", icon: "📁" },
+  "Under Review":         { color: "#3B82F6", bg: "#DBEAFE", icon: "🔍" },
+  "Investigating":        { color: "#8B5CF6", bg: "#EDE9FE", icon: "🕵️" },
+  "Awaiting Approval":    { color: "#EC4899", bg: "#FCE7F3", icon: "📋" },
+  "Verified":             { color: "#10B981", bg: "#D1FAE5", icon: "✅" },
+  "Waiting Sponsor":      { color: "#F59E0B", bg: "#FEF3C7", icon: "🤝" },
+  "Sponsored":            { color: "#EF4444", bg: "#FEE2E2", icon: "❤️" },
+  "Aid Delivered":        { color: "#06B6D4", bg: "#CFFAFE", icon: "📦" },
+  "Completed":            { color: "#6B7280", bg: "#F3F4F6", icon: "🏁" },
+  "Archived":             { color: "#374151", bg: "#E5E7EB", icon: "📁" },
 };
 
 const URGENCY = { Low: "#10B981", Medium: "#F59E0B", High: "#EF4444", Critical: "#7C3AED" };
