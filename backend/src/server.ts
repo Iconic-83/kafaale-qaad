@@ -140,10 +140,13 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: IS_PROD ? 'Internal server error' : err.message });
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Kafaale API running → http://localhost:${PORT}`);
-  console.log(`📡 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔒 CORS origins: ${[...ALLOWED_ORIGINS].join(', ')}`);
-});
+// Only start the HTTP server when run directly (not imported as serverless function)
+if (require.main === module) {
+  server.listen(PORT, () => {
+    console.log(`🚀 Kafaale API running → http://localhost:${PORT}`);
+    console.log(`📡 Health check: http://localhost:${PORT}/health`);
+    console.log(`🔒 CORS origins: ${[...ALLOWED_ORIGINS].join(', ')}`);
+  });
+}
 
 export default app;
