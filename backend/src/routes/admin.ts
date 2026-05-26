@@ -276,6 +276,39 @@ router.patch('/cases/:id/complete', async (req: AuthRequest, res: Response) => {
   } catch { res.status(500).json({ error: 'Failed to complete case' }); }
 });
 
+// PATCH /api/admin/users/:id/role — Change user role (super_admin only)
+router.patch('/users/:id/role', async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user!.role !== 'super_admin') {
+      return res.status(403).json({ error: 'Only Super Admin can change user roles' });
+    }
+    const { id } = req.params;
+    const { role } = req.body;
+    const validRoles = ['reporter', 'donor', 'field_agent', 'admin', 'super_admin'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: `Invalid role. Must be one of: ${validRoles.join(', ')}` });
+    }
+    if (id === req.user!.id && role !== 'super_admin') {
+      return res.status(400).json({ error: 'You cannot change your own role' });
+    }
+    const target = await prisma.user.findUnique({ where: { id } });
+    if (!target) return res.status(404).json({ error: 'User not found' });
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { role },
+      select: { id: true, name: true, email: true, role: true },
+    });
+    await prisma.adminAuditLog.create({
+      data: { adminId: req.user!.id, action: 'role_changed', notes: `Changed ${target.email} role: ${target.role} → ${role}` },
+    });
+    sysLog.info(`Super admin ${req.user!.email} changed ${target.email} role to ${role}`);
+    res.json({ message: 'Role updated', user: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to update role' });
+  }
+});
+
 // DELETE /api/admin/users/:id — Delete a user (super_admin only)
 router.delete('/users/:id', async (req: AuthRequest, res: Response) => {
   try {

@@ -51,6 +51,7 @@ export const admin = {
   publish:          (id, data)                => req(`/admin/cases/${id}/publish`, { method: 'PATCH', body: JSON.stringify(data) }),
   users:            ()                        => req('/admin/users'),
   deleteUser:       (id)                      => req(`/admin/users/${id}`, { method: 'DELETE' }),
+  changeRole:       (id, role)                => req(`/admin/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
   audit:            ()                        => req('/admin/audit'),
   donations:        ()                        => req('/admin/donations'),
   confirmDonation:  (id)                      => req(`/admin/donations/${id}/confirm`,         { method: 'PATCH' }),

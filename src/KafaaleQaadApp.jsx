@@ -2832,7 +2832,107 @@ const UserAvatar = ({ name, size = 36 }) => {
   );
 };
 
-const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase, onAddUser, onDeleteUser, onExport, onConfirmDonation, onComplete, onStartDelivery, onFullReport, isSuperAdmin }) => {
+// ─── USERS TAB — avatars, inline role change, delete ─────────────────────────
+const ALL_ROLES = [
+  { value: "reporter",    label: "📝 Reporter"      },
+  { value: "donor",       label: "💳 Donor"          },
+  { value: "field_agent", label: "🔍 Field Agent"    },
+  { value: "admin",       label: "🟠 Admin"          },
+  { value: "super_admin", label: "🔴 Super Admin"    },
+];
+const ROLE_COLORS = {
+  super_admin:  { bg: "#FEE2E2", text: "#991B1B" },
+  admin:        { bg: "#FEF3C7", text: "#92400E" },
+  field_agent:  { bg: "#EDE9FE", text: "#5B21B6" },
+  donor:        { bg: "#D1FAE5", text: "#065F46" },
+  reporter:     { bg: "#DBEAFE", text: "#1E40AF" },
+};
+
+const UsersTab = ({ users, isSuperAdmin, onDeleteUser, onChangeRole }) => {
+  const [editingId, setEditingId] = useState(null);
+  const [savingId,  setSavingId]  = useState(null);
+
+  const handleRoleChange = async (u, newRole) => {
+    if (newRole === u.role) { setEditingId(null); return; }
+    setSavingId(u.id);
+    try {
+      await onChangeRole(u, newRole);
+    } finally {
+      setSavingId(null);
+      setEditingId(null);
+    }
+  };
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr style={{ background: "#F8FAFC" }}>
+            {["", "Name", "Email", "Phone", "Role", "Status", isSuperAdmin ? "Actions" : null].filter(Boolean).map(h => (
+              <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((u, i) => {
+            const name = u.name || u.fullname || "?";
+            const rc = ROLE_COLORS[u.role] || { bg: "#F3F4F6", text: "#374151" };
+            const isSelf = false; // will be guarded on backend
+            const isEditing = editingId === u.id;
+            const isSaving  = savingId  === u.id;
+            return (
+              <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid ${COLORS.border}` : "none" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"} onMouseLeave={e => e.currentTarget.style.background = ""}>
+                <td style={{ padding: "10px 16px" }}><UserAvatar name={name} size={38} /></td>
+                <td style={{ padding: "10px 16px" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{name}</div>
+                  <div style={{ fontSize: 11, color: COLORS.muted }}>{u.country || ""}{u.city ? `, ${u.city}` : ""}</div>
+                </td>
+                <td style={{ padding: "10px 16px", fontSize: 13, color: COLORS.muted }}>{u.email}</td>
+                <td style={{ padding: "10px 16px", fontSize: 13 }}>{u.phone || "—"}</td>
+                <td style={{ padding: "10px 16px" }}>
+                  {isSuperAdmin && isEditing ? (
+                    <select defaultValue={u.role} disabled={isSaving}
+                      onChange={e => handleRoleChange(u, e.target.value)}
+                      onBlur={() => setEditingId(null)}
+                      autoFocus
+                      style={{ padding: "4px 8px", borderRadius: 8, border: `1.5px solid ${COLORS.primary}`, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "#fff", outline: "none" }}>
+                      {ALL_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </select>
+                  ) : (
+                    <span onClick={() => isSuperAdmin && setEditingId(u.id)}
+                      title={isSuperAdmin ? "Click to change role" : ""}
+                      style={{ background: rc.bg, color: rc.text, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: isSuperAdmin ? "pointer" : "default", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      {(u.role || "").replace(/_/g, " ")}
+                      {isSuperAdmin && <span style={{ fontSize: 9, opacity: 0.6 }}>✏️</span>}
+                    </span>
+                  )}
+                </td>
+                <td style={{ padding: "10px 16px" }}>
+                  <span style={{ background: u.isActive !== false ? "#D1FAE5" : "#FEE2E2", color: u.isActive !== false ? "#065F46" : "#991B1B", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                    ● {u.isActive !== false ? "Active" : "Inactive"}
+                  </span>
+                </td>
+                {isSuperAdmin && (
+                  <td style={{ padding: "10px 16px" }}>
+                    {u.role !== "super_admin" && (
+                      <button onClick={() => onDeleteUser && onDeleteUser(u)}
+                        style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#FEE2E2", color: "#DC2626", border: "1px solid #FCA5A5", cursor: "pointer" }}>
+                        🗑️ Delete
+                      </button>
+                    )}
+                  </td>
+                )}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase, onAddUser, onDeleteUser, onChangeRole, onExport, onConfirmDonation, onComplete, onStartDelivery, onFullReport, isSuperAdmin }) => {
   const [tab, setTab] = useState("overview");
   const [donFilter, setDonFilter] = useState("all");
   const totalDonated = donations.reduce((a, d) => a + (d.amount || 0), 0);
@@ -2959,58 +3059,8 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
       {tab === "analytics" && <AnalyticsDashboard cases={cases} donations={donations} users={users} />}
 
       {tab === "users" && (
-        <div>
-          <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 8px #0001" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ background: "#F8FAFC" }}>
-                  {["","Name","Email","Phone","Role","Status", isSuperAdmin ? "Action" : null].filter(Boolean).map(h => (
-                    <th key={h} style={{ padding: "12px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, color: COLORS.muted, borderBottom: `1px solid ${COLORS.border}` }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u, i) => {
-                  const name = u.name || u.fullname || "?";
-                  const canDelete = isSuperAdmin && u.role !== "super_admin";
-                  return (
-                    <tr key={u.id} style={{ borderBottom: i < users.length - 1 ? `1px solid ${COLORS.border}` : "none" }}
-                      onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"} onMouseLeave={e => e.currentTarget.style.background = ""}>
-                      <td style={{ padding: "10px 16px" }}>
-                        <UserAvatar name={name} size={38} />
-                      </td>
-                      <td style={{ padding: "10px 16px" }}>
-                        <div style={{ fontSize: 14, fontWeight: 700 }}>{name}</div>
-                        <div style={{ fontSize: 11, color: COLORS.muted }}>{u.country || ""}{u.city ? `, ${u.city}` : ""}</div>
-                      </td>
-                      <td style={{ padding: "10px 16px", fontSize: 13, color: COLORS.muted }}>{u.email}</td>
-                      <td style={{ padding: "10px 16px", fontSize: 13 }}>{u.phone || "—"}</td>
-                      <td style={{ padding: "10px 16px" }}>
-                        <span style={{ background: COLORS.primary + "15", color: COLORS.primary, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
-                          {(u.role || "").replace(/_/g, " ")}
-                        </span>
-                      </td>
-                      <td style={{ padding: "10px 16px" }}>
-                        <span style={{ background: u.isActive !== false ? "#D1FAE5" : "#FEE2E2", color: u.isActive !== false ? "#065F46" : "#991B1B", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
-                          ● {u.isActive !== false ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      {isSuperAdmin && (
-                        <td style={{ padding: "10px 16px" }}>
-                          {canDelete && (
-                            <button onClick={() => onDeleteUser && onDeleteUser(u)}
-                              style={{ padding: "5px 12px", borderRadius: 8, fontSize: 12, fontWeight: 700, background: "#FEE2E2", color: "#DC2626", border: "1px solid #FCA5A5", cursor: "pointer" }}>
-                              🗑️ Delete
-                            </button>
-                          )}
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        <UsersTab users={users} isSuperAdmin={isSuperAdmin} onDeleteUser={onDeleteUser} onChangeRole={onChangeRole} />
+      )}
         </div>
       )}
 
@@ -3312,6 +3362,16 @@ export default function KafaaleQaadApp() {
     }
   };
 
+  const handleChangeRole = async (u, newRole) => {
+    try {
+      await adminApi.changeRole(u.id, newRole);
+      setUsers(us => us.map(x => x.id === u.id ? { ...x, role: newRole } : x));
+      showToast(`${u.name || u.email} is now ${newRole.replace(/_/g, " ")}.`, "success");
+    } catch (e) {
+      showToast("Failed to change role: " + e.message, "error");
+    }
+  };
+
   const handleConfirmDonation = async (donationId) => {
     try {
       await adminApi.confirmDonation(donationId);
@@ -3400,7 +3460,7 @@ export default function KafaaleQaadApp() {
     super_admin: (
       <AdminDashboard cases={filteredCases} users={users} donations={donations} sponsors={sponsors} agents={agents}
         onViewCase={setSelectedCase} onAddUser={() => setShowAddUser(true)} onDeleteUser={handleDeleteUser}
-        onExport={() => setShowExport(true)} isSuperAdmin={authUser?.role === "super_admin"}
+        onChangeRole={handleChangeRole} onExport={() => setShowExport(true)} isSuperAdmin={authUser?.role === "super_admin"}
         onConfirmDonation={handleConfirmDonation} onComplete={setCompleteCase}
         onStartDelivery={setDeliveryAssign} onFullReport={setFullReportId} />
     ),
