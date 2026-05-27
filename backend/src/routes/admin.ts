@@ -5,7 +5,7 @@ import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { sysLog } from '../services/logger';
 
 const router = Router();
-router.use(authenticate, requireRole(['admin','super_admin']));
+router.use(authenticate, requireRole(['admin','super_admin','verification_office']));
 
 // GET /api/admin/cases — All cases with full details
 router.get('/cases', async (req: AuthRequest, res: Response) => {

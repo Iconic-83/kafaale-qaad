@@ -49,49 +49,6 @@ const STATUS_MAP = {
 
 const URGENCY = { Low: "#10B981", Medium: "#F59E0B", High: "#EF4444", Critical: "#7C3AED" };
 
-// ─── Mock Data ─────────────────────────────────────────────────────────────
-const INITIAL_CASES = [
-  { id: "C001", victim_name: "Amina Hassan",    age: 34, gender: "Female", description: "Single mother of 4, lost home in flood, urgent shelter needed",      location: "Mogadishu, Hodan",    urgency_level: "Critical", status: "Verified",            created_at: "2026-05-01", reporter_id: "U002", team_id: "T01", findings: "Family confirmed displaced, living in makeshift shelter", media_files: ["photo1.jpg"],               investigation_date: "2026-05-03", sponsor_id: null,   donation_amount: 0,    proof_files: [] },
-  { id: "C002", victim_name: "Mohamud Ali",     age: 67, gender: "Male",   description: "Elderly man, chronic illness, needs medication and food support",   location: "Mogadishu, Bondhere", urgency_level: "High",     status: "Waiting Sponsor",     created_at: "2026-05-02", reporter_id: "U003", team_id: "T02", findings: "Medical records verified, critically low on insulin",    media_files: ["photo2.jpg","doc.pdf"],      investigation_date: "2026-05-04", sponsor_id: null,   donation_amount: 0,    proof_files: [] },
-  { id: "C003", victim_name: "Fadumo Warsame",  age: 28, gender: "Female", description: "Widow with 3 children, no income source, food insecurity",          location: "Kismayo",             urgency_level: "High",     status: "Sponsored",           created_at: "2026-04-28", reporter_id: "U002", team_id: "T01", findings: "Confirmed widow, children malnourished",                media_files: ["photo3.jpg"],               investigation_date: "2026-04-30", sponsor_id: "S001", donation_amount: 500,  proof_files: [] },
-  { id: "C004", victim_name: "Cabdi Xasan",     age: 45, gender: "Male",   description: "Disability, cannot work, family of 6 without support",              location: "Beledweyne",          urgency_level: "Medium",   status: "Aid Delivered",       created_at: "2026-04-20", reporter_id: "U004", team_id: "T03", findings: "Disability confirmed via medical documents",            media_files: ["photo4.jpg"],               investigation_date: "2026-04-22", sponsor_id: "S002", donation_amount: 800,  proof_files: ["receipt.jpg"] },
-  { id: "C005", victim_name: "Xalimo Osman",    age: 19, gender: "Female", description: "Orphan, no family support, seeking education and shelter aid",      location: "Mogadishu, Wadajir",  urgency_level: "Medium",   status: "Pending Verification",created_at: "2026-05-10", reporter_id: "U003", team_id: null,  findings: "",                                                      media_files: [],                           investigation_date: null,         sponsor_id: null,   donation_amount: 0,    proof_files: [] },
-  { id: "C006", victim_name: "Bashir Nuur",     age: 52, gender: "Male",   description: "Lost livelihood due to drought, 8 dependents",                      location: "Garowe",              urgency_level: "High",     status: "Investigating",       created_at: "2026-05-05", reporter_id: "U002", team_id: "T02", findings: "",                                                      media_files: ["photo6.jpg"],               investigation_date: null,         sponsor_id: null,   donation_amount: 0,    proof_files: [] },
-  { id: "C007", victim_name: "Hodan Ismail",    age: 39, gender: "Female", description: "Domestic violence survivor, needs safe housing and counseling",     location: "Hargeisa",            urgency_level: "Critical", status: "Under Review",        created_at: "2026-05-08", reporter_id: "U005", team_id: null,  findings: "",                                                      media_files: [],                           investigation_date: null,         sponsor_id: null,   donation_amount: 0,    proof_files: [] },
-  { id: "C008", victim_name: "Mahad Jimcaale",  age: 8,  gender: "Male",   description: "Orphan child, malnutrition, needs immediate nutrition support",     location: "Baidoa",              urgency_level: "Critical", status: "Completed",           created_at: "2026-04-15", reporter_id: "U003", team_id: "T01", findings: "Child confirmed orphan, malnourished",                  media_files: ["photo8.jpg"],               investigation_date: "2026-04-17", sponsor_id: "S003", donation_amount: 1200, proof_files: ["proof1.jpg","proof2.jpg"] },
-];
-
-const INITIAL_USERS = [
-  { id: "U001", fullname: "Super Admin",        email: "admin@kafaale.so",       role: "super_admin",        phone: "+252611000001", verification_status: "active" },
-  { id: "U002", fullname: "Caasha Maxamed",     email: "caasha@reporter.so",     role: "observer",           phone: "+252611000002", verification_status: "active" },
-  { id: "U003", fullname: "Cabdirisaaq Yusuf",  email: "cabdi@reporter.so",      role: "observer",           phone: "+252611000003", verification_status: "active" },
-  { id: "U004", fullname: "Xaawo Cali",         email: "xaawo@field.so",         role: "field_team",         phone: "+252611000004", verification_status: "active" },
-  { id: "U005", fullname: "Maxamuud Ciise",     email: "maxamuud@field.so",      role: "field_team",         phone: "+252611000005", verification_status: "active" },
-  { id: "U006", fullname: "Fadumo Nuur",        email: "fadumo@office.so",       role: "verification_office",phone: "+252611000006", verification_status: "active" },
-  { id: "U007", fullname: "Ahmed Al-Rashid",    email: "ahmed@donor.com",        role: "donor",              phone: "+9715000001",   verification_status: "active" },
-  { id: "U008", fullname: "Sara Kowalski",      email: "sara@ngo.org",           role: "donor",              phone: "+16175000001",  verification_status: "active" },
-];
-
-const INITIAL_DONATIONS = [
-  { id: "D001", case_id: "C003", sponsor_id: "S001", amount: 500,  payment_method: "Bank Transfer", transaction_status: "completed", paid_at: "2026-05-01" },
-  { id: "D002", case_id: "C004", sponsor_id: "S002", amount: 800,  payment_method: "PayPal",        transaction_status: "completed", paid_at: "2026-04-25" },
-  { id: "D003", case_id: "C008", sponsor_id: "S003", amount: 1200, payment_method: "Stripe",        transaction_status: "completed", paid_at: "2026-04-20" },
-];
-
-const SPONSORS = [
-  { id: "S001", user_id: "U007", case_id: "C003", sponsorship_type: "Full Support",  start_date: "2026-05-01", end_date: "2026-08-01", status: "active" },
-  { id: "S002", user_id: "U008", case_id: "C004", sponsorship_type: "Partial Help",  start_date: "2026-04-25", end_date: "2026-07-25", status: "active" },
-  { id: "S003", user_id: "U007", case_id: "C008", sponsorship_type: "Full Support",  start_date: "2026-04-20", end_date: "2026-07-20", status: "completed" },
-];
-
-const NOTIFICATIONS_DATA = [
-  { id: 1, icon: "📝", msg: "New case reported by Caasha Maxamed",            time: "2 mins ago",  read: false },
-  { id: 2, icon: "✅", msg: "Case C001 verified successfully",                time: "15 mins ago", read: false },
-  { id: 3, icon: "❤️", msg: "Case C003 sponsored by Ahmed Al-Rashid ($500)", time: "1 hour ago",  read: true  },
-  { id: 4, icon: "🚨", msg: "Critical case C007 requires immediate attention",time: "2 hours ago", read: false },
-  { id: 5, icon: "📦", msg: "Aid delivery completed for Case C008",           time: "3 hours ago", read: true  },
-];
-
 // ─── WORKFLOW STEPS ────────────────────────────────────────────────────────
 const WORKFLOW_STEPS = [
   { num: 1, label: "Report Creation",    status: "Pending Verification", color: "#3B82F6", icon: "📝" },
@@ -3255,11 +3212,12 @@ export default function KafaaleQaadApp() {
   const internalRole = authUser ? (ROLE_MAP[authUser.role] || "observer") : null;
 
   const [cases,             setCases]            = useState([]);
-  const [users,             setUsers]            = useState(INITIAL_USERS);
-  const [donations,         setDonations]        = useState(INITIAL_DONATIONS);
-  const [sponsors,          setSponsors]         = useState(SPONSORS);
+  const [users,             setUsers]            = useState([]);
+  const [donations,         setDonations]        = useState([]);
+  const [sponsors,          setSponsors]         = useState([]);
   const [notifs,            setNotifs]           = useState([]);
   const [agents,            setAgents]           = useState([]);
+  const [dataLoading,       setDataLoading]      = useState(true);
   const [selectedCase,      setSelectedCase]     = useState(null);
   const [showReport,        setShowReport]       = useState(false);
   const [sponsorCase,       setSponsorCase]      = useState(null);
@@ -3301,21 +3259,24 @@ export default function KafaaleQaadApp() {
   } : null;
 
   // ─── Load data from API ─────────────────────────────────────────────────
-  const reloadCases = async () => {
+  const reloadCases = async (showLoader = false) => {
     if (!authUser) return;
+    if (showLoader) setDataLoading(true);
     try {
-      if (["admin","super_admin"].includes(authUser.role)) {
-        const data = await adminApi.cases({ limit: 100 });
-        if (data?.cases) setCases(data.cases.map(c => mapCase(c, "admin")));
-        // Load field agents for assign modal + real users for admin tab
-        const usersData = await adminApi.users();
-        if (Array.isArray(usersData)) {
-          setAgents(usersData.filter(u => u.role === "field_agent" && u.isActive));
-          setUsers(usersData);
+      if (["admin","super_admin","verification_office"].includes(authUser.role)) {
+        const [casesData, usersData, donData] = await Promise.allSettled([
+          adminApi.cases({ limit: 100 }),
+          adminApi.users(),
+          adminApi.donations(),
+        ]);
+        if (casesData.status === "fulfilled" && casesData.value?.cases)
+          setCases(casesData.value.cases.map(c => mapCase(c, "admin")));
+        if (usersData.status === "fulfilled" && Array.isArray(usersData.value)) {
+          setAgents(usersData.value.filter(u => u.role === "field_agent" && u.isActive));
+          setUsers(usersData.value);
         }
-        // Load real donations for admin
-        const donData = await adminApi.donations();
-        if (donData?.donations) setDonations(donData.donations);
+        if (donData.status === "fulfilled" && donData.value?.donations)
+          setDonations(donData.value.donations);
       } else if (authUser.role === "reporter") {
         const data = await casesApi.my();
         if (Array.isArray(data)) setCases(data.map(c => mapCase(c, "reporter")));
@@ -3326,7 +3287,11 @@ export default function KafaaleQaadApp() {
         const data = await casesApi.list({ limit: 30 });
         if (data?.cases) setCases(data.cases.map(c => mapCase(c, "donor")));
       }
-    } catch (e) { /* keep existing data */ }
+    } catch (e) {
+      console.error("Failed to load data:", e);
+    } finally {
+      setDataLoading(false);
+    }
   };
 
   const reloadNotifs = async () => {
@@ -3338,7 +3303,7 @@ export default function KafaaleQaadApp() {
   };
 
   useEffect(() => {
-    reloadCases();
+    reloadCases(true);  // true = show loading spinner on first load
     reloadNotifs();
     // Poll for new notifications every 30 seconds
     const interval = setInterval(reloadNotifs, 30000);
@@ -3431,6 +3396,27 @@ export default function KafaaleQaadApp() {
           <div style={{ fontSize: 48, marginBottom: 16 }}>🤝</div>
           <div style={{ fontSize: 18, color: COLORS.muted }}>Loading Kafaale Qaad...</div>
         </div>
+      </div>
+    );
+  }
+
+  // ─── Guard: data still loading ─────────────────────────────────────────
+  if (dataLoading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: COLORS.bg, gap: 20 }}>
+        <div style={{ fontSize: 52 }}>🤝</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: COLORS.primary }}>KAFAALE QAAD</div>
+        <div style={{ fontSize: 13, color: COLORS.muted, marginTop: -8 }}>Loading your dashboard…</div>
+        {/* Animated dots */}
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          {[0,1,2].map(i => (
+            <div key={i} style={{
+              width: 10, height: 10, borderRadius: "50%", background: COLORS.primary,
+              animation: `kf-pulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+            }} />
+          ))}
+        </div>
+        <style>{`@keyframes kf-pulse { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }`}</style>
       </div>
     );
   }
@@ -3657,9 +3643,9 @@ export default function KafaaleQaadApp() {
 
       {/* ── Footer ── */}
       <div style={{ textAlign: "center", padding: "20px 24px", color: COLORS.muted, fontSize: 12, borderTop: `1px solid ${COLORS.border}`, background: "#fff", marginTop: 32 }}>
-        <strong style={{ color: COLORS.primary }}>🤝 KAFAALE QAAD</strong> · Qaabka Isku Xirka System-ka · React + NestJS + PostgreSQL + Supabase · AWS Cloud
+        <strong style={{ color: COLORS.primary }}>🤝 KAFAALE QAAD</strong> · Humanitarian Aid Platform · React + Express + PostgreSQL · Claude AI
         <br />
-        <span style={{ fontSize: 11, opacity: 0.7 }}>🔐 OTP Login · ID Verification · Face Verification · Encrypted Payments · Role-Based Access · AI Fraud Detection · Audit Trails</span>
+        <span style={{ fontSize: 11, opacity: 0.7 }}>🔐 JWT Auth · Role-Based Access · AI Sanitization · Field Verification · Audit Trails · Real-Time Notifications</span>
       </div>
     </div>
   );
