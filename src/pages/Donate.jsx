@@ -1,22 +1,27 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useResponsive } from "../hooks/useResponsive.js";
 import { cases as casesApi, donations, admin as adminApi } from "../api/client.js";
 
 const C = {
-  primary:   "#0B3D91",
-  secondary: "#1A6B3C",
-  accent:    "#E8A020",
+  navy:      "#002651",
+  primary:   "#004B96",
+  secondary: "#4B7D19",
+  accent:    "#E0AB21",
+  gold:      "#E0AB21",
+  green:     "#4B7D19",
+  blue:      "#004B96",
   danger:    "#C0392B",
-  muted:     "#6B7280",
-  bg:        "#F0F4F8",
-  border:    "#E2E8F0",
-  text:      "#1A202C",
+  muted:     "#5A6E8A",
+  bg:        "#F4F7FC",
+  border:    "#D8E4F0",
+  text:      "#0D1F3C",
 };
 
 const URGENCY_COLOR = {
   critical: "#7C3AED",
-  high:     "#EF4444",
+  high:     "#C0392B",
   medium:   "#F59E0B",
   low:      "#10B981",
 };
@@ -37,6 +42,9 @@ const METHOD_MAP = {
 export default function Donate() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedId = searchParams.get("caseId");
+  const { isMobile, isTablet } = useResponsive();
 
   const [readyCases,    setReadyCases]    = useState([]);
   const [pipelineCount, setPipelineCount] = useState(0); // cases not yet ready
@@ -56,17 +64,33 @@ export default function Donate() {
     const load = async () => {
       setLoading(true);
       try {
-        // Public cases — only waiting_for_sponsor appear here
-        const data = await casesApi.list({ limit: 20 });
-        const sponsorable = (data?.cases || []).filter(c =>
+        const data = await casesApi.list({ limit: 50 });
+        const all = data?.cases || [];
+        const sponsorable = all.filter(c =>
           c.status === "waiting_for_sponsor" || c.status === "sponsored"
         );
         setReadyCases(sponsorable);
+        setPipelineCount(Math.max(0, all.length - sponsorable.length));
 
-        // Count total cases in the pipeline (all statuses) for the "not ready" message
-        const allData = await casesApi.list({ limit: 100 });
-        const total = allData?.pagination?.total || allData?.cases?.length || 0;
-        setPipelineCount(Math.max(0, total - sponsorable.length));
+        // Auto-select case from ?caseId= URL param
+        if (preselectedId) {
+          const found = all.find(c => c.id === preselectedId);
+          if (found) {
+            const remain = Math.max(0, (found.targetGoal || 0) - (found.totalRaised || 0));
+            setSelectedCase(found);
+            setAmount(remain > 0 ? String(remain) : String(found.targetGoal || ""));
+          } else {
+            // Fetch directly in case it's not in the first page
+            try {
+              const detail = await casesApi.get(preselectedId);
+              const c = detail.case || detail;
+              const remain = Math.max(0, (c.targetGoal || 0) - (c.totalRaised || 0));
+              setSelectedCase(c);
+              setAmount(remain > 0 ? String(remain) : String(c.targetGoal || ""));
+              if (!sponsorable.find(x => x.id === c.id)) setReadyCases(prev => [c, ...prev]);
+            } catch {}
+          }
+        }
       } catch (e) {
         setReadyCases([]);
       } finally {
@@ -74,7 +98,7 @@ export default function Donate() {
       }
     };
     load();
-  }, []);
+  }, [preselectedId]);
 
   const pickCase = (c) => {
     setSelectedCase(c);
@@ -185,7 +209,7 @@ export default function Donate() {
       </section>
 
       <section style={{ padding: "60px 24px 80px", background: C.bg }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "minmax(300px,1fr) minmax(340px,1.4fr)", gap: 36, alignItems: "start" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "minmax(300px,1fr) minmax(340px,1.4fr)", gap: isMobile ? 24 : 36, alignItems: "start" }}>
 
           {/* ── Left: Case list ── */}
           <div>
@@ -296,12 +320,12 @@ export default function Donate() {
           </div>
 
           {/* ── Right: Donation form ── */}
-          <div style={{ background: "#fff", borderRadius: 20, padding: 36, boxShadow: "0 4px 24px #0001", position: "sticky", top: 80 }}>
+          <div style={{ background: "#fff", borderRadius: 20, padding: isMobile ? 20 : 36, boxShadow: "0 4px 24px #0001", position: isMobile ? "static" : "sticky", top: 80 }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 16px" }}>Sponsorship Details</h2>
 
             {/* Selected case summary */}
             {selectedCase ? (
-              <div style={{ background: "linear-gradient(135deg, #0B3D91 0%, #1A6B3C 100%)", borderRadius: 14, padding: "16px 20px", marginBottom: 24, color: "#fff" }}>
+              <div style={{ background: "linear-gradient(135deg, #004B96 0%, #4B7D19 100%)", borderRadius: 14, padding: "16px 20px", marginBottom: 24, color: "#fff" }}>
                 <div style={{ fontSize: 15, fontWeight: 800 }}>{selectedCase.publicTitle?.slice(0,50)}</div>
                 <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>📍 {selectedCase.publicCity || "Somalia"}</div>
                 {(selectedCase.targetGoal || 0) > 0 && (

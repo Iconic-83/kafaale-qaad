@@ -1,65 +1,194 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useLang } from "../context/LanguageContext.jsx";
+import { PT } from "../translations.js";
+import { useResponsive } from "../hooks/useResponsive.js";
 
-const COLORS = { primary: "#0B3D91", secondary: "#1A6B3C", accent: "#E8A020" };
+const B = {
+  navy:   "#002651",
+  blue:   "#004B96",
+  green:  "#4B7D19",
+  gold:   "#E0AB21",
+  border: "#D8E4F0",
+};
 
 export default function Footer() {
+  const { lang } = useLang();
+  const P = PT.footer[lang] || PT.footer.en;
+  const { isMobile, isTablet } = useResponsive();
+  const [logoHover, setLogoHover] = useState(false);
+
+  const gridCols = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "2fr 1fr 1fr 1fr";
+
   return (
-    <footer style={{ background: "#0B1F4A", color: "#fff", fontFamily: "'Segoe UI', system-ui, sans-serif", marginTop: 80 }}>
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "60px 24px 0" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
-          {/* Brand */}
+    <footer style={{
+      background: `linear-gradient(180deg, ${B.navy} 0%, #001A40 100%)`,
+      color: "#fff",
+      fontFamily: "'Segoe UI', system-ui, sans-serif",
+      marginTop: 80,
+    }}>
+      {/* Gold top accent line */}
+      <div style={{ height: 4, background: `linear-gradient(90deg, ${B.blue}, ${B.green}, ${B.gold})` }} />
+
+      <div style={{ maxWidth: 1340, margin: "0 auto", padding: isMobile ? "48px 20px 0" : "64px 32px 0" }}>
+        <div style={{ display: "grid", gridTemplateColumns: gridCols, gap: isMobile ? 36 : 52, marginBottom: 52 }}>
+
+          {/* ── Brand ── */}
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <span style={{ fontSize: 32 }}>🤝</span>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 900 }}>KAFAALE QAAD</div>
-                <div style={{ fontSize: 9, opacity: 0.6, letterSpacing: 1.5 }}>HUMANITARIAN AID PLATFORM</div>
+            {/* Logo card — white bg makes the navy/green emblem visible on dark footer */}
+            <Link to="/" style={{ display: "inline-flex", alignItems: "center", gap: 14, marginBottom: 22, textDecoration: "none" }}>
+              <div
+                onMouseEnter={() => setLogoHover(true)}
+                onMouseLeave={() => setLogoHover(false)}
+                style={{
+                  width: 110, height: 110,
+                  background: "#ffffff",
+                  borderRadius: 22,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: logoHover
+                    ? `0 14px 40px rgba(0,0,0,0.55), 0 0 0 4px ${B.gold}`
+                    : `0 6px 28px rgba(0,0,0,0.4), 0 0 0 3px ${B.gold}50`,
+                  transform: logoHover ? "translateY(-5px) scale(1.05)" : "translateY(0) scale(1)",
+                  padding: 10,
+                  flexShrink: 0,
+                  cursor: "pointer",
+                  transition: "transform 0.22s cubic-bezier(0.34,1.5,0.64,1), box-shadow 0.22s ease",
+                }}>
+                <img
+                  src="/assets/brand/kafaala-qaad-hope-icon.png"
+                  alt="Kafaala Qaad HOPE"
+                  style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                />
               </div>
-            </div>
-            <p style={{ fontSize: 14, lineHeight: 1.8, opacity: 0.7, maxWidth: 280 }}>
-              Transparent, fraud-proof humanitarian aid distribution — bridging the gap between those who need help and those who want to give.
-            </p>
-            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-              {["📘 Facebook", "🐦 Twitter", "💼 LinkedIn"].map(s => (
-                <span key={s} style={{ background: "rgba(255,255,255,0.1)", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}>{s}</span>
+              {/* Wordmark next to icon */}
+              <div style={{ lineHeight: 1.2 }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", letterSpacing: -0.3 }}>KAFAALA QAAD</div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: B.gold, letterSpacing: 4, marginTop: 3 }}>HOPE</div>
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: B.green, letterSpacing: 2.5, marginTop: 5, opacity: 1 }}>
+                  HUMANITARIAN AID PLATFORM
+                </div>
+              </div>
+            </Link>
+
+            <p style={{ fontSize: 14, lineHeight: 1.8, opacity: 0.65, maxWidth: 280, marginTop: 4 }}>{P.tagline}</p>
+            <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
+              {[
+                { icon: "📘", label: "Facebook" },
+                { icon: "🐦", label: "Twitter" },
+                { icon: "💼", label: "LinkedIn" },
+              ].map(s => (
+                <span key={s.label} style={{
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: 8, padding: "6px 12px", fontSize: 12,
+                  cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+                }}>
+                  {s.icon} {s.label}
+                </span>
               ))}
             </div>
           </div>
 
-          {/* Quick links */}
+          {/* ── Quick Links ── */}
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.5, letterSpacing: 1.5, marginBottom: 16 }}>PLATFORM</div>
-            {[["Home", "/"], ["About", "/about"], ["How It Works", "/how-it-works"], ["Active Cases", "/cases"], ["Donate", "/donate"]].map(([label, to]) => (
-              <div key={to} style={{ marginBottom: 10 }}>
-                <Link to={to} style={{ color: "rgba(255,255,255,0.75)", textDecoration: "none", fontSize: 14 }}>{label}</Link>
+            <div style={{ fontSize: 11, fontWeight: 800, color: B.gold, letterSpacing: 2, marginBottom: 18, textTransform: "uppercase" }}>
+              {P.platform}
+            </div>
+            {[
+              [P.link_home,   "/"],
+              [P.link_about,  "/about"],
+              [P.link_how,    "/how-it-works"],
+              [P.link_cases,  "/cases"],
+              [P.link_donate, "/donate"],
+              ["🤝 Partners",  "/partners"],
+            ].map(([label, to]) => (
+              <div key={to} style={{ marginBottom: 12 }}>
+                <Link to={to} style={{
+                  color: "rgba(255,255,255,0.7)", textDecoration: "none",
+                  fontSize: 14, transition: "color .15s",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+                  onMouseOver={e => e.currentTarget.style.color = B.gold}
+                  onMouseOut={e  => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
+                >
+                  <span style={{ color: B.green, fontSize: 10 }}>▶</span> {label}
+                </Link>
               </div>
             ))}
           </div>
 
-          {/* Roles */}
+          {/* ── Roles ── */}
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.5, letterSpacing: 1.5, marginBottom: 16 }}>ROLES</div>
-            {["👁️ Reporter", "🏛️ Verification", "🗺️ Field Team", "❤️ Donor", "🛡️ Super Admin"].map(r => (
-              <div key={r} style={{ marginBottom: 10, fontSize: 14, opacity: 0.75 }}>{r}</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: B.gold, letterSpacing: 2, marginBottom: 18, textTransform: "uppercase" }}>
+              {P.roles}
+            </div>
+            {[
+              lang==="so"?"👁️ Warbixiye"      : lang==="ar"?"👁️ مراسل"       : lang==="tr"?"👁️ Muhabir"     : lang==="es"?"👁️ Reportero"    : lang==="fr"?"👁️ Rapporteur"   : "👁️ Reporter",
+              lang==="so"?"🏛️ Xaqiijinta"     : lang==="ar"?"🏛️ التحقق"      : lang==="tr"?"🏛️ Doğrulama"   : lang==="es"?"🏛️ Verificación"  : lang==="fr"?"🏛️ Vérification"  : "🏛️ Verification",
+              lang==="so"?"🗺️ Kooxda Goobta"  : lang==="ar"?"🗺️ الفريق الميداني": lang==="tr"?"🗺️ Saha Ekibi": lang==="es"?"🗺️ Equipo de Campo": lang==="fr"?"🗺️ Équipe Terrain" : "🗺️ Field Team",
+              lang==="so"?"❤️ Deeq-bixiye"    : lang==="ar"?"❤️ متبرع"        : lang==="tr"?"❤️ Bağışçı"     : lang==="es"?"❤️ Donante"       : lang==="fr"?"❤️ Donateur"      : "❤️ Donor",
+              lang==="so"?"🛡️ Maamulaha Sare" : lang==="ar"?"🛡️ المدير العام" : lang==="tr"?"🛡️ Süper Admin" : lang==="es"?"🛡️ Super Admin"   : lang==="fr"?"🛡️ Super Admin"   : "🛡️ Super Admin",
+            ].map(r => (
+              <div key={r} style={{ marginBottom: 10, fontSize: 14, opacity: 0.7, display: "flex", alignItems: "center", gap: 6 }}>
+                {r}
+              </div>
             ))}
           </div>
 
-          {/* Contact */}
+          {/* ── Contact ── */}
           <div>
-            <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.5, letterSpacing: 1.5, marginBottom: 16 }}>CONTACT</div>
-            <div style={{ fontSize: 14, opacity: 0.75, lineHeight: 2.2 }}>
-              <div>📧 support@kafaale.so</div>
-              <div>📞 +252 611 000 000</div>
-              <div>📍 Mogadishu, Somalia</div>
-              <div>🌐 kafaale.so</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: B.gold, letterSpacing: 2, marginBottom: 18, textTransform: "uppercase" }}>
+              {P.contact}
             </div>
+            <div style={{ fontSize: 14, lineHeight: 2.4 }}>
+              {[
+                ["📧", "support@kafaale.so"],
+                ["📞", "+252 611 000 000"],
+                ["📍", "Mogadishu, Somalia"],
+                ["🌐", "kafaale.so"],
+              ].map(([icon, text]) => (
+                <div key={text} style={{ display: "flex", alignItems: "center", gap: 8, opacity: 0.75 }}>
+                  <span>{icon}</span>
+                  <span>{text}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick CTA */}
+            <Link to="/donate" style={{
+              display: "inline-block", marginTop: 20,
+              padding: "10px 20px",
+              background: `linear-gradient(135deg, ${B.gold}, #B8861A)`,
+              color: "#fff", borderRadius: 10, textDecoration: "none",
+              fontSize: 13, fontWeight: 800,
+              boxShadow: `0 4px 16px ${B.gold}40`,
+            }}>
+              ❤️ Sponsor a Case
+            </Link>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", padding: "20px 0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, opacity: 0.5 }}>
-          <span>© 2026 Kafaale Qaad. All rights reserved.</span>
-          <span>🔐 OTP · Face Verification · Encrypted Payments · AI Fraud Detection · Audit Trails</span>
+        {/* ── Bottom bar ── */}
+        <div style={{
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          padding: "22px 0",
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          justifyContent: "space-between",
+          alignItems: isMobile ? "flex-start" : "center",
+          gap: isMobile ? 10 : 0,
+          fontSize: 12,
+        }}>
+          <span style={{ opacity: 0.45 }}>{P.copyright}</span>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", opacity: 0.45 }}>
+            <span>🔐 OTP Auth</span>
+            <span>·</span>
+            <span>😶 Face Verify</span>
+            <span>·</span>
+            <span>💳 PCI DSS Level 1</span>
+            <span>·</span>
+            <span>🤖 AI Fraud Detection</span>
+          </div>
         </div>
       </div>
     </footer>

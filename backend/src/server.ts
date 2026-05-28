@@ -17,6 +17,7 @@ import donationRoutes from './routes/donations';
 import impactRoutes from './routes/impact';
 import notificationRoutes from './routes/notifications';
 import aiRoutes from './routes/ai';
+import partnersRoutes from './routes/partners';
 import { sysLog } from './services/logger';
 
 const app = express();
@@ -117,6 +118,7 @@ app.use('/api/donate',        donationLimiter, donationRoutes);
 app.use('/api/impact',        impactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai',            aiLimiter, aiRoutes);
+app.use('/api/partners',      partnersRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {

@@ -84,10 +84,16 @@ export const impact = {
   stats: () => req('/impact'),
 };
 
+// ── Partners endpoints ────────────────────────────────────────────
+export const partners = {
+  all:     () => req('/partners'),
+  stories: () => req('/partners/stories'),
+};
+
 // ── AI endpoints ──────────────────────────────────────────────────
 export const ai = {
   chat:     (message, context, caseId) => req('/ai/chat', { method: 'POST', body: JSON.stringify({ message, context, caseId }) }),
   sanitize: (caseId)                   => req(`/ai/sanitize/${caseId}`, { method: 'POST' }),
 };
 
-export default { auth, cases, admin, donations, field, notifications, impact, ai, getUser, getToken, isLoggedIn, setAuth, clearAuth };
+export default { auth, cases, admin, donations, field, notifications, impact, ai, partners, getUser, getToken, isLoggedIn, setAuth, clearAuth };

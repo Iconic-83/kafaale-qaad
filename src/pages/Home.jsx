@@ -1,176 +1,261 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { impact } from "../api/client";
+import { useLang } from "../context/LanguageContext.jsx";
+import { PT } from "../translations.js";
+import { useResponsive } from "../hooks/useResponsive.js";
 
-const C = { primary: "#0B3D91", secondary: "#1A6B3C", accent: "#E8A020", danger: "#EF4444", muted: "#6B7280", bg: "#F0F4F8", border: "#E2E8F0" };
+const C = {
+  navy: "#002651", primary: "#004B96", secondary: "#4B7D19",
+  accent: "#E0AB21", gold: "#E0AB21", green: "#4B7D19", blue: "#004B96",
+  danger: "#C0392B", muted: "#5A6E8A", bg: "#F4F7FC",
+  border: "#D8E4F0", text: "#0D1F3C",
+};
 
-const WORKFLOW = [
-  { n: 1, icon: "📝", label: "Report Creation",     desc: "Reporter submits a case with details, photos and location",          color: "#3B82F6" },
-  { n: 2, icon: "🏛️", label: "Verification Office", desc: "Officers review the report and assign a field team",                 color: "#8B5CF6" },
-  { n: 3, icon: "🔍", label: "Field Investigation", desc: "Field agents visit, verify and document with GPS + photo proof",     color: "#F59E0B" },
-  { n: 4, icon: "✅", label: "Verified",             desc: "Case confirmed and made visible to donors for sponsorship",          color: "#10B981" },
-  { n: 5, icon: "👥", label: "Donor Queue",          desc: "Case enters the donor pool — sponsors can browse and select",       color: "#EC4899" },
-  { n: 6, icon: "❤️", label: "Sponsorship",          desc: "Donor sponsors the case and payment is securely processed",         color: "#EF4444" },
-  { n: 7, icon: "📦", label: "Aid Delivery",         desc: "Field team delivers aid and uploads proof of delivery",             color: "#06B6D4" },
-  { n: 8, icon: "🏁", label: "Completed",            desc: "Case archived with impact report — full audit trail preserved",     color: "#6B7280" },
-];
-
-const STATS = [
-  { val: "2,400+", label: "Cases Processed",    icon: "📋", color: C.primary   },
-  { val: "$1.2M",  label: "Aid Distributed",    icon: "💰", color: C.secondary },
-  { val: "98.8%",  label: "Verification Rate",  icon: "✅", color: "#10B981"   },
-  { val: "6",      label: "Cities Covered",     icon: "📍", color: C.accent    },
-];
-
-const ROLES = [
-  { icon: "👁️", role: "Observer / Reporter", color: "#3B82F6", bg: "#DBEAFE", desc: "Submit case reports for vulnerable people in your area. Take photos, add GPS location, and track your submissions in real time." },
-  { icon: "🏛️", role: "Verification Office", color: "#8B5CF6", bg: "#EDE9FE", desc: "Review incoming reports, verify their legitimacy, assign field investigation teams, and manage the case workflow." },
-  { icon: "🗺️", role: "Field Team",          color: "#F59E0B", bg: "#FEF3C7", desc: "Receive assignments on your phone, navigate to locations via GPS, collect evidence, and upload verified findings." },
-  { icon: "❤️", role: "Donor / Sponsor",     color: "#EC4899", bg: "#FCE7F3", desc: "Browse verified cases, choose who to sponsor, make secure payments, and track exactly how your donation is delivered." },
-  { icon: "🛡️", role: "Super Admin",         color: C.danger,  bg: "#FEE2E2", desc: "Full platform control — manage all users, monitor case pipeline, view financial analytics, and detect fraud in real time." },
-];
-
-const FEATURES = [
-  { icon: "🔐", title: "Multi-Layer Security",      desc: "OTP login, face verification, ID verification, and AES-256 encryption protect every account." },
-  { icon: "💰", title: "Secure Payments",           desc: "Stripe, PayPal, Bank Transfer & Ama Gateway — all transactions encrypted and PCI DSS Level 1." },
-  { icon: "🗺️", title: "GPS Field Tracking",       desc: "Real-time GPS navigation for field teams with geofencing to verify on-site presence." },
-  { icon: "📊", title: "Real-Time Analytics",       desc: "Live dashboards for every role — case pipeline, team performance, donation trends and KPIs." },
-  { icon: "🤖", title: "AI Fraud Detection",        desc: "Anomaly detection engine flags duplicate cases, suspicious patterns and payment irregularities." },
-  { icon: "📱", title: "Mobile App (React Native)", desc: "Offline-capable mobile app for field teams — works without internet and syncs on reconnect." },
-  { icon: "📋", title: "Full Audit Trail",          desc: "Every action is logged — immutable audit trail with timestamps, user IDs and transaction hashes." },
-  { icon: "🌍", title: "Multi-Language",            desc: "Full Somali and English support throughout the platform for all user roles." },
-];
+const URGENCY_COLOR = { Low: "#10B981", Medium: "#F59E0B", High: "#C0392B", Critical: "#7C3AED" };
+const URGENCY_BG    = { Low: "#D1FAE5", Medium: "#FEF3C7", High: "#FEE2E2", Critical: "#EDE9FE" };
 
 const FEATURED_CASES = [
-  { id: "C002", name: "Mohamud Ali",    age: 67, location: "Mogadishu, Bondhere", urgency: "High",     desc: "Elderly man with chronic illness needs medication and food support. Medical records verified.",   color: "#EF4444", bg: "#FEF2F2" },
-  { id: "C001", name: "Amina Hassan",  age: 34, location: "Mogadishu, Hodan",    urgency: "Critical", desc: "Single mother of 4 lost her home in flooding. Family confirmed displaced in makeshift shelter.", color: "#7C3AED", bg: "#F5F3FF" },
-  { id: "C005", name: "Xalimo Osman",  age: 19, location: "Mogadishu, Wadajir",  urgency: "Medium",   desc: "Young orphan with no family support seeking education assistance and safe shelter.",              color: "#F59E0B", bg: "#FFFBEB" },
+  { id: "C002", name: "Mohamud Ali",   age: 67, location: "Mogadishu, Bondhere", urgency: "High",     funded: 68, goal: "$850",  desc: "Elderly man with chronic illness needs medication and food support. Medical records verified.", color: "#C0392B" },
+  { id: "C001", name: "Amina Hassan",  age: 34, location: "Mogadishu, Hodan",    urgency: "Critical", funded: 45, goal: "$1,200",desc: "Single mother of 4 lost her home in flooding. Family confirmed displaced in makeshift shelter.", color: "#7C3AED" },
+  { id: "C005", name: "Xalimo Osman",  age: 19, location: "Mogadishu, Wadajir",  urgency: "Medium",   funded: 82, goal: "$600",  desc: "Young orphan with no family support seeking education assistance and safe shelter.", color: "#F59E0B" },
 ];
-
-const URGENCY_COLOR = { Low: "#10B981", Medium: "#F59E0B", High: "#EF4444", Critical: "#7C3AED" };
 
 export default function Home() {
   const navigate = useNavigate();
+  const { lang } = useLang();
+  const P = PT.home[lang] || PT.home.en;
+  const { isMobile, isTablet } = useResponsive();
+
+  /* ─── data arrays (translations inline) ─────────────────────────────── */
+  const WORKFLOW = [
+    { n:1,  icon:"📝", color:"#3B82F6",  label: lang==="so"?"Abuurista Warbixinta"    :lang==="ar"?"إنشاء التقرير"         :lang==="tr"?"Rapor Oluşturma"       :lang==="es"?"Creación del Reporte" :lang==="fr"?"Création du Rapport"   :"Report Creation",     desc: lang==="so"?"Warbixiyuhu wuxuu soo gudbinaayaa xaaladda oo leh faahfaahinta, sawirrada iyo goobta":lang==="ar"?"يقدم المُبلِّغ حالة مع التفاصيل والصور والموقع":lang==="tr"?"Muhabir ayrıntılar, fotoğraflar ve konum ile vaka gönderir":lang==="es"?"El reportero envía un caso con detalles, fotos y ubicación":lang==="fr"?"Le rapporteur soumet un cas avec détails, photos et localisation":"Reporter submits a case with details, photos and location" },
+    { n:2,  icon:"🏛️", color:"#8B5CF6",  label: lang==="so"?"Xafiiska Xaqiijinta"     :lang==="ar"?"مكتب التحقق"           :lang==="tr"?"Doğrulama Ofisi"        :lang==="es"?"Oficina de Verificación":lang==="fr"?"Bureau de Vérification" :"Verification Office", desc: lang==="so"?"Saraakiishu waxay dib u eegayaan warbixinta oo u xilsaarayaan koox goobta":lang==="ar"?"يراجع المسؤولون التقرير ويعيّنون فريقًا ميدانيًا":lang==="tr"?"Yetkililer raporu inceler ve saha ekibi atar":lang==="es"?"Los oficiales revisan el reporte y asignan equipo de campo":lang==="fr"?"Les officiers examinent le rapport et assignent une équipe de terrain":"Officers review the report and assign a field team" },
+    { n:3,  icon:"🔍", color:"#F59E0B",  label: lang==="so"?"Baarista Goobta"          :lang==="ar"?"التحقيق الميداني"      :lang==="tr"?"Saha Soruşturması"      :lang==="es"?"Investigación de Campo":lang==="fr"?"Enquête de Terrain"     :"Field Investigation", desc: lang==="so"?"Wakiilku waxuu booqanayaa, xaqiijinayaa oo dukumeentinaayaa iyada oo leh GPS + caddayn sawir":lang==="ar"?"يزور العملاء الميدانيون ويتحققون ويوثقون بـGPS + دليل صوري":lang==="tr"?"Saha ajanları ziyaret eder, doğrular ve GPS + fotoğraf kanıtıyla belgeler":lang==="es"?"Agentes visitan, verifican y documentan con GPS + prueba fotográfica":lang==="fr"?"Les agents visitent, vérifient et documentent avec GPS + preuve photo":"Field agents visit, verify and document with GPS + photo proof" },
+    { n:4,  icon:"✅", color:"#10B981",  label: lang==="so"?"Xaqiijisan"               :lang==="ar"?"تم التحقق"             :lang==="tr"?"Doğrulandı"             :lang==="es"?"Verificado"           :lang==="fr"?"Vérifié"               :"Verified",            desc: lang==="so"?"Xaaladda waxaa la xaqiijiyay oo la muujiyay deeq-bixiyeyaasha si ay u taageeraan":lang==="ar"?"تم تأكيد الحالة وأصبحت مرئية للمانحين للرعاية":lang==="tr"?"Vaka onaylandı ve sponsorlar için bağışçılara görünür hale getirildi":lang==="es"?"Caso confirmado y visible para donantes para apadrinamiento":lang==="fr"?"Cas confirmé et rendu visible aux donateurs pour parrainage":"Case confirmed and made visible to donors for sponsorship" },
+    { n:5,  icon:"👥", color:"#EC4899",  label: lang==="so"?"Safka Deeq-bixiyeyaasha"  :lang==="ar"?"قائمة انتظار المانحين":lang==="tr"?"Bağışçı Kuyruğu"        :lang==="es"?"Cola de Donantes"     :lang==="fr"?"File des Donateurs"    :"Donor Queue",         desc: lang==="so"?"Xaaladda waxay galaysaa baanka deeq-bixiyeyaasha — deeq-bixiyeyaashu waxay ka baadhi karaan oo dooranayaan":lang==="ar"?"تدخل الحالة تجمع المانحين — يمكن للرعاة التصفح والاختيار":lang==="tr"?"Vaka bağışçı havuzuna girer — sponsorlar göz atabilir ve seçebilir":lang==="es"?"El caso entra al fondo de donantes — patrocinadores pueden explorar y seleccionar":lang==="fr"?"Le cas entre dans le pool des donateurs — les sponsors peuvent parcourir et sélectionner":"Case enters the donor pool — sponsors can browse and select" },
+    { n:6,  icon:"❤️", color:"#C0392B",  label: lang==="so"?"Taageerada"               :lang==="ar"?"الرعاية"               :lang==="tr"?"Sponsorluk"             :lang==="es"?"Apadrinamiento"       :lang==="fr"?"Parrainage"            :"Sponsorship",         desc: lang==="so"?"Deeq-bixiyuhu wuxuu taageeraa xaaladda oo lacagtu si amaahday loo daabacanayaa":lang==="ar"?"يرعى المانح الحالة ويتم معالجة الدفع بأمان":lang==="tr"?"Bağışçı vakayı destekler ve ödeme güvenli şekilde işlenir":lang==="es"?"El donante patrocina el caso y el pago se procesa de forma segura":lang==="fr"?"Le donateur parraine le cas et le paiement est traité en toute sécurité":"Donor sponsors the case and payment is securely processed" },
+    { n:7,  icon:"📦", color:"#06B6D4",  label: lang==="so"?"Gaarsiinta Gargaarka"     :lang==="ar"?"تسليم المساعدة"        :lang==="tr"?"Yardım Teslimatı"       :lang==="es"?"Entrega de Ayuda"     :lang==="fr"?"Livraison de l'Aide"   :"Aid Delivery",        desc: lang==="so"?"Kooxda goobtu waxay gaarsiisaa gargaarka oo soo raraysaa caddaynta gaarsiinta":lang==="ar"?"يسلم الفريق الميداني المساعدة ويرفع دليل التسليم":lang==="tr"?"Saha ekibi yardımı teslim eder ve teslimat kanıtı yükler":lang==="es"?"El equipo de campo entrega la ayuda y sube prueba de entrega":lang==="fr"?"L'équipe de terrain livre l'aide et télécharge la preuve de livraison":"Field team delivers aid and uploads proof of delivery" },
+    { n:8,  icon:"🏁", color:"#5A6E8A",  label: lang==="so"?"La Dhammeeyay"            :lang==="ar"?"مكتملة"                :lang==="tr"?"Tamamlandı"             :lang==="es"?"Completado"           :lang==="fr"?"Terminé"               :"Completed",           desc: lang==="so"?"Xaaladda waxaa lagu kaydiyaa warbixin saameyn leh — xadhkaha buuxa oo ilaalinaya":lang==="ar"?"تُؤرشف الحالة مع تقرير التأثير — يُحفظ سجل التدقيق الكامل":lang==="tr"?"Vaka etki raporu ile arşivlenir — tam denetim izi korunur":lang==="es"?"Caso archivado con informe de impacto — rastro de auditoría completo preservado":lang==="fr"?"Cas archivé avec rapport d'impact — piste d'audit complète préservée":"Case archived with impact report — full audit trail preserved" },
+  ];
+
+  const ROLES = [
+    { icon:"👁️", color:"#3B82F6", bg:"#EFF6FF", role: lang==="so"?"Warbixiye":lang==="ar"?"مراسل":lang==="tr"?"Muhabir":lang==="es"?"Reportero":lang==="fr"?"Rapporteur":"Reporter", desc: lang==="so"?"Soo gudbi xaaladaha & qaado sawiro GPS ah":"Submit cases & take GPS photos" },
+    { icon:"🏛️", color:"#8B5CF6", bg:"#F5F3FF", role: lang==="so"?"Xafiiska":lang==="ar"?"التحقق":lang==="tr"?"Doğrulama":lang==="es"?"Verificación":lang==="fr"?"Vérification":"Verification", desc: lang==="so"?"Xaqiiji & xilsaar kooxaha goobta":"Verify & assign field teams" },
+    { icon:"🗺️", color:"#F59E0B", bg:"#FFFBEB", role: lang==="so"?"Kooxda Goobta":lang==="ar"?"الفريق الميداني":lang==="tr"?"Saha Ekibi":lang==="es"?"Equipo de Campo":lang==="fr"?"Équipe Terrain":"Field Team", desc: lang==="so"?"Booqo, xaqiiji & soo rar caddaynta":"Visit, verify & upload proof" },
+    { icon:"❤️", color:"#EC4899", bg:"#FDF2F8", role: lang==="so"?"Deeq-bixiye":lang==="ar"?"متبرع":lang==="tr"?"Bağışçı":lang==="es"?"Donante":lang==="fr"?"Donateur":"Donor", desc: lang==="so"?"Taageer xaaladaha xaqiijisan":"Sponsor verified cases securely" },
+    { icon:"🛡️", color:"#C0392B", bg:"#FEF2F2", role: lang==="so"?"Super Admin":lang==="ar"?"المدير العام":lang==="tr"?"Süper Admin":lang==="es"?"Super Admin":lang==="fr"?"Super Admin":"Super Admin", desc: lang==="so"?"Xukumaad buuxda ee platform-ka":"Full platform control & analytics" },
+  ];
+
+  const FEATURES = [
+    { icon:"🔐", color:"#004B96", title:lang==="so"?"Amni Badan":lang==="ar"?"أمان متعدد الطبقات":lang==="tr"?"Güvenlik":lang==="es"?"Seguridad":lang==="fr"?"Sécurité":"Multi-Layer Security", desc:lang==="so"?"OTP, xaqiijinta wejigu & AES-256":"OTP login, face verify & AES-256 encryption on every account." },
+    { icon:"💰", color:"#4B7D19", title:lang==="so"?"Lacag-bixiyooyin Ammaan":"Secure Payments",                    desc:"Stripe, PayPal, Bank Transfer & Ama Gateway — PCI DSS Level 1." },
+    { icon:"🗺️", color:"#E0AB21", title:lang==="so"?"GPS Goobta":"GPS Field Tracking",                              desc:"Real-time GPS navigation with geofencing to verify on-site presence." },
+    { icon:"📊", color:"#8B5CF6", title:lang==="so"?"Falanqaynta":"Real-Time Analytics",                            desc:"Live dashboards for every role — case pipeline, donations, KPIs." },
+    { icon:"🤖", color:"#06B6D4", title:lang==="so"?"AI Ogaanshaha":"AI Fraud Detection",                           desc:"Anomaly engine flags duplicates, suspicious patterns & irregularities." },
+    { icon:"📱", color:"#EC4899", title:lang==="so"?"App Mobile-ka":"Mobile App",                                   desc:"Offline-capable React Native app — works without internet, syncs on reconnect." },
+    { icon:"📋", color:"#F59E0B", title:lang==="so"?"Diiwaanka Buuxa":"Full Audit Trail",                           desc:"Every action logged — immutable trail with timestamps & transaction hashes." },
+    { icon:"🌍", color:"#10B981", title:lang==="so"?"Luqaddo Badan":"Multi-Language",                              desc:"Somali, Arabic, English, Turkish, Spanish & French across all roles." },
+  ];
+
+  const STATS = [
+    { val:"2,400+", label:P.stat_cases,  icon:"📋", color:C.primary   },
+    { val:"$1.2M",  label:P.stat_aid,    icon:"💰", color:C.secondary },
+    { val:"98.8%",  label:P.stat_verify, icon:"✅", color:"#10B981"   },
+    { val:"6",      label:P.stat_cities, icon:"📍", color:C.accent    },
+  ];
+
+  const TRUST = [
+    "100% field-verified cases",
+    "GPS-tracked deliveries",
+    "Secure escrow payments",
+    "Real-time donor updates",
+    "PCI DSS Level 1",
+  ];
+
+  /* ─── Shared style atoms ──────────────────────────────────────────────── */
+  const pad  = isMobile ? "0 20px" : "0 32px";
+  const wrap = { maxWidth: 1280, margin: "0 auto", padding: pad };
+  const sec  = (bg, py=80) => ({ background: bg, padding: isMobile ? `${py*.75}px 0` : `${py}px 0` });
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: "#1A202C" }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: C.text }}>
 
-      {/* ── HERO ── */}
-      <section style={{ background: `linear-gradient(135deg, ${C.primary} 0%, #1e40af 40%, ${C.secondary} 100%)`, color: "#fff", padding: "100px 24px 80px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        {/* Decorative blobs */}
-        <div style={{ position: "absolute", top: -80, right: -80, width: 320, height: 320, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-        <div style={{ position: "absolute", bottom: -60, left: -60, width: 240, height: 240, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+      {/* ══════════════════════════════ HERO ══════════════════════════════ */}
+      <section className="kf-hero-dots" style={{
+        background: `linear-gradient(145deg, ${C.navy} 0%, ${C.primary} 55%, ${C.secondary} 100%)`,
+        color: "#fff",
+        padding: isMobile ? "72px 20px 60px" : "110px 32px 90px",
+        position: "relative", overflow: "hidden",
+      }}>
+        {/* Decorative orbs */}
+        <div style={{ position:"absolute", top:-100, right:-100, width:480, height:480, borderRadius:"50%", background:"rgba(255,255,255,0.04)", pointerEvents:"none" }} />
+        <div style={{ position:"absolute", bottom:-80, left:-80,  width:360, height:360, borderRadius:"50%", background:"rgba(255,255,255,0.03)", pointerEvents:"none" }} />
+        <div style={{ position:"absolute", top:"30%", right:"12%", width:180, height:180, borderRadius:"50%", background:"rgba(224,171,33,0.08)", pointerEvents:"none" }} />
 
-        <div style={{ maxWidth: 860, margin: "0 auto", position: "relative" }}>
-          <div style={{ display: "inline-block", background: "rgba(255,255,255,0.15)", borderRadius: 20, padding: "6px 18px", fontSize: 13, fontWeight: 700, marginBottom: 24, border: "1px solid rgba(255,255,255,0.25)" }}>
-            🌍 Qaabka Isku Xirka System-ka · Humanitarian Aid Platform
+        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center", position: "relative" }}>
+          {/* Eyebrow */}
+          <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.22)", borderRadius:100, padding:"7px 20px", fontSize:12, fontWeight:800, letterSpacing:1, textTransform:"uppercase", marginBottom:28 }}>
+            <span style={{ width:6, height:6, borderRadius:"50%", background:C.gold, display:"inline-block", boxShadow:`0 0 6px ${C.gold}` }} />
+            {P.hero_badge}
           </div>
-          <h1 style={{ fontSize: "clamp(36px, 6vw, 64px)", fontWeight: 900, margin: "0 0 20px", lineHeight: 1.1, letterSpacing: -1 }}>
-            Transparent Aid,<br />
-            <span style={{ color: C.accent }}>From Report to Delivery</span>
+
+          {/* Headline */}
+          <h1 style={{ fontSize: "clamp(36px, 6vw, 68px)", fontWeight:900, margin:"0 0 24px", lineHeight:1.08, letterSpacing:-1.5 }}>
+            {P.hero_title1}<br />
+            <span style={{ color:C.gold }}>{P.hero_title2}</span>
           </h1>
-          <p style={{ fontSize: "clamp(16px, 2.5vw, 20px)", opacity: 0.85, maxWidth: 680, margin: "0 auto 40px", lineHeight: 1.7 }}>
-            KAFAALE QAAD is a comprehensive humanitarian aid platform that bridges the gap between vulnerable communities, field investigators, donors, and aid distributors — with full transparency and fraud protection.
+
+          <p style={{ fontSize: "clamp(16px, 2.2vw, 20px)", opacity:0.82, maxWidth:640, margin:"0 auto 44px", lineHeight:1.75 }}>
+            {P.hero_sub}
           </p>
-          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={() => navigate("/cases")}
-              style={{ padding: "16px 36px", background: C.accent, color: "#fff", border: "none", borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: "pointer", boxShadow: "0 8px 24px rgba(232,160,32,.4)" }}>
-              ❤️ Sponsor a Case
+
+          {/* CTA row */}
+          <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+            <button className="kf-btn kf-btn-gold" onClick={() => navigate("/cases")}
+              style={{ padding: isMobile?"14px 28px":"17px 40px", borderRadius:14, fontSize:isMobile?14:16, fontWeight:800, border:"none" }}>
+              ❤️ {P.btn_sponsor}
             </button>
-            <button onClick={() => navigate("/how-it-works")}
-              style={{ padding: "16px 36px", background: "rgba(255,255,255,0.15)", color: "#fff", border: "2px solid rgba(255,255,255,0.4)", borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
-              How It Works →
+            <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/how-it-works")}
+              style={{ padding: isMobile?"14px 28px":"17px 40px", borderRadius:14, fontSize:isMobile?14:16, fontWeight:700, border:"none" }}>
+              {P.btn_how} →
             </button>
           </div>
 
-          {/* Tech badges */}
-          <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap", marginTop: 40, opacity: 0.7 }}>
-            {["React + Next.js", "Node.js / NestJS", "PostgreSQL", "AWS Cloud", "Stripe + PayPal", "Google Maps API"].map(t => (
-              <span key={t} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 600 }}>{t}</span>
+          {/* Trust strip */}
+          <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap: isMobile?10:24, marginTop:44, paddingTop:36, borderTop:"1px solid rgba(255,255,255,0.12)" }}>
+            {TRUST.map(t => (
+              <div key={t} style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, fontWeight:600, opacity:0.78 }}>
+                <span style={{ width:16, height:16, borderRadius:"50%", background:"rgba(75,125,25,0.8)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:900, flexShrink:0 }}>✓</span>
+                {t}
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── STATS ── */}
-      <section style={{ background: "#fff", borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+      {/* ══════════════════════════════ STATS ══════════════════════════════ */}
+      <section style={{ background:"#fff", borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", padding: isMobile?"0 20px":"0 32px",
+          display:"grid", gridTemplateColumns: isMobile?"repeat(2,1fr)":"repeat(4,1fr)" }}>
           {STATS.map((s, i) => (
-            <div key={i} style={{ padding: "36px 24px", textAlign: "center", borderRight: i < 3 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>{s.icon}</div>
-              <div style={{ fontSize: 36, fontWeight: 900, color: s.color }}>{s.val}</div>
-              <div style={{ fontSize: 14, color: C.muted, fontWeight: 500, marginTop: 4 }}>{s.label}</div>
+            <div key={i} style={{
+              padding: isMobile?"28px 16px":"40px 28px", textAlign:"center",
+              borderRight: (!isMobile && i<3) ? `1px solid ${C.border}` : "none",
+              borderBottom: (isMobile && i<2) ? `1px solid ${C.border}` : "none",
+            }}>
+              <div style={{ fontSize:32, marginBottom:6 }}>{s.icon}</div>
+              <div className="kf-stat-num" style={{ color:s.color }}>{s.val}</div>
+              <div style={{ fontSize:13, color:C.muted, fontWeight:500, marginTop:5 }}>{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── HOW IT WORKS (PREVIEW) ── */}
-      <section style={{ padding: "80px 24px", background: C.bg }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <span style={{ background: C.primary + "15", color: C.primary, borderRadius: 20, padding: "6px 16px", fontSize: 13, fontWeight: 700 }}>8-Step Verified Workflow</span>
-            <h2 style={{ fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 900, margin: "16px 0 12px" }}>How Kafaale Qaad Works</h2>
-            <p style={{ fontSize: 17, color: C.muted, maxWidth: 560, margin: "0 auto" }}>Every case follows a strict, transparent pipeline — from first report to verified delivery.</p>
+      {/* ══════════════════════════ HOW IT WORKS ═══════════════════════════ */}
+      <section style={sec(C.bg)}>
+        <div style={wrap}>
+          {/* Section header */}
+          <div style={{ textAlign:"center", marginBottom: isMobile?40:60 }}>
+            <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary }}>{P.workflow_badge}</span>
+            <hr className="kf-rule-center" />
+            <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 12px", letterSpacing:-0.5 }}>{P.workflow_title}</h2>
+            <p style={{ fontSize:17, color:C.muted, maxWidth:520, margin:"0 auto", lineHeight:1.7 }}>{P.workflow_sub}</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
+
+          {/* Steps grid */}
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr":"repeat(4,1fr)", gap: isMobile?12:20 }}>
             {WORKFLOW.map((s, i) => (
-              <div key={s.n} style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 2px 12px rgba(0,0,0,.06)", position: "relative", overflow: "hidden" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: s.color }} />
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: s.color + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{s.icon}</div>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: s.color, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800 }}>{s.n}</div>
+              <div key={s.n} className="kf-card kf-shine" style={{
+                background:"#fff", borderRadius:18, padding: isMobile?18:24,
+                boxShadow:"0 2px 12px rgba(0,38,81,0.06)",
+                border:`1px solid ${C.border}`, position:"relative", overflow:"hidden",
+              }}>
+                {/* Color top stripe */}
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:s.color, borderRadius:"18px 18px 0 0" }} />
+                {/* Step number badge + icon */}
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, marginTop:8 }}>
+                  <div style={{ width:32, height:32, borderRadius:10, background:s.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>{s.icon}</div>
+                  <div style={{ width:24, height:24, borderRadius:"50%", background:s.color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900 }}>{s.n}</div>
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: s.color, marginBottom: 8 }}>{s.label}</div>
-                <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>{s.desc}</div>
-                {i < WORKFLOW.length - 1 && (
-                  <div style={{ position: "absolute", top: "50%", right: -12, transform: "translateY(-50%)", fontSize: 18, color: C.border, zIndex: 1 }}>→</div>
-                )}
+                <div style={{ fontSize:13, fontWeight:800, color:s.color, marginBottom:7 }}>{s.label}</div>
+                <div style={{ fontSize:12, color:C.muted, lineHeight:1.65 }}>{s.desc}</div>
               </div>
             ))}
           </div>
-          <div style={{ textAlign: "center", marginTop: 36 }}>
-            <Link to="/how-it-works" style={{ display: "inline-block", padding: "12px 32px", background: C.primary, color: "#fff", borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 15 }}>
-              See Full Workflow Details →
+
+          <div style={{ textAlign:"center", marginTop:36 }}>
+            <Link to="/how-it-works" className="kf-btn kf-btn-navy"
+              style={{ padding:"13px 32px", borderRadius:12, fontWeight:700, fontSize:14 }}>
+              {P.workflow_link} →
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── FEATURED CASES ── */}
-      <section style={{ padding: "80px 24px", background: "#fff" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
+      {/* ══════════════════════════ FEATURED CASES ══════════════════════════ */}
+      <section style={sec("#fff")}>
+        <div style={wrap}>
+          {/* Header */}
+          <div style={{ display:"flex", flexDirection: isMobile?"column":"row", justifyContent:"space-between", alignItems: isMobile?"flex-start":"flex-end", gap:16, marginBottom: isMobile?32:48 }}>
             <div>
-              <span style={{ background: "#FCE7F3", color: "#DB2777", borderRadius: 20, padding: "6px 16px", fontSize: 13, fontWeight: 700 }}>💝 Awaiting Your Support</span>
-              <h2 style={{ fontSize: "clamp(26px, 3.5vw, 40px)", fontWeight: 900, margin: "14px 0 8px" }}>Cases Needing Sponsors</h2>
-              <p style={{ fontSize: 16, color: C.muted }}>Verified cases ready for sponsorship — every dollar tracked end-to-end.</p>
+              <span className="kf-badge" style={{ background:"#FDF2F8", color:"#9D174D" }}>{P.cases_badge}</span>
+              <hr className="kf-rule" />
+              <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 8px", letterSpacing:-0.4 }}>{P.cases_title}</h2>
+              <p style={{ fontSize:15, color:C.muted, margin:0 }}>{P.cases_sub}</p>
             </div>
-            <Link to="/cases" style={{ padding: "12px 24px", border: `2px solid ${C.primary}`, color: C.primary, borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 14, whiteSpace: "nowrap" }}>
-              View All Cases →
+            <Link to="/cases" className="kf-btn kf-btn-outline"
+              style={{ padding:"11px 24px", borderRadius:10, fontSize:13, fontWeight:700, whiteSpace:"nowrap", border:`2px solid ${C.primary}` }}>
+              {P.cases_viewall} →
             </Link>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24 }}>
+
+          {/* Case cards */}
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(3,1fr)", gap: isMobile?16:24 }}>
             {FEATURED_CASES.map(c => (
-              <div key={c.id} style={{ background: "#fff", borderRadius: 18, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,.08)", border: `1px solid ${C.border}`, transition: "transform .2s, box-shadow .2s" }}
-                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 36px rgba(0,0,0,.12)"; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,.08)"; }}>
-                <div style={{ height: 6, background: URGENCY_COLOR[c.urgency] }} />
-                <div style={{ padding: 24 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
+              <div key={c.id} className="kf-card" style={{
+                background:"#fff", borderRadius:20, overflow:"hidden",
+                boxShadow:"0 2px 16px rgba(0,38,81,0.07)", border:`1px solid ${C.border}`,
+              }}>
+                {/* Top urgency stripe */}
+                <div style={{ height:5, background:URGENCY_COLOR[c.urgency] }} />
+                <div style={{ padding: isMobile?20:26 }}>
+                  {/* Header row */}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
                     <div>
-                      <div style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>CASE {c.id}</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, marginTop: 2 }}>{c.name}</div>
-                      <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>Age {c.age} · 📍 {c.location}</div>
+                      <div style={{ fontSize:10, color:C.muted, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>CASE {c.id}</div>
+                      <div style={{ fontSize:19, fontWeight:900, color:C.text, marginTop:3 }}>{c.name}</div>
+                      <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>Age {c.age} · 📍 {c.location}</div>
                     </div>
-                    <span style={{ background: URGENCY_COLOR[c.urgency] + "20", color: URGENCY_COLOR[c.urgency], border: `1px solid ${URGENCY_COLOR[c.urgency]}40`, borderRadius: 20, padding: "4px 10px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
-                      {c.urgency}
-                    </span>
+                    <span style={{
+                      background:URGENCY_BG[c.urgency], color:URGENCY_COLOR[c.urgency],
+                      border:`1px solid ${URGENCY_COLOR[c.urgency]}30`,
+                      borderRadius:100, padding:"4px 11px", fontSize:10, fontWeight:800, whiteSpace:"nowrap",
+                      flexShrink:0, marginLeft:8,
+                    }}>{c.urgency}</span>
                   </div>
-                  <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.6, margin: "0 0 20px" }}>{c.desc}</p>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <Link to={`/cases`} style={{ flex: 1, textAlign: "center", padding: "10px", border: `1.5px solid ${C.primary}`, color: C.primary, borderRadius: 10, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>View Details</Link>
-                    <Link to="/donate" style={{ flex: 1, textAlign: "center", padding: "10px", background: C.accent, color: "#fff", borderRadius: 10, textDecoration: "none", fontSize: 13, fontWeight: 700 }}>❤️ Sponsor</Link>
+
+                  <p style={{ fontSize:13, color:"#4A5568", lineHeight:1.65, margin:"0 0 18px" }}>{c.desc}</p>
+
+                  {/* Progress bar */}
+                  <div style={{ marginBottom:20 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+                      <span style={{ fontSize:11, fontWeight:700, color:URGENCY_COLOR[c.urgency] }}>{c.funded}% funded</span>
+                      <span style={{ fontSize:11, color:C.muted, fontWeight:600 }}>Goal: {c.goal}</span>
+                    </div>
+                    <div className="kf-prog-track">
+                      <div className="kf-prog-fill" style={{ width:`${c.funded}%`, background:`linear-gradient(90deg, ${URGENCY_COLOR[c.urgency]}80, ${URGENCY_COLOR[c.urgency]})` }} />
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{ display:"flex", gap:10 }}>
+                    <Link to="/cases" className="kf-btn kf-btn-outline"
+                      style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:700, textAlign:"center", border:`1.5px solid ${C.primary}` }}>
+                      {P.case_view}
+                    </Link>
+                    <Link to="/donate" className="kf-btn kf-btn-gold"
+                      style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:800, textAlign:"center", border:"none" }}>
+                      {P.case_sponsor}
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -179,70 +264,94 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── USER ROLES ── */}
-      <section style={{ padding: "80px 24px", background: C.bg }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 52 }}>
-            <span style={{ background: C.secondary + "20", color: C.secondary, borderRadius: 20, padding: "6px 16px", fontSize: 13, fontWeight: 700 }}>5 Dedicated Roles</span>
-            <h2 style={{ fontSize: "clamp(26px, 3.5vw, 40px)", fontWeight: 900, margin: "14px 0 10px" }}>Who Uses Kafaale Qaad?</h2>
-            <p style={{ fontSize: 16, color: C.muted }}>Every role has a tailored dashboard and workflow access.</p>
+      {/* ══════════════════════════ USER ROLES ══════════════════════════════ */}
+      <section style={sec(C.bg)}>
+        <div style={wrap}>
+          <div style={{ textAlign:"center", marginBottom: isMobile?40:56 }}>
+            <span className="kf-badge" style={{ background:C.secondary+"18", color:C.secondary }}>{P.roles_badge}</span>
+            <hr className="kf-rule-center" />
+            <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.4 }}>{P.roles_title}</h2>
+            <p style={{ fontSize:15, color:C.muted }}>{P.roles_sub}</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 18 }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr": isTablet?"repeat(3,1fr)":"repeat(5,1fr)", gap: isMobile?12:18 }}>
             {ROLES.map(r => (
-              <div key={r.role} style={{ background: "#fff", borderRadius: 16, padding: 24, textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,.05)", border: `1px solid ${C.border}` }}>
-                <div style={{ width: 60, height: 60, borderRadius: "50%", background: r.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>{r.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: r.color, marginBottom: 10 }}>{r.role}</div>
-                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.6 }}>{r.desc}</div>
+              <div key={r.role} className="kf-card" style={{
+                background:"#fff", borderRadius:18, padding: isMobile?18:26,
+                textAlign:"center", boxShadow:"0 2px 10px rgba(0,38,81,0.05)",
+                border:`1px solid ${C.border}`,
+              }}>
+                <div style={{
+                  width:64, height:64, borderRadius:18, background:r.bg,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:28, margin:"0 auto 16px",
+                  boxShadow:`0 4px 16px ${r.color}22`,
+                }}>{r.icon}</div>
+                <div style={{ fontSize:13, fontWeight:800, color:r.color, marginBottom:8, letterSpacing:0.2 }}>{r.role}</div>
+                <div style={{ fontSize:12, color:C.muted, lineHeight:1.6 }}>{r.desc}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
-      <section style={{ padding: "80px 24px", background: "#fff" }}>
-        <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 52 }}>
-            <span style={{ background: "#EDE9FE", color: "#7C3AED", borderRadius: 20, padding: "6px 16px", fontSize: 13, fontWeight: 700 }}>Platform Capabilities</span>
-            <h2 style={{ fontSize: "clamp(26px, 3.5vw, 40px)", fontWeight: 900, margin: "14px 0 10px" }}>Everything You Need</h2>
-            <p style={{ fontSize: 16, color: C.muted }}>Built for security, scale, and real humanitarian impact.</p>
+      {/* ══════════════════════════ PLATFORM FEATURES ═══════════════════════ */}
+      <section style={sec("#fff")}>
+        <div style={wrap}>
+          <div style={{ textAlign:"center", marginBottom: isMobile?40:56 }}>
+            <span className="kf-badge" style={{ background:"#EDE9FE", color:"#6D28D9" }}>{P.feat_badge}</span>
+            <hr className="kf-rule-center" />
+            <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.4 }}>{P.feat_title}</h2>
+            <p style={{ fontSize:15, color:C.muted }}>{P.feat_sub}</p>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24 }}>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr": isTablet?"repeat(2,1fr)":"repeat(4,1fr)", gap: isMobile?12:20 }}>
             {FEATURES.map((f, i) => (
-              <div key={i} style={{ padding: 24, borderRadius: 16, border: `1px solid ${C.border}`, background: "#FAFAFA" }}>
-                <div style={{ fontSize: 32, marginBottom: 14 }}>{f.icon}</div>
-                <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 8 }}>{f.title}</div>
-                <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>{f.desc}</div>
+              <div key={i} className="kf-card kf-feature-card" style={{
+                padding: isMobile?18:24, borderRadius:16,
+                border:`1px solid ${C.border}`, borderLeft:`3px solid ${f.color}`,
+                background:"#FAFBFF",
+              }}>
+                <div style={{
+                  width:44, height:44, borderRadius:12, background:f.color+"14",
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:22, marginBottom:14,
+                }}>{f.icon}</div>
+                <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:8, letterSpacing:-0.1 }}>{f.title}</div>
+                <div style={{ fontSize:12, color:C.muted, lineHeight:1.65 }}>{f.desc}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA BANNER ── */}
-      <section style={{ background: `linear-gradient(135deg, ${C.primary} 0%, ${C.secondary} 100%)`, padding: "80px 24px", textAlign: "center", color: "#fff" }}>
-        <div style={{ maxWidth: 700, margin: "0 auto" }}>
-          <div style={{ fontSize: 52, marginBottom: 20 }}>🤝</div>
-          <h2 style={{ fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 900, margin: "0 0 16px" }}>Ready to Make a Difference?</h2>
-          <p style={{ fontSize: 18, opacity: 0.85, marginBottom: 40, lineHeight: 1.6 }}>
-            Whether you want to report a case, sponsor a family, or join our field team — every role matters.
-          </p>
-          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={() => navigate("/donate")}
-              style={{ padding: "16px 36px", background: C.accent, color: "#fff", border: "none", borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>
-              ❤️ Become a Donor
+      {/* ══════════════════════════ CTA BANNER ══════════════════════════════ */}
+      <section className="kf-hero-dots" style={{
+        background: `linear-gradient(135deg, ${C.navy} 0%, ${C.primary} 60%, ${C.secondary} 100%)`,
+        padding: isMobile?"64px 20px":"96px 32px",
+        textAlign:"center", color:"#fff",
+        position:"relative", overflow:"hidden",
+      }}>
+        <div style={{ position:"absolute", top:-60, right:-60, width:320, height:320, borderRadius:"50%", background:"rgba(255,255,255,0.03)", pointerEvents:"none" }} />
+        <div style={{ maxWidth:680, margin:"0 auto", position:"relative" }}>
+          <div style={{ fontSize: isMobile?44:56, marginBottom:20 }}>🤝</div>
+          <h2 style={{ fontSize:"clamp(26px,3.5vw,44px)", fontWeight:900, margin:"0 0 16px", letterSpacing:-0.5 }}>{P.cta_title}</h2>
+          <p style={{ fontSize: isMobile?15:18, opacity:0.84, marginBottom:44, lineHeight:1.7, maxWidth:520, margin:"0 auto 44px" }}>{P.cta_sub}</p>
+          <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+            <button className="kf-btn kf-btn-gold" onClick={() => navigate("/donate")}
+              style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:800, border:"none" }}>
+              ❤️ {P.cta_donor}
             </button>
-            <button onClick={() => navigate("/contact")}
-              style={{ padding: "16px 36px", background: "rgba(255,255,255,0.15)", color: "#fff", border: "2px solid rgba(255,255,255,.4)", borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
-              Report a Case →
+            <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/contact")}
+              style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:700, border:"none" }}>
+              {P.cta_report}
             </button>
-            <button onClick={() => navigate("/dashboard")}
-              style={{ padding: "16px 36px", background: "rgba(255,255,255,0.15)", color: "#fff", border: "2px solid rgba(255,255,255,.4)", borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: "pointer" }}>
-              Access Dashboard →
+            <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/dashboard")}
+              style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:700, border:"none" }}>
+              {P.cta_dashboard}
             </button>
           </div>
         </div>
       </section>
+
     </div>
   );
 }

@@ -10,9 +10,11 @@ import Home         from './pages/Home.jsx';
 import About        from './pages/About.jsx';
 import HowItWorks   from './pages/HowItWorks.jsx';
 import Cases        from './pages/Cases.jsx';
+import CaseDetail   from './pages/CaseDetail.jsx';
 import Donate       from './pages/Donate.jsx';
-import Contact      from './pages/Contact.jsx';
-import Login        from './pages/Login.jsx';
+import Contact        from './pages/Contact.jsx';
+import ImpactPartners from './pages/ImpactPartners.jsx';
+import Login          from './pages/Login.jsx';
 import Dashboard    from './KafaaleQaadApp.jsx';
 
 function Layout({ children }) {
@@ -36,8 +38,10 @@ function App() {
           <Route path="/about"         element={<Layout><About /></Layout>} />
           <Route path="/how-it-works"  element={<Layout><HowItWorks /></Layout>} />
           <Route path="/cases"         element={<Layout><Cases /></Layout>} />
+          <Route path="/cases/:id"     element={<Layout><CaseDetail /></Layout>} />
           <Route path="/donate"        element={<Layout><Donate /></Layout>} />
-          <Route path="/contact"       element={<Layout><Contact /></Layout>} />
+          <Route path="/contact"         element={<Layout><Contact /></Layout>} />
+          <Route path="/partners"       element={<Layout><ImpactPartners /></Layout>} />
           <Route path="/login"         element={<Login />} />
           <Route path="/dashboard"     element={<Dashboard />} />
           <Route path="/dashboard/*"   element={<Dashboard />} />

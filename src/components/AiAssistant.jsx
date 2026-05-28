@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { ai } from '../api/client';
+import { useResponsive } from '../hooks/useResponsive.js';
 
 const C = {
-  primary: '#0B3D91', accent: '#E8A020', green: '#1A6B3C',
-  bg: '#F0F4F8', white: '#FFFFFF', text: '#1A202C', muted: '#6B7280', border: '#E2E8F0',
+  primary: '#004B96', accent: '#E0AB21', green: '#4B7D19',
+  bg: '#F4F7FC', white: '#FFFFFF', text: '#0D1F3C', muted: '#5A6E8A', border: '#D8E4F0',
 };
 
 export default function AiAssistant({ caseId = null, context = 'general' }) {
   const [open, setOpen] = useState(false);
+  const { isMobile } = useResponsive();
   const [messages, setMessages] = useState([
     { role: 'assistant', text: 'Assalamu Alaykum! I\'m the Kafaale Qaad AI Assistant. I can help you understand our cases, guide you through the verification process, or answer any questions about our humanitarian platform. How can I assist you today? 🌍' }
   ]);
@@ -35,7 +37,16 @@ export default function AiAssistant({ caseId = null, context = 'general' }) {
 
   const handleKey = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
 
-  const QUICK = ['How does case verification work?', 'How can I sponsor a case?', 'How is victim privacy protected?', 'How do I report an emergency?'];
+  const QUICK = [
+    'How does the 8-step workflow work?',
+    'How do I sponsor a case?',
+    'How do I report an emergency?',
+    'How is victim privacy protected?',
+    'What payment methods are accepted?',
+    'How long does it take from report to delivery?',
+    'What are the user roles?',
+    'How does the escrow system work?',
+  ];
 
   return (
     <>
@@ -59,9 +70,15 @@ export default function AiAssistant({ caseId = null, context = 'general' }) {
       {/* Chat Window */}
       {open && (
         <div style={{
-          position: 'fixed', bottom: 96, right: 24, zIndex: 9998,
-          width: 380, maxWidth: 'calc(100vw - 48px)', height: 520,
-          background: C.white, borderRadius: 16, boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          position: 'fixed',
+          bottom: isMobile ? 0 : 96,
+          right: isMobile ? 0 : 24,
+          left: isMobile ? 0 : 'auto',
+          zIndex: 9998,
+          width: isMobile ? '100%' : 420,
+          maxWidth: isMobile ? '100%' : 'calc(100vw - 48px)',
+          height: isMobile ? '85vh' : 580,
+          background: C.white, borderRadius: isMobile ? '16px 16px 0 0' : 16, boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
           display: 'flex', flexDirection: 'column', overflow: 'hidden',
           border: `1px solid ${C.border}`,
         }}>
@@ -82,7 +99,7 @@ export default function AiAssistant({ caseId = null, context = 'general' }) {
                   maxWidth: '80%', padding: '10px 14px', borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                   background: m.role === 'user' ? C.primary : C.bg,
                   color: m.role === 'user' ? '#fff' : C.text,
-                  fontSize: 14, lineHeight: 1.5,
+                  fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap',
                 }}>
                   {m.text}
                 </div>

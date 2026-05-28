@@ -19,17 +19,23 @@ const useIsTablet = () => useIsMobile(900);
 
 // ─── Color Palette & Globals ───────────────────────────────────────────────
 const COLORS = {
-  primary: "#0B3D91",
-  secondary: "#1A6B3C",
-  accent: "#E8A020",
-  danger: "#C0392B",
-  purple: "#6B21A8",
-  teal: "#0E7490",
-  bg: "#F0F4F8",
-  card: "#FFFFFF",
-  text: "#1A202C",
-  muted: "#6B7280",
-  border: "#E2E8F0",
+  navy:      "#002651",
+  primary:   "#004B96",
+  blue:      "#004B96",
+  secondary: "#4B7D19",
+  green:     "#4B7D19",
+  accent:    "#E0AB21",
+  gold:      "#E0AB21",
+  danger:    "#C0392B",
+  purple:    "#6B21A8",
+  teal:      "#0E7490",
+  bg:        "#F4F7FC",
+  card:      "#FFFFFF",
+  text:      "#0D1F3C",
+  muted:     "#5A6E8A",
+  border:    "#D8E4F0",
+  darkBg:    "#001A40",
+  darkCard:  "#00244F",
 };
 
 const STATUS_MAP = {
@@ -43,7 +49,7 @@ const STATUS_MAP = {
   "Aid Delivered":        { color: "#06B6D4", bg: "#CFFAFE", icon: "📦" },
   "Delivering":           { color: "#0891B2", bg: "#CFFAFE", icon: "🚚" },
   "Proof Submitted":      { color: "#10B981", bg: "#D1FAE5", icon: "📤" },
-  "Completed":            { color: "#6B7280", bg: "#F3F4F6", icon: "🏁" },
+  "Completed":            { color: "#5A6E8A", bg: "#F3F4F6", icon: "🏁" },
   "Archived":             { color: "#374151", bg: "#E5E7EB", icon: "📁" },
 };
 
@@ -58,12 +64,12 @@ const WORKFLOW_STEPS = [
   { num: 5, label: "Donor Queue",        status: "Waiting Sponsor",      color: "#EC4899", icon: "👥" },
   { num: 6, label: "Sponsorship",        status: "Sponsored",            color: "#EF4444", icon: "❤️" },
   { num: 7, label: "Aid Delivery",       status: "Aid Delivered",        color: "#06B6D4", icon: "📦" },
-  { num: 8, label: "Completed",          status: "Completed",            color: "#6B7280", icon: "🏁" },
+  { num: 8, label: "Completed",          status: "Completed",            color: "#5A6E8A", icon: "🏁" },
 ];
 
 // ─── HELPER COMPONENTS ─────────────────────────────────────────────────────
 const Badge = ({ status }) => {
-  const s = STATUS_MAP[status] || { color: "#6B7280", bg: "#F3F4F6", icon: "○" };
+  const s = STATUS_MAP[status] || { color: "#5A6E8A", bg: "#F3F4F6", icon: "○" };
   return (
     <span style={{ background: s.bg, color: s.color, border: `1px solid ${s.color}40`, borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
       {s.icon} {status}
@@ -816,7 +822,7 @@ const SponsorModal = ({ c, onClose, onConfirm, currentUser }) => {
   return (
     <Modal title={`❤️ Sponsor This Case`} onClose={onClose} wide>
       {/* Case summary card */}
-      <div style={{ background: "linear-gradient(135deg, #0B3D91 0%, #1A6B3C 100%)", borderRadius: 16, padding: 20, marginBottom: 24, color: "#fff" }}>
+      <div style={{ background: "linear-gradient(135deg, #004B96 0%, #4B7D19 100%)", borderRadius: 16, padding: 20, marginBottom: 24, color: "#fff" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
           <div>
             <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>{c.victim_name}</div>
@@ -1692,18 +1698,18 @@ const CaseFullReportModal = ({ caseId, onClose }) => {
       <html><head><title>Kafaale Case Report — ${caseId}</title>
       <style>
         body { font-family: 'Segoe UI', sans-serif; color: #1a202c; padding: 32px; max-width: 900px; margin: 0 auto; }
-        h1 { font-size: 22px; color: #0B3D91; margin-bottom: 4px; }
-        .sub { font-size: 13px; color: #6B7280; margin-bottom: 28px; }
-        .section-title { background: #0B3D91; color: #fff; padding: 8px 16px; font-size: 12px; font-weight: 800; border-radius: 6px 6px 0 0; letter-spacing: 0.5px; margin-top: 20px; }
+        h1 { font-size: 22px; color: #004B96; margin-bottom: 4px; }
+        .sub { font-size: 13px; color: #5A6E8A; margin-bottom: 28px; }
+        .section-title { background: #004B96; color: #fff; padding: 8px 16px; font-size: 12px; font-weight: 800; border-radius: 6px 6px 0 0; letter-spacing: 0.5px; margin-top: 20px; }
         .section-body { border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 6px 6px; padding: 12px 16px; }
         .row { display: flex; gap: 12px; padding: 5px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-        .label { color: #6B7280; font-weight: 700; min-width: 170px; }
+        .label { color: #5A6E8A; font-weight: 700; min-width: 170px; }
         .val { color: #1a202c; font-weight: 500; }
-        .green { color: #065F46; } .red { color: #C0392B; } .blue { color: #0B3D91; }
+        .green { color: #065F46; } .red { color: #C0392B; } .blue { color: #004B96; }
         .notes { background: #f8fafc; border-radius: 6px; padding: 10px 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; margin-top: 6px; }
         .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
         table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-        th { background: #f8fafc; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: #6B7280; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f8fafc; padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; color: #5A6E8A; border-bottom: 1px solid #e2e8f0; }
         td { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #f0f0f0; }
         .footer { margin-top: 40px; text-align: center; font-size: 11px; color: #9CA3AF; border-top: 1px solid #e2e8f0; padding-top: 16px; }
         @media print { body { padding: 0; } }
@@ -2001,7 +2007,7 @@ const AnalyticsDashboard = ({ cases, donations }) => {
       {/* Gradient KPI cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16, marginBottom: 28 }}>
         {[
-          { val: totalCases,             label: "Total Cases",      sub: "↑ 12% this month", grad: "135deg, #0B3D91 0%, #1A6B3C 100%" },
+          { val: totalCases,             label: "Total Cases",      sub: "↑ 12% this month", grad: "135deg, #004B96 0%, #4B7D19 100%" },
           { val: completedCases,         label: "Completed",        sub: `${completionRate}% completion rate`, grad: "135deg, #10B981 0%, #059669 100%" },
           { val: `$${totalFunded.toLocaleString()}`, label: "Total Donated", sub: `Avg $${avgDonation} / donation`, grad: "135deg, #EC4899 0%, #DB2777 100%" },
           { val: urgentCases,            label: "Critical Cases",   sub: "Require immediate action", grad: "135deg, #EF4444 0%, #DC2626 100%" },
@@ -2547,7 +2553,7 @@ const FieldTeamDashboard = ({ cases, currentUser, onViewCase, onInvestigate, onD
         <StatCard label="Active Missions"   value={active.length}     icon="🎯" color={COLORS.primary} />
         <StatCard label="Report Submitted"  value={submitted.length}  icon="📋" color={COLORS.secondary} />
         <StatCard label="Delivering Aid"    value={delivering.length} icon="📦" color="#EC4899" />
-        <StatCard label="Completed"         value={completed.length}  icon="✅" color="#6B7280" />
+        <StatCard label="Completed"         value={completed.length}  icon="✅" color="#5A6E8A" />
       </div>
 
       {active.length > 0 && (
@@ -2795,7 +2801,7 @@ const DonorDashboard = ({ cases, currentUser, onViewCase, onSponsor }) => {
 };
 
 // ─── USER AVATAR — coloured circle with initials ─────────────────────────────
-const AVATAR_COLORS = ["#0B3D91","#1A6B3C","#7C3AED","#D97706","#DC2626","#0891B2","#059669","#9D174D"];
+const AVATAR_COLORS = ["#004B96","#4B7D19","#7C3AED","#D97706","#DC2626","#0891B2","#059669","#9D174D"];
 const UserAvatar = ({ name, size = 36 }) => {
   const initials = (name || "?").split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase();
   const color = AVATAR_COLORS[(name || "").charCodeAt(0) % AVATAR_COLORS.length];
@@ -2957,7 +2963,7 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
             <StatCard label={t("totalCases")}   value={cases.length}    icon="📋" color={COLORS.primary} />
             <StatCard label={t("totalUsers")}   value={users.length}    icon="👥" color="#8B5CF6" />
             <StatCard label={t("totalDonated")} value={`$${totalDonated.toLocaleString()}`} icon="💰" color={COLORS.secondary} />
-            <StatCard label={t("completed")}    value={cases.filter(c => c.status === "Completed").length} icon="🏁" color="#6B7280" />
+            <StatCard label={t("completed")}    value={cases.filter(c => c.status === "Completed").length} icon="🏁" color="#5A6E8A" />
           </div>
 
           {/* Proof pending alert */}

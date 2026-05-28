@@ -3,21 +3,14 @@ generator client {
 }
 
 datasource db {
-  // ── LOCAL DEV:    provider = "postgresql"     +  DATABASE_URL="file:./dev.db"
-  // ── PRODUCTION:   provider = "postgresql" +  DATABASE_URL=<Railway/Supabase URL>
-  //    (Prisma doesn't support env() for provider — edit this line before deploying)
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // ── Supabase PostgreSQL ──────────────────────────────────────────────────
+  // DATABASE_URL  → Transaction pooler URL  (use for the running app)
+  // DIRECT_URL    → Direct connection URL   (use for prisma migrate)
+  // Both come from Supabase dashboard → Project Settings → Database
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
-
-// ─── NOTE FOR PRODUCTION MIGRATION ───────────────────────────────────────────
-// When switching to PostgreSQL:
-//   1. Change provider to "postgresql"
-//   2. Set DATABASE_URL to your Supabase/Neon/Railway PostgreSQL URL
-//   3. Delete prisma/migrations folder
-//   4. Run: npx prisma migrate dev --name init
-//   5. Run: npx prisma db seed
-// ─────────────────────────────────────────────────────────────────────────────
 
 model User {
   id                String    @id @default(cuid())
@@ -82,7 +75,7 @@ model Case {
   publicStory      String?
   publicCity       String?
   publicCountry    String?
-  publicMediaUrls  String?   // JSON array stored as String (SQLite compat)
+  publicMediaUrls  String[]  // array of media URLs
   aiSanitizedAt    DateTime?
   adminPublishedAt DateTime?
 
@@ -170,10 +163,10 @@ model AiPublicData {
   generatedCategory String
   generatedCity     String?
   generatedUrgency  String
-  safeMediaUrls     String?
+  safeMediaUrls     String[]
   piiDetected       Boolean @default(false)
-  piiRemoved        String?   // JSON array as String
-  mediaFlagged      String?   // JSON array as String
+  piiRemoved        String[]
+  mediaFlagged      String[]
   confidenceScore   Int     @default(0)
   adminEdited       Boolean @default(false)
   adminEditedTitle  String?
@@ -217,7 +210,7 @@ model DeliveryProof {
   amountDelivered Float
   recipientName   String?
   deliveryNotes   String?
-  photoUrls       String?   // JSON array of Supabase Storage URLs
+  photoUrls       String[]  // array of storage URLs
   adminConfirmed  Boolean   @default(false)
   adminConfirmedAt DateTime?
   adminNotes      String?
@@ -227,43 +220,124 @@ model DeliveryProof {
   @@index([adminConfirmed])
 }
 
+enum AdminAction {
+  approved
+  rejected
+  assigned_team
+  triggered_ai
+  edited_public_version
+  published
+  confirmed_payment
+  confirmed_delivery
+  completed_case
+  suspended_user
+  reinstated_user
+}
+
+enum NotificationType {
+  case_submitted
+  case_assigned
+  investigation_completed
+  ai_ready_for_review
+  case_published
+  case_sponsored
+  delivery_started
+  delivery_completed
+  case_rejected
+  fraud_alert
+  payment_confirmed
+}
+
 model AdminAuditLog {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   adminId   String
-  admin     User     @relation(fields: [adminId], references: [id])
+  admin     User        @relation(fields: [adminId], references: [id])
   caseId    String?
-  case      Case?    @relation(fields: [caseId], references: [id])
-  action    String
+  case      Case?       @relation(fields: [caseId], references: [id])
+  action    AdminAction
   notes     String?
-  metadata  String?
+  metadata  Json?
   ipAddress String?
-  timestamp DateTime @default(now())
+  timestamp DateTime    @default(now())
 
   @@index([adminId])
   @@index([caseId])
-  @@index([action])
   @@index([timestamp])
 }
 
 model Notification {
-  id        String    @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
-  user      User      @relation(fields: [userId], references: [id])
+  user      User             @relation(fields: [userId], references: [id])
   caseId    String?
-  case      Case?     @relation(fields: [caseId], references: [id])
-  type      String
+  case      Case?            @relation(fields: [caseId], references: [id])
+  type      NotificationType
   title     String
   message   String
-  isRead    Boolean   @default(false)
+  isRead    Boolean          @default(false)
   readAt    DateTime?
-  createdAt DateTime  @default(now())
+  createdAt DateTime         @default(now())
 
   @@index([userId])
-  @@index([userId, isRead])   // unread count query
+  @@index([userId, isRead])
   @@index([createdAt])
 }
 
 model IdempotencyKey {
   key       String   @id
   createdAt DateTime @default(now())
+}
+
+// ─── Impact Partners ─────────────────────────────────────────────────────────
+model Partner {
+  id          String   @id @default(cuid())
+
+  // Identity
+  name        String
+  slug        String   @unique          // URL-friendly key
+  avatar      String   @default("🤝")  // emoji or image URL
+  logoUrl     String?                   // optional hosted logo
+
+  // Classification
+  type        String   @default("individual") // ngo | organization | individual | government
+  tier        String   @default("community")  // featured | community | verified_org
+  isVerified  Boolean  @default(false)
+  isAnonymous Boolean  @default(false)
+  isActive    Boolean  @default(true)
+
+  // Location
+  country     String?
+  countryFlag String?
+  city        String?
+  region      String?
+
+  // Details
+  description String?
+  website     String?
+  focus       String[] // e.g. ["Food Aid", "Medical"]
+  color       String   @default("#004B96")
+
+  // Impact metrics (updated by admin or automated)
+  casesSupported  Int     @default(0)
+  totalDonated    Float   @default(0)
+  familiesImpacted Int    @default(0)
+
+  // Impact story (optional — shown on partners page)
+  impactStory     String?
+  impactBefore    String?
+  impactAfter     String?
+  caseRef         String?   // e.g. "Case #KQ-2024-0441"
+
+  // Admin
+  featuredOrder   Int?      // lower = shown first in featured section
+  addedByAdmin    String?
+  notes           String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tier])
+  @@index([isVerified, isActive])
+  @@index([type])
+  @@index([featuredOrder])
 }

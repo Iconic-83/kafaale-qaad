@@ -43,7 +43,7 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   gap: 4px;
-  border-bottom: 2px solid #E2E8F0;
+  border-bottom: 2px solid #D8E4F0;
   margin-bottom: 24px;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -87,7 +87,7 @@
 
 /* ── Header / top bar ─────────────────────────────────────────────────────── */
 .kf-header {
-  background: #0B3D91;
+  background: #004B96;
   color: #fff;
   position: sticky;
   top: 0;
