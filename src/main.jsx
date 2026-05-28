@@ -2,15 +2,17 @@ import { StrictMode, Component } from 'react';
 import { createRoot } from 'react-dom/client';
 
 class ErrorBoundary extends Component {
-  state = { error: null };
+  state = { error: null, info: null };
   static getDerivedStateFromError(e) { return { error: e }; }
+  componentDidCatch(error, info) { this.setState({ info }); }
   render() {
     if (this.state.error) return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F4F7FC', fontFamily: 'system-ui', gap: 16, padding: 24 }}>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#F4F7FC', fontFamily: 'system-ui', gap: 12, padding: 24 }}>
         <div style={{ fontSize: 48 }}>⚠️</div>
         <div style={{ fontSize: 20, fontWeight: 800, color: '#C0392B' }}>Something went wrong</div>
-        <div style={{ fontSize: 13, color: '#5A6E8A', maxWidth: 400, textAlign: 'center' }}>{this.state.error.message}</div>
-        <button onClick={() => window.location.href = '/login'} style={{ padding: '10px 24px', background: '#004B96', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Back to Login</button>
+        <pre style={{ fontSize: 11, color: '#C0392B', background: '#FEE2E2', padding: 12, borderRadius: 8, maxWidth: 600, overflowX: 'auto', whiteSpace: 'pre-wrap' }}>{this.state.error.message}</pre>
+        <pre style={{ fontSize: 10, color: '#5A6E8A', background: '#fff', padding: 12, borderRadius: 8, maxWidth: 600, overflowX: 'auto', whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto' }}>{this.state.info?.componentStack}</pre>
+        <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }} style={{ padding: '10px 24px', background: '#004B96', color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontWeight: 700 }}>Clear & Back to Login</button>
       </div>
     );
     return this.props.children;
