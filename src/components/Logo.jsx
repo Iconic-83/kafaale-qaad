@@ -27,12 +27,21 @@ export default function Logo({ size = "md", variant = "full", linked = true, dar
       textDecoration: "none",
       ...style,
     }}>
-      <img
-        src="/assets/brand/kafaala-qaad-hope-icon.png"
-        alt="Kafaale Qaad"
-        style={{ width: s.img, height: s.img, objectFit: "contain", display: "block", flexShrink: 0 }}
-        draggable={false}
-      />
+      <div style={{
+        width: s.img, height: s.img,
+        background: "#fff",
+        borderRadius: Math.round(s.img * 0.22),
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: Math.round(s.img * 0.09),
+        flexShrink: 0,
+      }}>
+        <img
+          src="/assets/brand/kafaala-qaad-hope-icon.png"
+          alt="Kafaale Qaad"
+          style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+          draggable={false}
+        />
+      </div>
       {variant !== "icon" && (
         <div style={{ lineHeight: 1.2 }}>
           <div style={{ fontSize: s.title, fontWeight: 900, color: titleColor, letterSpacing: -0.5, whiteSpace: "nowrap" }}>
