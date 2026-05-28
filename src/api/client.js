@@ -15,11 +15,7 @@ async function req(path, opts = {}) {
   const res = await fetch(`${API}${path}`, { ...opts, headers });
   if (res.status === 401) {
     clearAuth();
-    // Avoid infinite redirect loop if already on /login
-    if (!window.location.pathname.includes('/login')) {
-      window.location.href = '/login';
-    }
-    throw new Error('Invalid email or password');
+    throw new Error('Session expired. Please log in again.');
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);

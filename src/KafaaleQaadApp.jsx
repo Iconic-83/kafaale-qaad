@@ -3284,13 +3284,7 @@ export default function KafaaleQaadApp() {
     try {
       if (["admin","super_admin","verification_office"].includes(authUser.role)) {
         const data = await adminApi.cases({ limit: 30 });
-        if (data?.cases) {
-          setCases(data.cases.map(c => mapCase(c, "admin")));
-          // Also grab agents from a lightweight users fetch scoped to field_agent only
-          adminApi.users().then(us => {
-            if (Array.isArray(us)) setAgents(us.filter(u => u.role === "field_agent" && u.isActive));
-          }).catch(() => {});
-        }
+        if (data?.cases) setCases(data.cases.map(c => mapCase(c, "admin")));
       } else if (authUser.role === "reporter") {
         const data = await casesApi.my();
         if (Array.isArray(data)) setCases(data.map(c => mapCase(c, "reporter")));
@@ -3303,6 +3297,7 @@ export default function KafaaleQaadApp() {
       }
     } catch (e) {
       console.error("Failed to load data:", e);
+      if (e.message?.includes('Session expired')) { logout(); navigate("/login"); }
     } finally {
       setDataLoading(false);
     }
