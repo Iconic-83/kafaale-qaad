@@ -176,11 +176,6 @@ export async function runAiSanitizationForCase(caseId: string): Promise<AiPublic
     }
   }
 
-  // Serialize arrays as JSON strings (SQLite/PG stores them as String fields)
-  const safeMediaUrlsJson  = JSON.stringify(result.safeMediaUrls);
-  const piiRemovedJson     = JSON.stringify(result.piiRemoved);
-  const mediaFlaggedJson   = JSON.stringify(result.mediaFlagged);
-
   // Upsert AI public data
   const aiData = await prisma.aiPublicData.upsert({
     where: { caseId },
@@ -190,10 +185,10 @@ export async function runAiSanitizationForCase(caseId: string): Promise<AiPublic
       generatedCategory: result.generatedCategory,
       generatedCity:     result.generatedCity,
       generatedUrgency:  result.generatedUrgency,
-      safeMediaUrls:     safeMediaUrlsJson,
+      safeMediaUrls:     result.safeMediaUrls,
       piiDetected:       result.piiDetected,
-      piiRemoved:        piiRemovedJson,
-      mediaFlagged:      mediaFlaggedJson,
+      piiRemoved:        result.piiRemoved,
+      mediaFlagged:      result.mediaFlagged,
       confidenceScore:   result.confidenceScore,
       tokensUsed:        result.tokensUsed,
       updatedAt:         new Date(),
@@ -205,16 +200,15 @@ export async function runAiSanitizationForCase(caseId: string): Promise<AiPublic
       generatedCategory: result.generatedCategory,
       generatedCity:     result.generatedCity,
       generatedUrgency:  result.generatedUrgency,
-      safeMediaUrls:     safeMediaUrlsJson,
+      safeMediaUrls:     result.safeMediaUrls,
       piiDetected:       result.piiDetected,
-      piiRemoved:        piiRemovedJson,
-      mediaFlagged:      mediaFlaggedJson,
+      piiRemoved:        result.piiRemoved,
+      mediaFlagged:      result.mediaFlagged,
       confidenceScore:   result.confidenceScore,
       tokensUsed:        result.tokensUsed,
     },
   });
 
-  // Update case status (publicMediaUrls is also a JSON string field)
   await prisma.case.update({
     where: { id: caseId },
     data: {
@@ -223,7 +217,7 @@ export async function runAiSanitizationForCase(caseId: string): Promise<AiPublic
       publicTitle:     result.generatedTitle,
       publicStory:     result.generatedStory,
       publicCity:      result.generatedCity,
-      publicMediaUrls: safeMediaUrlsJson,
+      publicMediaUrls: result.safeMediaUrls,
     },
   });
 

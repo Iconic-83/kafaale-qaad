@@ -17,7 +17,7 @@ class NotificationService {
       data: {
         userId: input.userId,
         caseId: input.caseId,
-        type: input.type,
+        type: input.type as any,
         title: input.title,
         message: input.message,
       },

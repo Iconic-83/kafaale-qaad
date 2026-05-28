@@ -232,6 +232,11 @@ enum AdminAction {
   completed_case
   suspended_user
   reinstated_user
+  delivery_assigned
+  donation_confirmed
+  completed
+  role_changed
+  user_deleted
 }
 
 enum NotificationType {
@@ -246,6 +251,11 @@ enum NotificationType {
   case_rejected
   fraud_alert
   payment_confirmed
+  delivery_assigned
+  donation_confirmed
+  case_completed
+  delivery_proof_submitted
+  aid_delivered
 }
 
 model AdminAuditLog {
