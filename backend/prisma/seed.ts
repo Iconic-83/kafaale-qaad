@@ -154,6 +154,383 @@ async function main() {
     ],
   });
 
+  // ── Program Manager user ─────────────────────────────────────────────────
+  const programManager = await prisma.user.upsert({
+    where: { email: 'programs@kafaale.org' },
+    update: {},
+    create: { name: 'Sahra Programs', email: 'programs@kafaale.org', password: pw, role: 'program_manager', phone: '+252612000006', country: 'Somalia', city: 'Mogadishu' },
+  });
+  console.log('✅ Program Manager user created');
+
+  // ── Humanitarian Programs ─────────────────────────────────────────────────
+  const progChild = await prisma.program.upsert({
+    where: { id: 'prog-child-001' },
+    update: {},
+    create: {
+      id: 'prog-child-001',
+      name: 'Child Sponsorship Program', type: 'child_sponsorship',
+      description: 'Long-term sponsorship for orphans and vulnerable children covering education, food, medical care and clothing. Each child is matched with a dedicated sponsor who receives monthly progress updates.',
+      icon: '👶', color: '#EC4899', isActive: true, totalBeneficiaries: 3, activeSponsorships: 1,
+    },
+  });
+
+  const progEducation = await prisma.program.upsert({
+    where: { id: 'prog-edu-001' },
+    update: {},
+    create: {
+      id: 'prog-edu-001',
+      name: 'Education Support Program', type: 'education',
+      description: 'Sponsoring school fees, books, uniforms and supplies for children who cannot attend school due to financial hardship. Track attendance, grades and graduation.',
+      icon: '🎓', color: '#3B82F6', isActive: true, totalBeneficiaries: 2, activeSponsorships: 0,
+    },
+  });
+
+  const progMedical = await prisma.program.upsert({
+    where: { id: 'prog-med-001' },
+    update: {},
+    create: {
+      id: 'prog-med-001',
+      name: 'Medical Continuity Program', type: 'medical',
+      description: 'Continuous medical support for patients with chronic conditions — dialysis, cancer treatment, disability support. Care continues until professional discharge.',
+      icon: '🩺', color: '#EF4444', isActive: true, totalBeneficiaries: 2, activeSponsorships: 1,
+    },
+  });
+
+  const progFamily = await prisma.program.upsert({
+    where: { id: 'prog-fam-001' },
+    update: {},
+    create: {
+      id: 'prog-fam-001',
+      name: 'Family Care Program', type: 'family_care',
+      description: 'Monthly support for vulnerable families covering food, rent, medical care and education. Quarterly reviews track progress toward self-sufficiency.',
+      icon: '🏠', color: '#F59E0B', isActive: true, totalBeneficiaries: 2, activeSponsorships: 0,
+    },
+  });
+  console.log('✅ 4 Programs created');
+
+  // ── Beneficiaries ─────────────────────────────────────────────────────────
+  const ben1 = await prisma.beneficiary.upsert({
+    where: { publicId: 'CSP-2026-001' },
+    update: {},
+    create: {
+      publicId: 'CSP-2026-001', programId: progChild.id, programType: 'child_sponsorship',
+      privateFullName: 'Amina Cabdullaahi Hassan', privateGuardianName: 'Caasha Hassan (Aunt)',
+      privateGuardianPhone: '+252615111222', privateSchoolName: 'Al-Nuur Primary School, Hodan',
+      privateAddress: 'Hodan District, Street 12, House 5, Mogadishu',
+      privateMedicalNotes: 'Healthy. Routine checkup every 3 months.',
+      publicAge: 10, publicGender: 'female', publicRegion: 'Banaadir', publicCity: 'Mogadishu', publicCountry: 'Somalia',
+      publicNeedsDesc: 'School fees + food + clothing',
+      publicStory: 'A 10-year-old orphan girl in Mogadishu lost both parents to illness. She lives with her aunt\'s family and dreams of becoming a doctor. Without monthly support she cannot attend school.',
+      monthlyNeed: 35, status: 'sponsored',
+      verifiedAt: new Date(Date.now() - 30*86400000), verifiedById: programManager.id,
+      enrolledBy: programManager.id,
+    },
+  });
+
+  const ben2 = await prisma.beneficiary.upsert({
+    where: { publicId: 'CSP-2026-002' },
+    update: {},
+    create: {
+      publicId: 'CSP-2026-002', programId: progChild.id, programType: 'child_sponsorship',
+      privateFullName: 'Mahad Xasan Warsame', privateGuardianName: 'Maryan Warsame (Mother)',
+      privateGuardianPhone: '+252618333444', privateSchoolName: 'Damal Academy, Wadajir',
+      privateAddress: 'Wadajir District, Mogadishu',
+      publicAge: 8, publicGender: 'male', publicRegion: 'Banaadir', publicCity: 'Mogadishu',
+      publicNeedsDesc: 'School fees + food support + uniform',
+      publicStory: 'An 8-year-old boy from a single-parent family. His father passed away and his mother works as a cleaner. Monthly sponsorship will keep him in school and fed.',
+      monthlyNeed: 30, status: 'seeking_sponsor',
+      verifiedAt: new Date(Date.now() - 10*86400000), verifiedById: programManager.id,
+      enrolledBy: programManager.id,
+    },
+  });
+
+  const ben3 = await prisma.beneficiary.upsert({
+    where: { publicId: 'CSP-2026-003' },
+    update: {},
+    create: {
+      publicId: 'CSP-2026-003', programId: progChild.id, programType: 'child_sponsorship',
+      privateFullName: 'Fadumo Ali Mohamud', privateGuardianName: 'Ali Mohamud (Father)',
+      privateGuardianPhone: '+252617555666', privateSchoolName: 'None — out of school',
+      privateAddress: 'Daynile District, Mogadishu',
+      publicAge: 12, publicGender: 'female', publicRegion: 'Banaadir', publicCity: 'Mogadishu',
+      publicNeedsDesc: 'Education enrolment + school fees + food',
+      publicStory: 'A 12-year-old girl who has never been to school due to poverty. Her family of 9 relies on daily labour. A sponsor will change the trajectory of her entire life.',
+      monthlyNeed: 40, status: 'seeking_sponsor',
+      verifiedAt: new Date(Date.now() - 5*86400000), verifiedById: programManager.id,
+      enrolledBy: programManager.id,
+    },
+  });
+
+  const ben4 = await prisma.beneficiary.upsert({
+    where: { publicId: 'EDU-2026-001' },
+    update: {},
+    create: {
+      publicId: 'EDU-2026-001', programId: progEducation.id, programType: 'education',
+      privateFullName: 'Ismail Daud Ibrahim', privateGuardianName: 'Daud Ibrahim (Father)',
+      privateGuardianPhone: '+252611777888', privateSchoolName: 'Horseed Secondary School, Garowe',
+      privateAddress: 'Garowe, Nugal Region, Puntland',
+      publicAge: 16, publicGender: 'male', publicRegion: 'Nugal', publicCity: 'Garowe',
+      publicNeedsDesc: 'Secondary school fees + textbooks + exam fees',
+      publicStory: 'A bright 16-year-old student in Garowe who scores top of his class but is at risk of dropping out. His school fees for the year total $420. A sponsor will secure his secondary education.',
+      monthlyNeed: 45, status: 'seeking_sponsor',
+      verifiedAt: new Date(Date.now() - 7*86400000), verifiedById: programManager.id,
+      enrolledBy: programManager.id,
+    },
+  });
+
+  const ben5 = await prisma.beneficiary.upsert({
+    where: { publicId: 'EDU-2026-002' },
+    update: {},
+    create: {
+      publicId: 'EDU-2026-002', programId: progEducation.id, programType: 'education',
+      privateFullName: 'Hodan Abdirashid Osman', privateGuardianName: 'Abdirashid Osman (Father)',
+      privateGuardianPhone: '+252613999000',
+      privateSchoolName: 'Hiiraan Girls School, Beledweyne',
+      privateAddress: 'Beledweyne, Hiiraan Region',
+      publicAge: 14, publicGender: 'female', publicRegion: 'Hiiraan', publicCity: 'Beledweyne',
+      publicNeedsDesc: 'Girls school fees + uniform + sanitary supplies',
+      publicStory: 'A 14-year-old girl in Beledweyne whose education is at risk. With targeted sponsorship she can complete her middle school education and continue to high school.',
+      monthlyNeed: 25, status: 'pending_verification',
+      enrolledBy: programManager.id,
+    },
+  });
+
+  const ben6 = await prisma.beneficiary.upsert({
+    where: { publicId: 'MED-2026-001' },
+    update: {},
+    create: {
+      publicId: 'MED-2026-001', programId: progMedical.id, programType: 'medical',
+      privateFullName: 'Xirsi Mukhtar Jama', privateGuardianName: 'Mukhtar Jama (Son)',
+      privateGuardianPhone: '+252614222333',
+      privateSchoolName: 'N/A', privateAddress: 'Hodan District, Mogadishu',
+      privateMedicalNotes: 'Chronic kidney failure. Requires dialysis 3x/week at Banadir Hospital.',
+      publicAge: 62, publicGender: 'male', publicRegion: 'Banaadir', publicCity: 'Mogadishu',
+      publicNeedsDesc: 'Dialysis 3x/week + medication + transport',
+      publicStory: 'A 62-year-old man with chronic kidney failure requiring dialysis three times per week. Without continuous sponsorship, treatment will stop. Monthly support covers all dialysis sessions and medication.',
+      monthlyNeed: 180, status: 'sponsored',
+      verifiedAt: new Date(Date.now() - 45*86400000), verifiedById: programManager.id,
+      enrolledBy: programManager.id,
+    },
+  });
+
+  const ben7 = await prisma.beneficiary.upsert({
+    where: { publicId: 'MED-2026-002' },
+    update: {},
+    create: {
+      publicId: 'MED-2026-002', programId: progMedical.id, programType: 'medical',
+      privateFullName: 'Nimco Abdi Farah', privateGuardianName: 'Abdi Farah (Husband)',
+      privateGuardianPhone: '+252616444555',
+      privateAddress: 'Karan District, Mogadishu',
+      privateMedicalNotes: 'Type-1 diabetes. Requires daily insulin and monthly labs.',
+      publicAge: 34, publicGender: 'female', publicRegion: 'Banaadir', publicCity: 'Mogadishu',
+      publicNeedsDesc: 'Monthly insulin + lab tests + medical supplies',
+      publicStory: 'A mother of three living with Type-1 diabetes. She depends on monthly insulin supplies to survive. Sponsorship covers all her medication and regular checkups.',
+      monthlyNeed: 75, status: 'seeking_sponsor',
+      verifiedAt: new Date(Date.now() - 12*86400000), verifiedById: programManager.id,
+      enrolledBy: programManager.id,
+    },
+  });
+
+  const ben8 = await prisma.beneficiary.upsert({
+    where: { publicId: 'FAM-2026-001' },
+    update: {},
+    create: {
+      publicId: 'FAM-2026-001', programId: progFamily.id, programType: 'family_care',
+      privateFullName: 'Khadija Nur Ali (Head of Family)', privateGuardianName: 'N/A',
+      privateGuardianPhone: '+252619888777',
+      privateAddress: 'Dharkenley District, Mogadishu',
+      privateNotes: 'Widow with 6 children. No income. Husband died in 2024.',
+      publicAge: 42, publicGender: 'female', publicRegion: 'Banaadir', publicCity: 'Mogadishu',
+      publicNeedsDesc: 'Monthly food + rent + children\'s school fees',
+      publicStory: 'A widow with six children who lost her husband and sole provider in 2024. Monthly family sponsorship will cover food, rent and the children\'s education until she regains stability.',
+      monthlyNeed: 120, status: 'seeking_sponsor',
+      verifiedAt: new Date(Date.now() - 8*86400000), verifiedById: programManager.id,
+      enrolledBy: programManager.id,
+    },
+  });
+
+  const ben9 = await prisma.beneficiary.upsert({
+    where: { publicId: 'FAM-2026-002' },
+    update: {},
+    create: {
+      publicId: 'FAM-2026-002', programId: progFamily.id, programType: 'family_care',
+      privateFullName: 'Abdulle Sheikh Hassan (Head of Family)',
+      privateGuardianPhone: '+252613000111',
+      privateAddress: 'Afgooye, Lower Shabelle',
+      privateNotes: 'Displaced IDP family. 8 members. Father disabled after accident.',
+      publicAge: 48, publicGender: 'male', publicRegion: 'Lower Shabelle', publicCity: 'Afgooye',
+      publicNeedsDesc: 'Monthly food basket + medical support for disability',
+      publicStory: 'A displaced family of 8 from a rural area. The father became disabled after a farming accident and can no longer work. Monthly sponsorship provides food and basic medical support.',
+      monthlyNeed: 90, status: 'pending_verification',
+      enrolledBy: programManager.id,
+    },
+  });
+  console.log('✅ 9 Beneficiaries enrolled');
+
+  // ── Sample Sponsorship (donor → ben1 child) ───────────────────────────────
+  await prisma.sponsorship.upsert({
+    where: { id: 'spons-demo-001' },
+    update: {},
+    create: {
+      id: 'spons-demo-001',
+      beneficiaryId: ben1.id, sponsorId: donor.id,
+      type: 'full', monthlyAmount: 35, currency: 'USD',
+      status: 'active', paymentMethod: 'bank_transfer',
+      totalPaid: 105, monthsCompleted: 3,
+      nextPaymentDate: new Date(Date.now() + 7*86400000),
+    },
+  });
+
+  await prisma.sponsorship.upsert({
+    where: { id: 'spons-demo-002' },
+    update: {},
+    create: {
+      id: 'spons-demo-002',
+      beneficiaryId: ben6.id, sponsorId: donor.id,
+      type: 'medical', monthlyAmount: 180, currency: 'USD',
+      status: 'active', paymentMethod: 'bank_transfer',
+      totalPaid: 360, monthsCompleted: 2,
+      nextPaymentDate: new Date(Date.now() + 14*86400000),
+    },
+  });
+  console.log('✅ 2 Sponsorships created');
+
+  // ── Monthly Updates for ben1 (3 months) ──────────────────────────────────
+  const months = [
+    { month: 3, year: 2026, schoolAttendance: 92, healthStatus: 'good', progressNotes: 'Amina had an excellent month. She attended school every day except two days due to a minor cold. Her teacher reports she is one of the top students in her class. Food package delivered successfully.', deliveriesMade: ['School fees paid', 'Food package delivered', 'Uniform purchased'] },
+    { month: 4, year: 2026, schoolAttendance: 96, healthStatus: 'good', progressNotes: 'Outstanding progress. Amina scored 94% in her monthly exams. She has made new friends and her confidence has grown. Books and supplies were delivered. Medical checkup completed — all clear.', deliveriesMade: ['School fees paid', 'Books & supplies delivered', 'Medical checkup completed'] },
+    { month: 5, year: 2026, schoolAttendance: 88, healthStatus: 'good', progressNotes: 'Good month overall. Attendance slightly lower due to school holidays mid-month. The teacher confirmed Amina is preparing for end-of-year exams. Her aunt reports she is eating well and happy. Food support delivered.', deliveriesMade: ['School fees paid', 'Monthly food basket delivered', 'Exam preparation materials provided'] },
+  ];
+
+  for (const m of months) {
+    await prisma.monthlyUpdate.upsert({
+      where: { beneficiaryId_month_year: { beneficiaryId: ben1.id, month: m.month, year: m.year } },
+      update: {},
+      create: {
+        beneficiaryId: ben1.id, submittedById: programManager.id,
+        ...m, isPublished: true, publishedAt: new Date(),
+        photoUrls: [], needsAssessment: 'No urgent needs at this time.',
+      },
+    });
+  }
+  console.log('✅ 3 Monthly updates created for CSP-2026-001');
+
+  // ── Community Projects ────────────────────────────────────────────────────
+  await prisma.communityProject.upsert({
+    where: { publicId: 'CP-2026-001' },
+    update: {},
+    create: {
+      publicId: 'CP-2026-001',
+      title: 'Solar Water Well — Daryeel Village', category: 'water',
+      description: 'Construction of a solar-powered water well to serve 850 residents of Daryeel village who currently walk 8km daily to access contaminated water sources.',
+      location: 'Daryeel Village', region: 'Lower Shabelle', country: 'Somalia',
+      populationSize: 850,
+      problemDesc: 'Residents walk 8km daily to the nearest water source which is shared with livestock and frequently contaminated, causing recurring waterborne diseases.',
+      solutionDesc: 'A solar-powered borehole well with a hand pump and storage tank. Low maintenance, sustainable, and provides clean water to all households within walking distance.',
+      fundingGoal: 12000, totalRaised: 8700,
+      status: 'seeking_funding', createdById: programManager.id,
+      phases: [
+        { name: 'Site Preparation', status: 'pending' },
+        { name: 'Drilling', status: 'pending' },
+        { name: 'Pump Installation', status: 'pending' },
+        { name: 'Water Testing', status: 'pending' },
+        { name: 'Project Completion', status: 'pending' },
+      ],
+      photoUrls: [],
+    },
+  });
+
+  await prisma.communityProject.upsert({
+    where: { publicId: 'CP-2026-002' },
+    update: {},
+    create: {
+      publicId: 'CP-2026-002',
+      title: 'Classroom Renovation — Horseed Primary School', category: 'school',
+      description: 'Renovation of 4 damaged classrooms and supply of 120 desks and chairs for Horseed Primary School serving 320 students in Kismayo.',
+      location: 'Kismayo', region: 'Jubaland', country: 'Somalia',
+      populationSize: 320,
+      problemDesc: '4 classrooms have collapsed roofs and broken walls. 320 students have no desks and sit on the floor. The school risks closure.',
+      solutionDesc: 'Full renovation of 4 classrooms with new roofing, walls, windows, and 120 desks and chairs. Will restore a safe learning environment for all 320 students.',
+      fundingGoal: 18000, totalRaised: 4200,
+      status: 'seeking_funding', createdById: programManager.id,
+      phases: [
+        { name: 'Materials Procurement', status: 'pending' },
+        { name: 'Construction', status: 'pending' },
+        { name: 'Furniture Delivery', status: 'pending' },
+        { name: 'Handover & Opening', status: 'pending' },
+      ],
+      photoUrls: [],
+    },
+  });
+
+  await prisma.communityProject.upsert({
+    where: { publicId: 'CP-2026-003' },
+    update: {},
+    create: {
+      publicId: 'CP-2026-003',
+      title: 'Rural Health Clinic — Bulo Burde', category: 'health',
+      description: 'Equipping a new rural health clinic in Bulo Burde with essential medical equipment, solar power and a 3-month medicine supply to serve 1,200 people with no current health access.',
+      location: 'Bulo Burde', region: 'Hiiraan', country: 'Somalia',
+      populationSize: 1200,
+      problemDesc: 'Nearest clinic is 45km away. Residents travel to receive any medical care. Women give birth at home without any support. Child and maternal mortality are high.',
+      solutionDesc: 'Equip an existing building as a functional health clinic with solar power, medical equipment, medicine stock and a trained community health worker for 12 months.',
+      fundingGoal: 25000, totalRaised: 25000,
+      status: 'funded', createdById: programManager.id,
+      verifiedAt: new Date(Date.now() - 15*86400000),
+      phases: [
+        { name: 'Equipment Procurement', status: 'in_progress' },
+        { name: 'Solar Installation', status: 'pending' },
+        { name: 'Medicine Delivery', status: 'pending' },
+        { name: 'Staff Training', status: 'pending' },
+        { name: 'Clinic Opening', status: 'pending' },
+      ],
+      photoUrls: [],
+    },
+  });
+
+  await prisma.communityProject.upsert({
+    where: { publicId: 'CP-2026-004' },
+    update: {},
+    create: {
+      publicId: 'CP-2026-004',
+      title: 'Community Farming Program — Afgooye District', category: 'agriculture',
+      description: 'Seeds, irrigation tools and training for 120 farming families in Afgooye to restore agricultural livelihoods after two consecutive drought years.',
+      location: 'Afgooye', region: 'Lower Shabelle', country: 'Somalia',
+      populationSize: 600,
+      problemDesc: 'Two consecutive droughts have wiped out crops for 120 families. Families have no seeds for next season and no tools. Famine risk is high in this area.',
+      solutionDesc: 'Seed packages, irrigation tools and 2-day farming training for 120 families. Expected to restore food self-sufficiency within one growing season.',
+      fundingGoal: 9500, totalRaised: 9500,
+      status: 'completed', createdById: programManager.id,
+      verifiedAt: new Date(Date.now() - 60*86400000),
+      startedAt: new Date(Date.now() - 45*86400000),
+      completedAt: new Date(Date.now() - 10*86400000),
+      completionReport: 'All 120 families received seed packages and tools. 2-day training completed with 95% attendance. First harvest expected in 8 weeks. Families report significant improvement in food security.',
+      phases: [
+        { name: 'Seed Procurement', status: 'completed', completedAt: new Date(Date.now() - 40*86400000) },
+        { name: 'Tool Distribution', status: 'completed', completedAt: new Date(Date.now() - 35*86400000) },
+        { name: 'Farmer Training', status: 'completed', completedAt: new Date(Date.now() - 30*86400000) },
+        { name: 'First Harvest', status: 'completed', completedAt: new Date(Date.now() - 10*86400000) },
+      ],
+      photoUrls: [],
+    },
+  });
+  console.log('✅ 4 Community Projects created');
+
+  // ── Sample project contribution ───────────────────────────────────────────
+  const proj1 = await prisma.communityProject.findUnique({ where: { publicId: 'CP-2026-001' } });
+  if (proj1) {
+    await prisma.projectContribution.upsert({
+      where: { id: 'contrib-demo-001' },
+      update: {},
+      create: {
+        id: 'contrib-demo-001',
+        projectId: proj1.id, donorId: donor.id,
+        amount: 1000, currency: 'USD', type: 'partial', status: 'confirmed',
+      },
+    });
+  }
+  console.log('✅ Sample project contribution created');
+
   // ── Impact Partners seed ──────────────────────────────────────────────────
   const partnerData = [
     // Featured
@@ -193,20 +570,29 @@ async function main() {
   console.log(`✅ ${partnerData.length} Impact Partners seeded`);
 
   console.log(`
-╔══════════════════════════════════════════════════════╗
-║           🌍 KAFAALE DATABASE SEEDED ✅              ║
-╠══════════════════════════════════════════════════════╣
-║  Password for all accounts: Kafaale123!              ║
-╠══════════════════════════════════════════════════════╣
-║  superadmin@kafaale.org  → Super Admin               ║
-║  admin@kafaale.org       → Admin / Office            ║
-║  agent@kafaale.org       → Field Agent               ║
-║  donor@kafaale.org       → Sponsor / Donor           ║
-║  reporter@kafaale.org    → Reporter                  ║
-╠══════════════════════════════════════════════════════╣
-║  4 cases created (medical, food, shelter, orphan)    ║
-║  22 Impact Partners seeded                           ║
-╚══════════════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════╗
+║           🌍 KAFAALE DATABASE SEEDED ✅                  ║
+╠══════════════════════════════════════════════════════════╣
+║  Password for all accounts: Kafaale123!                  ║
+╠══════════════════════════════════════════════════════════╣
+║  superadmin@kafaale.org   → Super Admin                  ║
+║  admin@kafaale.org        → Admin / Office               ║
+║  programs@kafaale.org     → Program Manager              ║
+║  agent@kafaale.org        → Field Agent                  ║
+║  donor@kafaale.org        → Sponsor / Donor              ║
+║  reporter@kafaale.org     → Reporter                     ║
+╠══════════════════════════════════════════════════════════╣
+║  🚨 Emergency Engine                                     ║
+║     4 cases (medical, food, shelter, orphan)             ║
+║  🌱 Humanitarian Programs Engine                         ║
+║     4 programs created                                   ║
+║     9 beneficiaries enrolled (child, edu, medical, fam)  ║
+║     2 active sponsorships                                ║
+║     3 monthly updates (CSP-2026-001)                     ║
+║  🏗️  Community Projects                                  ║
+║     4 projects (water, school, health, agriculture)      ║
+║  🤝 Impact Partners: 22 seeded                           ║
+╚══════════════════════════════════════════════════════════╝
   `);
 }
 
