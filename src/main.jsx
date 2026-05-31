@@ -32,6 +32,7 @@ import CaseDetail   from './pages/CaseDetail.jsx';
 import Donate       from './pages/Donate.jsx';
 import Contact        from './pages/Contact.jsx';
 import ImpactPartners from './pages/ImpactPartners.jsx';
+import Programs       from './pages/Programs.jsx';
 import Login          from './pages/Login.jsx';
 import Dashboard    from './KafaaleQaadApp.jsx';
 
@@ -59,7 +60,8 @@ function App() {
           <Route path="/cases/:id"     element={<Layout><CaseDetail /></Layout>} />
           <Route path="/donate"        element={<Layout><Donate /></Layout>} />
           <Route path="/contact"         element={<Layout><Contact /></Layout>} />
-          <Route path="/partners"       element={<Layout><ImpactPartners /></Layout>} />
+          <Route path="/partners"        element={<Layout><ImpactPartners /></Layout>} />
+          <Route path="/programs"        element={<Layout><Programs /></Layout>} />
           <Route path="/login"         element={<Login />} />
           <Route path="/dashboard"     element={<Dashboard />} />
           <Route path="/dashboard/*"   element={<Dashboard />} />

@@ -92,4 +92,29 @@ export const ai = {
   sanitize: (caseId)                   => req(`/ai/sanitize/${caseId}`, { method: 'POST' }),
 };
 
-export default { auth, cases, admin, donations, field, notifications, impact, ai, partners, getUser, getToken, isLoggedIn, setAuth, clearAuth };
+// ── Programs endpoints ────────────────────────────────────────────
+export const programs = {
+  list:               ()                      => req('/programs'),
+  stats:              ()                      => req('/programs/stats'),
+  create:             (data)                  => req('/programs', { method: 'POST', body: JSON.stringify(data) }),
+  beneficiaries:      (params = {})           => req('/programs/beneficiaries?' + new URLSearchParams(params)),
+  beneficiariesAdmin: (params = {})           => req('/programs/beneficiaries/admin?' + new URLSearchParams(params)),
+  enrollBeneficiary:  (data)                  => req('/programs/beneficiaries', { method: 'POST', body: JSON.stringify(data) }),
+  verifyBeneficiary:  (id, data)              => req(`/programs/beneficiaries/${id}/verify`, { method: 'PATCH', body: JSON.stringify(data) }),
+  getUpdates:         (beneficiaryId)         => req(`/programs/beneficiaries/${beneficiaryId}/updates`),
+  submitUpdate:       (beneficiaryId, data)   => req(`/programs/beneficiaries/${beneficiaryId}/updates`, { method: 'POST', body: JSON.stringify(data) }),
+  publishUpdate:      (updateId)              => req(`/programs/updates/${updateId}/publish`, { method: 'PATCH' }),
+  mySponshorships:    ()                      => req('/programs/sponsorships/my'),
+  createSponsorship:  (data)                  => req('/programs/sponsorships', { method: 'POST', body: JSON.stringify(data) }),
+};
+
+// ── Community Projects endpoints ──────────────────────────────────
+export const projects = {
+  list:        (params = {})  => req('/projects?' + new URLSearchParams(params)),
+  get:         (id)           => req(`/projects/${id}`),
+  create:      (data)         => req('/projects', { method: 'POST', body: JSON.stringify(data) }),
+  contribute:  (id, data)     => req(`/projects/${id}/contribute`, { method: 'POST', body: JSON.stringify(data) }),
+  updateStatus:(id, data)     => req(`/projects/${id}/status`, { method: 'PATCH', body: JSON.stringify(data) }),
+};
+
+export default { auth, cases, admin, donations, field, notifications, impact, ai, partners, programs, projects, getUser, getToken, isLoggedIn, setAuth, clearAuth };

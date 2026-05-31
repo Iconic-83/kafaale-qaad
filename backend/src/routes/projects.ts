@@ -1,0 +1,132 @@
+import { Router, Response, Request } from 'express';
+import { z } from 'zod';
+import { prisma } from '../prisma/client';
+import { authenticate, AuthRequest } from '../middleware/auth';
+
+const router = Router();
+
+const isAdmin = (role: string) => ['admin','super_admin','program_manager','verification_office'].includes(role);
+
+// GET /api/projects — Public list
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const { category, status, page = '1', limit = '12' } = req.query as Record<string,string>;
+    const where: any = {};
+    if (category) where.category = category;
+    if (status) where.status = status;
+    else where.status = { in: ['seeking_funding','funded','in_progress','completed'] };
+
+    const skip = (parseInt(page)-1) * parseInt(limit);
+    const [projects, total] = await Promise.all([
+      prisma.communityProject.findMany({
+        where,
+        skip, take: parseInt(limit),
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, publicId: true, title: true, description: true, category: true,
+          location: true, region: true, country: true, populationSize: true,
+          problemDesc: true, solutionDesc: true, fundingGoal: true, totalRaised: true,
+          status: true, photoUrls: true, phases: true, startedAt: true, completedAt: true,
+          _count: { select: { contributions: true } },
+        },
+      }),
+      prisma.communityProject.count({ where }),
+    ]);
+    res.json({ projects, pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total/parseInt(limit)) } });
+  } catch { res.status(500).json({ error: 'Failed to fetch projects' }); }
+});
+
+// GET /api/projects/:id — Project detail
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const project = await prisma.communityProject.findFirst({
+      where: { OR: [{ id: String(req.params.id) }, { publicId: String(req.params.id) }] },
+      include: { contributions: { include: { donor: { select: { name: true } } }, orderBy: { createdAt: 'desc' } } },
+    });
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+    res.json(project);
+  } catch { res.status(500).json({ error: 'Failed to fetch project' }); }
+});
+
+// POST /api/projects — Admin create
+router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
+  if (!isAdmin(req.user!.role)) return res.status(403).json({ error: 'Forbidden' });
+  const schema = z.object({
+    title: z.string().min(5).max(200),
+    description: z.string().min(20).max(3000),
+    category: z.enum(['water','school','health','agriculture','shelter','energy']),
+    location: z.string().min(2).max(200),
+    region: z.string().min(2).max(100),
+    country: z.string().optional(),
+    populationSize: z.number().int().min(1).optional(),
+    problemDesc: z.string().min(10).max(1000),
+    solutionDesc: z.string().min(10).max(1000),
+    fundingGoal: z.number().min(100).max(10000000),
+  });
+  try {
+    const data = schema.parse(req.body);
+    const count = await prisma.communityProject.count();
+    const year = new Date().getFullYear();
+    const publicId = `CP-${year}-${String(count + 1).padStart(3, '0')}`;
+    const project = await prisma.communityProject.create({
+      data: { ...data, publicId, createdById: req.user!.id, status: 'seeking_funding' },
+    });
+    res.status(201).json(project);
+  } catch (e: any) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// POST /api/projects/:id/contribute — Donor contributes
+router.post('/:id/contribute', authenticate, async (req: AuthRequest, res: Response) => {
+  const schema = z.object({
+    amount: z.number().min(5).max(1000000),
+    type: z.enum(['full','partial','custom']).optional(),
+  });
+  try {
+    const data = schema.parse(req.body);
+    const project = await prisma.communityProject.findUnique({ where: { id: req.params.id } });
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const contribution = await prisma.projectContribution.create({
+      data: {
+        projectId: req.params.id,
+        donorId: req.user!.id,
+        amount: data.amount,
+        type: data.type || 'partial',
+        status: 'pending',
+      },
+    });
+
+    // Update total raised
+    await prisma.communityProject.update({
+      where: { id: req.params.id },
+      data: { totalRaised: { increment: data.amount } },
+    });
+
+    res.status(201).json(contribution);
+  } catch (e: any) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+// PATCH /api/projects/:id/status — Admin update project status/phases
+router.patch('/:id/status', authenticate, async (req: AuthRequest, res: Response) => {
+  if (!isAdmin(req.user!.role)) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const { status, phases, completionReport } = req.body;
+    const project = await prisma.communityProject.update({
+      where: { id: req.params.id },
+      data: {
+        ...(status && { status }),
+        ...(phases && { phases }),
+        ...(completionReport && { completionReport }),
+        ...(status === 'in_progress' && { startedAt: new Date() }),
+        ...(status === 'completed' && { completedAt: new Date() }),
+      },
+    });
+    res.json(project);
+  } catch { res.status(500).json({ error: 'Failed to update project' }); }
+});
+
+export default router;

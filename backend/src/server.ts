@@ -18,6 +18,8 @@ import impactRoutes from './routes/impact';
 import notificationRoutes from './routes/notifications';
 import aiRoutes from './routes/ai';
 import partnersRoutes from './routes/partners';
+import programsRoutes from './routes/programs';
+import projectsRoutes from './routes/projects';
 import { sysLog } from './services/logger';
 
 const app = express();
@@ -119,6 +121,8 @@ app.use('/api/impact',        impactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai',            aiLimiter, aiRoutes);
 app.use('/api/partners',      partnersRoutes);
+app.use('/api/programs',      programsRoutes);
+app.use('/api/projects',      projectsRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {

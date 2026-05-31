@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext.jsx";
 import { useLang } from "./context/LanguageContext.jsx";
-import { cases as casesApi, admin as adminApi, field as fieldApi, notifications as notifsApi, donations, impact } from "./api/client.js";
+import { cases as casesApi, admin as adminApi, field as fieldApi, notifications as notifsApi, donations, impact, programs as programsApi, projects as projectsApi } from "./api/client.js";
 import Logo from "./components/Logo.jsx";
 import "./responsive.css";
 
@@ -2600,6 +2600,75 @@ const FieldTeamDashboard = ({ cases, currentUser, onViewCase, onInvestigate, onD
           <div style={{ fontSize: 14, color: COLORS.muted, marginTop: 8 }}>You will receive a notification when a case is assigned to you.</div>
         </div>
       )}
+
+      {/* Programs section for field team */}
+      <div style={{ marginTop: 32 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: COLORS.secondary }}>🌱 Program Beneficiaries — Monthly Updates</h3>
+        </div>
+        <FieldTeamProgramsSection currentUser={currentUser} showToast={() => {}} />
+      </div>
+    </div>
+  );
+};
+
+// ── Field team programs section for monthly updates ───────────────────────────
+const FieldTeamProgramsSection = ({ currentUser, showToast }) => {
+  const [beneficiaries, setBeneficiaries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [updateTarget, setUpdateTarget] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showLocalToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  useEffect(() => {
+    programsApi.beneficiariesAdmin({ status: "sponsored" }).then(data => {
+      if (Array.isArray(data)) setBeneficiaries(data);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{ color: COLORS.muted, fontSize: 13 }}>Loading beneficiaries…</div>;
+
+  if (beneficiaries.length === 0) return (
+    <div style={{ background: "#F0FDF4", borderRadius: 12, padding: 24, textAlign: "center", color: COLORS.secondary, border: "1px solid #BBF7D0" }}>
+      <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+      No sponsored beneficiaries assigned yet.
+    </div>
+  );
+
+  return (
+    <div>
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, right: 16, background: COLORS.secondary, color: "#fff", borderRadius: 14, padding: "12px 20px", boxShadow: "0 8px 32px #0003", fontSize: 14, fontWeight: 700, zIndex: 3000 }}>
+          ✅ {toast}
+        </div>
+      )}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
+        {beneficiaries.map(b => {
+          const pt = PROGRAM_TYPE_LABELS[b.programType] || { icon: "👤", color: COLORS.primary };
+          return (
+            <div key={b.id} style={{ background: "#fff", borderRadius: 14, padding: 16, border: `1px solid ${COLORS.border}`, boxShadow: "0 2px 8px #0001" }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: pt.color, background: pt.color + "12", borderRadius: 20, padding: "2px 10px" }}>{pt.icon} {b.publicId}</span>
+                <BeneficiaryStatusBadge status={b.status} />
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{b.privateFullName || "Beneficiary"}</div>
+              <div style={{ fontSize: 11, color: COLORS.muted, marginTop: 2 }}>{b.publicCity || "—"} · ${b.monthlyNeed}/mo</div>
+              <div style={{ marginTop: 10 }}>
+                <Btn variant="purple" size="sm" onClick={() => setUpdateTarget(b)} style={{ width: "100%" }}>
+                  📊 Submit Monthly Update
+                </Btn>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {updateTarget && (
+        <MonthlyUpdateModal beneficiary={updateTarget} onClose={() => setUpdateTarget(null)} showToast={showLocalToast} />
+      )}
     </div>
   );
 };
@@ -2607,6 +2676,8 @@ const FieldTeamDashboard = ({ cases, currentUser, onViewCase, onInvestigate, onD
 const DonorDashboard = ({ cases, currentUser, onViewCase, onSponsor }) => {
   const [myDonations, setMyDonations] = useState([]);
   const [loadingDonations, setLoadingDonations] = useState(true);
+  const [donorTab, setDonorTab] = useState("emergency");
+  const navigate = useNavigate();
 
   useEffect(() => {
     donations.my().then(data => {
@@ -2635,16 +2706,44 @@ const DonorDashboard = ({ cases, currentUser, onViewCase, onSponsor }) => {
   return (
     <div>
       <h2 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 800 }}>❤️ Donor Dashboard</h2>
-      <p style={{ margin: "0 0 20px", color: COLORS.muted }}>Welcome, {currentUser.fullname} — your support changes lives</p>
+      <p style={{ margin: "0 0 16px", color: COLORS.muted }}>Welcome, {currentUser.fullname} — your support changes lives</p>
 
       {/* Stats */}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 28 }}>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
         <StatCard label="Cases to Sponsor" value={waitingCases.length}                    icon="🤝" color={COLORS.primary} />
         <StatCard label="My Donations"      value={myDonations.length}                    icon="❤️" color="#EC4899" />
         <StatCard label="Total Pledged"     value={`$${myTotal.toLocaleString()}`}        icon="💸" color={COLORS.accent} />
         <StatCard label="Confirmed"         value={`$${confirmedTotal.toLocaleString()}`} icon="✅" color={COLORS.secondary} />
       </div>
 
+      {/* Tab selector */}
+      <div style={{ display: "flex", gap: 4, borderBottom: `2px solid ${COLORS.border}`, marginBottom: 24 }}>
+        {[
+          { id: "emergency", label: "🚨 Emergency Cases" },
+          { id: "programs",  label: "🌱 Long-Term Sponsorships" },
+        ].map(t => (
+          <button key={t.id} onClick={() => setDonorTab(t.id)}
+            style={{ padding: "10px 20px", fontSize: 13, fontWeight: 700, border: "none", background: "none", cursor: "pointer", color: donorTab === t.id ? COLORS.primary : COLORS.muted, borderBottom: donorTab === t.id ? `2px solid ${COLORS.primary}` : "2px solid transparent", marginBottom: -2 }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {donorTab === "programs" && (
+        <div>
+          <div style={{ background: `linear-gradient(135deg, ${COLORS.primary}10, ${COLORS.secondary}10)`, borderRadius: 16, padding: 24, marginBottom: 24, border: `1px solid ${COLORS.primary}20` }}>
+            <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>🌱 Sponsor a Future</div>
+            <p style={{ fontSize: 14, color: COLORS.muted, margin: "0 0 16px", lineHeight: 1.7 }}>
+              Unlike emergency donations, long-term sponsorships give you monthly progress updates — school attendance, health reports, photos — and create a real relationship with the beneficiary.
+            </p>
+            <Btn variant="primary" onClick={() => navigate("/programs")}>Browse Beneficiaries & Programs →</Btn>
+          </div>
+          <MySponshorshipsTab />
+        </div>
+      )}
+
+      {donorTab === "emergency" && (
+      <div>
       {/* Cases grid */}
       <h3 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700, color: "#EC4899" }}>💝 Cases Waiting for a Sponsor</h3>
       {waitingCases.length === 0 ? (
@@ -2797,6 +2896,106 @@ const DonorDashboard = ({ cases, currentUser, onViewCase, onSponsor }) => {
           );
         })}
       </div>
+      </div>
+      )}
+    </div>
+  );
+};
+
+// ─── DONOR MY SPONSORSHIPS ────────────────────────────────────────────────────
+const MySponshorshipsTab = () => {
+  const [sponsorships, setSponsorships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    programsApi.mySponshorships().then(data => {
+      if (Array.isArray(data)) setSponsorships(data);
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  if (loading) return <div style={{ textAlign: "center", padding: 40, color: COLORS.muted }}>Loading sponsorships…</div>;
+
+  if (sponsorships.length === 0) return (
+    <div style={{ background: "#fff", borderRadius: 16, padding: 48, textAlign: "center", color: COLORS.muted, boxShadow: "0 2px 8px #0001" }}>
+      <div style={{ fontSize: 48, marginBottom: 12 }}>🌱</div>
+      <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>No long-term sponsorships yet</div>
+      <div style={{ fontSize: 13, marginBottom: 20 }}>Sponsor a child, family, or program for ongoing monthly support with progress updates.</div>
+      <Btn variant="primary" onClick={() => navigate("/programs")}>🌱 Explore Programs →</Btn>
+    </div>
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {sponsorships.map(s => {
+        const b = s.beneficiary;
+        if (!b) return null;
+        const pt = PROGRAM_TYPE_LABELS[b.programType] || { icon: "👤", color: COLORS.primary, label: b.programType };
+        const updates = b.monthlyUpdates || [];
+        return (
+          <div key={s.id} style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 16px #0002", border: `1.5px solid ${pt.color}30` }}>
+            {/* Header */}
+            <div style={{ background: `linear-gradient(135deg, ${pt.color} 0%, ${COLORS.navy} 100%)`, padding: "16px 20px", color: "#fff" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 2 }}>{pt.icon} {b.program?.name || pt.label}</div>
+                  <div style={{ fontSize: 17, fontWeight: 800 }}>{b.publicId}</div>
+                  <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                    {b.publicAge ? `${b.publicAge} years old · ` : ""}{b.publicGender ? `${b.publicGender} · ` : ""}📍 {b.publicCity || "—"}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 20, fontWeight: 900 }}>${s.monthlyAmount}/mo</div>
+                  <div style={{ fontSize: 11, opacity: 0.75 }}>{s.type} sponsorship</div>
+                  <div style={{ fontSize: 10, opacity: 0.6, marginTop: 2 }}>{s.monthsCompleted} months · ${s.totalPaid} total</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress timeline */}
+            {updates.length > 0 && (
+              <div style={{ padding: "16px 20px" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, marginBottom: 12 }}>📊 Progress Journey</div>
+                <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8 }}>
+                  {updates.map((u, i) => (
+                    <div key={u.id} style={{ minWidth: 160, background: "#F8FAFC", borderRadius: 12, padding: "12px 14px", border: `1px solid ${COLORS.border}`, flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.primary, marginBottom: 6 }}>
+                        {MONTH_NAMES[u.month-1]} {u.year}
+                      </div>
+                      {u.schoolAttendance != null && (
+                        <div style={{ fontSize: 12, color: COLORS.text, marginBottom: 3 }}>📚 Attendance: <strong>{u.schoolAttendance}%</strong></div>
+                      )}
+                      {u.healthStatus && (
+                        <div style={{ fontSize: 12, color: COLORS.text, marginBottom: 3 }}>
+                          🏥 Health: <strong>{u.healthStatus === "good" ? "🟢 Good" : u.healthStatus === "fair" ? "🟡 Fair" : "🔴 Poor"}</strong>
+                        </div>
+                      )}
+                      {u.deliveriesMade?.length > 0 && (
+                        <div style={{ marginTop: 6 }}>
+                          {u.deliveriesMade.map((d, j) => (
+                            <div key={j} style={{ fontSize: 10, color: COLORS.secondary, fontWeight: 600 }}>✅ {d}</div>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 10, color: COLORS.muted, marginTop: 6, lineHeight: 1.5 }}>
+                        {u.progressNotes?.slice(0, 80)}{u.progressNotes?.length > 80 ? "…" : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {updates.length === 0 && (
+              <div style={{ padding: "16px 20px", fontSize: 13, color: COLORS.muted, textAlign: "center" }}>
+                📊 Monthly updates will appear here after the first month.
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -2815,11 +3014,12 @@ const UserAvatar = ({ name, size = 36 }) => {
 
 // ─── USERS TAB — avatars, inline role change, delete ─────────────────────────
 const ALL_ROLES = [
-  { value: "reporter",    label: "📝 Reporter"      },
-  { value: "donor",       label: "💳 Donor"          },
-  { value: "field_agent", label: "🔍 Field Agent"    },
-  { value: "admin",       label: "🟠 Admin"          },
-  { value: "super_admin", label: "🔴 Super Admin"    },
+  { value: "reporter",         label: "📝 Reporter"          },
+  { value: "donor",            label: "💳 Donor"              },
+  { value: "field_agent",      label: "🔍 Field Agent"        },
+  { value: "admin",            label: "🟠 Admin"              },
+  { value: "program_manager",  label: "🌱 Program Manager"   },
+  { value: "super_admin",      label: "🔴 Super Admin"        },
 ];
 const ROLE_COLORS = {
   super_admin:  { bg: "#FEE2E2", text: "#991B1B" },
@@ -2914,7 +3114,7 @@ const UsersTab = ({ users, isSuperAdmin, onDeleteUser, onChangeRole }) => {
   );
 };
 
-const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase, onAddUser, onDeleteUser, onChangeRole, onExport, onConfirmDonation, onComplete, onStartDelivery, onFullReport, isSuperAdmin }) => {
+const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase, onAddUser, onDeleteUser, onChangeRole, onExport, onConfirmDonation, onComplete, onStartDelivery, onFullReport, isSuperAdmin, currentUser, showToast }) => {
   const [tab, setTab] = useState("overview");
   const [donFilter, setDonFilter] = useState("all");
   const { t } = useLang();
@@ -2933,6 +3133,7 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
     { id: "users",      label: t("users")      },
     { id: "cases",      label: t("allCases")   },
     { id: "donations",  label: t("donations")  },
+    { id: "programs",   label: "🌱 Programs"   },
   ];
 
   return (
@@ -3148,6 +3349,624 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
 
         </div>
       )}
+
+      {tab === "programs" && (
+        <ProgramsDashboard currentUser={currentUser} showToast={showToast || (() => {})} />
+      )}
+    </div>
+  );
+};
+
+// ─── PROGRAMS ENGINE COMPONENTS ─────────────────────────────────────────────
+
+const PROGRAM_TYPE_LABELS = {
+  child_sponsorship: { icon: "👶", label: "Child Sponsorship", color: "#EC4899" },
+  education:         { icon: "🎓", label: "Education",         color: "#3B82F6" },
+  medical:           { icon: "🩺", label: "Medical Support",   color: "#EF4444" },
+  family_care:       { icon: "🏠", label: "Family Care",       color: "#F59E0B" },
+  nutrition:         { icon: "🍎", label: "Nutrition",         color: "#10B981" },
+  emergency_relief:  { icon: "🚨", label: "Emergency Relief",  color: "#7C3AED" },
+};
+
+const PROJECT_CAT_LABELS = {
+  water:       { icon: "💧", label: "Water & Sanitation" },
+  school:      { icon: "🏫", label: "Education" },
+  health:      { icon: "🏥", label: "Healthcare" },
+  agriculture: { icon: "🌱", label: "Agriculture" },
+  shelter:     { icon: "🏠", label: "Shelter" },
+  energy:      { icon: "⚡", label: "Energy" },
+};
+
+const BeneficiaryStatusBadge = ({ status }) => {
+  const map = {
+    pending_verification: { bg: "#F3F4F6", color: COLORS.muted, label: "⏳ Pending" },
+    verified:             { bg: "#DBEAFE", color: "#1E40AF",    label: "✅ Verified" },
+    seeking_sponsor:      { bg: "#FEF3C7", color: "#92400E",    label: "🤝 Seeking Sponsor" },
+    sponsored:            { bg: "#D1FAE5", color: "#065F46",    label: "❤️ Sponsored" },
+    completed:            { bg: "#F0FDF4", color: "#166534",    label: "🏁 Completed" },
+    on_hold:              { bg: "#F3F4F6", color: COLORS.muted, label: "⏸ On Hold" },
+  };
+  const s = map[status] || { bg: "#F3F4F6", color: COLORS.muted, label: status };
+  return <span style={{ background: s.bg, color: s.color, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>{s.label}</span>;
+};
+
+// ── Enroll Beneficiary Modal ──────────────────────────────────────────────────
+const EnrollBeneficiaryModal = ({ programs: progList, onClose, onDone, showToast }) => {
+  const [form, setForm] = useState({
+    programId: progList[0]?.id || "",
+    programType: "child_sponsorship",
+    privateFullName: "",
+    privateGuardianName: "",
+    privateGuardianPhone: "",
+    privateSchoolName: "",
+    privateAddress: "",
+    privateMedicalNotes: "",
+    privateNotes: "",
+    publicAge: "",
+    publicGender: "female",
+    publicRegion: "",
+    publicCity: "",
+    publicNeedsDesc: "",
+    publicStory: "",
+    monthlyNeed: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = async () => {
+    setError("");
+    if (!form.privateFullName.trim()) return setError("Full name required");
+    if (!form.monthlyNeed || isNaN(parseFloat(form.monthlyNeed))) return setError("Monthly need amount required");
+    if (!form.programId) return setError("Please select a program");
+    setLoading(true);
+    try {
+      await programsApi.enrollBeneficiary({
+        ...form,
+        monthlyNeed: parseFloat(form.monthlyNeed),
+        publicAge: form.publicAge ? parseInt(form.publicAge) : undefined,
+      });
+      showToast("✅ Beneficiary enrolled! Pending verification.");
+      onDone();
+      onClose();
+    } catch (e) {
+      setError(e.message || "Enrollment failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const TYPE_OPTIONS = Object.entries(PROGRAM_TYPE_LABELS).slice(0, 4);
+
+  return (
+    <Modal title="👶 Enroll New Beneficiary" onClose={onClose} wide>
+      <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#065F46" }}>
+        🔐 Private information (full name, guardian, school, medical records) is <strong>never shown publicly</strong>. Only the public profile fields are visible to donors.
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
+        {/* Left — private */}
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.primary, textTransform: "uppercase", marginBottom: 12, letterSpacing: 0.5 }}>🔐 Private Information</div>
+          <Input label="Full Name *" value={form.privateFullName} onChange={e => set("privateFullName", e.target.value)} placeholder="Full legal name" />
+          <Input label="Guardian / Parent Name" value={form.privateGuardianName} onChange={e => set("privateGuardianName", e.target.value)} />
+          <Input label="Guardian Phone" value={form.privateGuardianPhone} onChange={e => set("privateGuardianPhone", e.target.value)} placeholder="+252 61 xxx xxxx" />
+          <Input label="School / Institution" value={form.privateSchoolName} onChange={e => set("privateSchoolName", e.target.value)} />
+          <Input label="Private Address" value={form.privateAddress} onChange={e => set("privateAddress", e.target.value)} placeholder="District, City, Region" />
+          <Textarea label="Medical Notes (if any)" value={form.privateMedicalNotes} onChange={e => set("privateMedicalNotes", e.target.value)} placeholder="Conditions, treatments…" />
+          <Textarea label="Admin Notes" value={form.privateNotes} onChange={e => set("privateNotes", e.target.value)} placeholder="Internal context…" />
+        </div>
+
+        {/* Right — program + public */}
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.primary, textTransform: "uppercase", marginBottom: 12, letterSpacing: 0.5 }}>🌱 Program & Public Profile</div>
+          <Select label="Program *" value={form.programId} onChange={e => set("programId", e.target.value)}>
+            <option value="">— Select program —</option>
+            {progList.map(p => <option key={p.id} value={p.id}>{p.icon} {p.name}</option>)}
+          </Select>
+          <Select label="Program Type *" value={form.programType} onChange={e => set("programType", e.target.value)}>
+            {TYPE_OPTIONS.map(([v, t]) => <option key={v} value={v}>{t.icon} {t.label}</option>)}
+          </Select>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Input label="Age (public)" type="number" value={form.publicAge} onChange={e => set("publicAge", e.target.value)} placeholder="e.g. 10" />
+            <Select label="Gender" value={form.publicGender} onChange={e => set("publicGender", e.target.value)}>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="other">Other</option>
+            </Select>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Input label="Region" value={form.publicRegion} onChange={e => set("publicRegion", e.target.value)} placeholder="e.g. Banaadir" />
+            <Input label="City" value={form.publicCity} onChange={e => set("publicCity", e.target.value)} placeholder="e.g. Mogadishu" />
+          </div>
+          <Input label="Needs Description (public)" value={form.publicNeedsDesc} onChange={e => set("publicNeedsDesc", e.target.value)} placeholder="e.g. School fees + food support" />
+          <Input label="Monthly Need (USD) *" type="number" value={form.monthlyNeed} onChange={e => set("monthlyNeed", e.target.value)} placeholder="e.g. 35" />
+          <Textarea label="Public Story (AI will help sanitize)" value={form.publicStory} onChange={e => set("publicStory", e.target.value)} placeholder="Write a story without private details. Donors will see this." />
+        </div>
+      </div>
+
+      {error && <div style={{ background: "#FEF2F2", color: COLORS.danger, borderRadius: 10, padding: "10px 14px", fontSize: 13, marginTop: 12 }}>⚠️ {error}</div>}
+
+      <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+        <Btn variant="muted" onClick={onClose} style={{ flex: 1 }} disabled={loading}>Cancel</Btn>
+        <Btn variant="primary" onClick={handleSubmit} disabled={loading} style={{ flex: 2 }}>
+          {loading ? "Enrolling…" : "👶 Enroll Beneficiary"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
+// ── Create Program Modal ──────────────────────────────────────────────────────
+const CreateProgramModal = ({ onClose, onDone, showToast }) => {
+  const [form, setForm] = useState({ name: "", type: "child_sponsorship", description: "", icon: "🌱", color: "#004B96", monthlyBudget: "" });
+  const [loading, setLoading] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handle = async () => {
+    if (!form.name || !form.description) return;
+    setLoading(true);
+    try {
+      await programsApi.create({ ...form, monthlyBudget: form.monthlyBudget ? parseFloat(form.monthlyBudget) : undefined });
+      showToast("✅ Program created successfully!");
+      onDone();
+      onClose();
+    } catch (e) {
+      showToast(e.message || "Failed", "error");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Modal title="🌱 Create New Program" onClose={onClose}>
+      <Select label="Program Type *" value={form.type} onChange={e => set("type", e.target.value)}>
+        {Object.entries(PROGRAM_TYPE_LABELS).map(([v, t]) => <option key={v} value={v}>{t.icon} {t.label}</option>)}
+      </Select>
+      <Input label="Program Name *" value={form.name} onChange={e => set("name", e.target.value)} placeholder="e.g. Education Support for Girls" />
+      <Textarea label="Description *" value={form.description} onChange={e => set("description", e.target.value)} placeholder="Describe what this program does and who it helps…" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Input label="Icon (emoji)" value={form.icon} onChange={e => set("icon", e.target.value)} placeholder="🌱" />
+        <Input label="Color (hex)" value={form.color} onChange={e => set("color", e.target.value)} placeholder="#004B96" />
+      </div>
+      <Input label="Monthly Budget ($)" type="number" value={form.monthlyBudget} onChange={e => set("monthlyBudget", e.target.value)} placeholder="Optional" />
+      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+        <Btn variant="muted" onClick={onClose} style={{ flex: 1 }}>Cancel</Btn>
+        <Btn variant="success" onClick={handle} disabled={loading || !form.name || !form.description} style={{ flex: 2 }}>
+          {loading ? "Creating…" : "🌱 Create Program"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
+// ── Monthly Update Modal (field team) ─────────────────────────────────────────
+const MonthlyUpdateModal = ({ beneficiary, onClose, showToast }) => {
+  const now = new Date();
+  const [form, setForm] = useState({
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
+    schoolAttendance: "",
+    healthStatus: "good",
+    progressNotes: "",
+    needsAssessment: "",
+    deliveriesMade: [],
+  });
+  const [delivery, setDelivery] = useState("");
+  const [loading, setLoading] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  const addDelivery = () => {
+    if (!delivery.trim()) return;
+    set("deliveriesMade", [...form.deliveriesMade, delivery.trim()]);
+    setDelivery("");
+  };
+
+  const handle = async () => {
+    if (!form.progressNotes.trim()) return;
+    setLoading(true);
+    try {
+      await programsApi.submitUpdate(beneficiary.id, {
+        ...form,
+        schoolAttendance: form.schoolAttendance ? parseInt(form.schoolAttendance) : undefined,
+      });
+      showToast(`✅ Monthly update for ${MONTH_NAMES[form.month-1]} submitted!`);
+      onClose();
+    } catch (e) {
+      showToast(e.message || "Failed to submit", "error");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Modal title={`📊 Monthly Update — ${beneficiary.publicId}`} onClose={onClose} wide>
+      <div style={{ background: "#EFF6FF", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 12, color: COLORS.primary }}>
+        📋 This update will be reviewed by admin and then shared with the sponsor. Include accurate data and any receipts or photos if available.
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 }}>
+        <Select label="Month *" value={form.month} onChange={e => set("month", parseInt(e.target.value))}>
+          {MONTH_NAMES.map((m, i) => <option key={i+1} value={i+1}>{m}</option>)}
+        </Select>
+        <Input label="Year *" type="number" value={form.year} onChange={e => set("year", parseInt(e.target.value))} />
+      </div>
+
+      {["child_sponsorship","education"].includes(beneficiary.programType) && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <Input label="School Attendance (%)" type="number" min="0" max="100" value={form.schoolAttendance} onChange={e => set("schoolAttendance", e.target.value)} placeholder="0–100" />
+          <Select label="Health Status" value={form.healthStatus} onChange={e => set("healthStatus", e.target.value)}>
+            <option value="good">🟢 Good</option>
+            <option value="fair">🟡 Fair</option>
+            <option value="poor">🔴 Poor</option>
+          </Select>
+        </div>
+      )}
+
+      <Textarea label="Progress Notes *" value={form.progressNotes} onChange={e => set("progressNotes", e.target.value)} placeholder="Describe the beneficiary's progress this month — school performance, health, family situation, challenges…" style={{ minHeight: 100 }} />
+      <Textarea label="Needs Assessment (optional)" value={form.needsAssessment} onChange={e => set("needsAssessment", e.target.value)} placeholder="What additional support is needed next month?" />
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ fontSize: 13, fontWeight: 700, display: "block", marginBottom: 8 }}>✅ What Was Delivered This Month</label>
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <input value={delivery} onChange={e => setDelivery(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addDelivery()}
+            style={{ flex: 1, padding: "8px 12px", border: `1.5px solid ${COLORS.border}`, borderRadius: 8, fontSize: 13 }}
+            placeholder="e.g. School fees paid, Books delivered, Medical checkup" />
+          <Btn variant="primary" size="sm" onClick={addDelivery}>Add</Btn>
+        </div>
+        {form.deliveriesMade.length > 0 && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {form.deliveriesMade.map((d, i) => (
+              <span key={i} style={{ background: COLORS.secondary + "15", color: COLORS.secondary, borderRadius: 20, padding: "4px 12px", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                ✅ {d}
+                <button onClick={() => set("deliveriesMade", form.deliveriesMade.filter((_,j) => j !== i))}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, color: COLORS.muted, lineHeight: 1 }}>×</button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+        <Btn variant="muted" onClick={onClose} style={{ flex: 1 }}>Cancel</Btn>
+        <Btn variant="success" onClick={handle} disabled={loading || !form.progressNotes.trim()} style={{ flex: 2 }}>
+          {loading ? "Submitting…" : "📊 Submit Monthly Update"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
+// ── Create Community Project Modal ────────────────────────────────────────────
+const CreateProjectModal = ({ onClose, onDone, showToast }) => {
+  const [form, setForm] = useState({ title: "", description: "", category: "water", location: "", region: "", populationSize: "", problemDesc: "", solutionDesc: "", fundingGoal: "" });
+  const [loading, setLoading] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const handle = async () => {
+    if (!form.title || !form.description || !form.fundingGoal) return;
+    setLoading(true);
+    try {
+      await projectsApi.create({ ...form, populationSize: form.populationSize ? parseInt(form.populationSize) : undefined, fundingGoal: parseFloat(form.fundingGoal) });
+      showToast("✅ Community project created!");
+      onDone();
+      onClose();
+    } catch (e) {
+      showToast(e.message || "Failed", "error");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Modal title="🏗️ Create Community Project" onClose={onClose} wide>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+        <div>
+          <Select label="Category *" value={form.category} onChange={e => set("category", e.target.value)}>
+            {Object.entries(PROJECT_CAT_LABELS).map(([v,l]) => <option key={v} value={v}>{l.icon} {l.label}</option>)}
+          </Select>
+          <Input label="Project Title *" value={form.title} onChange={e => set("title", e.target.value)} placeholder="e.g. Solar Water Well — Daryeel Village" />
+          <Input label="Location *" value={form.location} onChange={e => set("location", e.target.value)} placeholder="e.g. Daryeel Village" />
+          <Input label="Region *" value={form.region} onChange={e => set("region", e.target.value)} placeholder="e.g. Lower Shabelle" />
+          <Input label="Population Size" type="number" value={form.populationSize} onChange={e => set("populationSize", e.target.value)} placeholder="People who will benefit" />
+          <Input label="Funding Goal (USD) *" type="number" value={form.fundingGoal} onChange={e => set("fundingGoal", e.target.value)} placeholder="e.g. 12000" />
+        </div>
+        <div>
+          <Textarea label="Description *" value={form.description} onChange={e => set("description", e.target.value)} placeholder="Describe the project…" style={{ minHeight: 80 }} />
+          <Textarea label="Problem Description *" value={form.problemDesc} onChange={e => set("problemDesc", e.target.value)} placeholder="What problem does this solve?" />
+          <Textarea label="Solution Description *" value={form.solutionDesc} onChange={e => set("solutionDesc", e.target.value)} placeholder="How will this project solve it?" />
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+        <Btn variant="muted" onClick={onClose} style={{ flex: 1 }}>Cancel</Btn>
+        <Btn variant="teal" onClick={handle} disabled={loading} style={{ flex: 2 }}>
+          {loading ? "Creating…" : "🏗️ Create Project"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
+// ── Programs Dashboard (admin / program_manager) ───────────────────────────────
+const ProgramsDashboard = ({ currentUser, showToast }) => {
+  const [tab, setTab] = useState("overview");
+  const [programs, setPrograms] = useState([]);
+  const [beneficiaries, setBeneficiaries] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showEnroll, setShowEnroll] = useState(false);
+  const [showCreateProg, setShowCreateProg] = useState(false);
+  const [showCreateProj, setShowCreateProj] = useState(false);
+  const [updateTarget, setUpdateTarget] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("");
+
+  const isAdmin = ["super_admin","verification_office","program_manager"].includes(currentUser?.role || "");
+
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      programsApi.list().catch(() => []),
+      programsApi.beneficiariesAdmin({}).catch(() => []),
+      projectsApi.list({ limit: "50" }).catch(() => ({ projects: [] })),
+    ]).then(([progs, bens, projs]) => {
+      setPrograms(Array.isArray(progs) ? progs : []);
+      setBeneficiaries(Array.isArray(bens) ? bens : []);
+      setProjects(projs.projects || []);
+    }).finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleVerify = async (id, status) => {
+    try {
+      await programsApi.verifyBeneficiary(id, { status });
+      showToast(`✅ Beneficiary status updated to: ${status}`);
+      load();
+    } catch (e) {
+      showToast(e.message || "Failed to update", "error");
+    }
+  };
+
+  const filteredBens = filterStatus ? beneficiaries.filter(b => b.status === filterStatus) : beneficiaries;
+
+  const TABS = [
+    { id: "overview",      label: "📊 Overview" },
+    { id: "beneficiaries", label: `👶 Beneficiaries (${beneficiaries.length})` },
+    { id: "projects",      label: `🏗️ Community Projects (${projects.length})` },
+  ];
+
+  if (loading) return (
+    <div style={{ textAlign: "center", padding: "60px 0", color: COLORS.muted }}>
+      <div style={{ fontSize: 40, marginBottom: 12 }}>🌱</div>
+      Loading Programs Engine…
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+        <div>
+          <h2 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 800 }}>🌱 Humanitarian Programs Engine</h2>
+          <p style={{ margin: 0, color: COLORS.muted }}>Long-term beneficiary management — Child Sponsorship, Education, Medical, Family Care</p>
+        </div>
+        {isAdmin && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="primary" size="sm" onClick={() => setShowCreateProg(true)}>+ Program</Btn>
+            <Btn variant="success" size="sm" onClick={() => programs.length > 0 ? setShowEnroll(true) : showToast("Create a program first", "error")}>👶 Enroll</Btn>
+            <Btn variant="teal" size="sm" onClick={() => setShowCreateProj(true)}>🏗️ Project</Btn>
+          </div>
+        )}
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+        <StatCard label="Programs"         value={programs.length}                                           icon="🌱" color={COLORS.secondary} />
+        <StatCard label="Beneficiaries"    value={beneficiaries.length}                                      icon="👶" color="#EC4899" />
+        <StatCard label="Seeking Sponsor"  value={beneficiaries.filter(b=>b.status==="seeking_sponsor").length} icon="🤝" color={COLORS.accent} />
+        <StatCard label="Sponsored"        value={beneficiaries.filter(b=>b.status==="sponsored").length}    icon="❤️" color={COLORS.primary} />
+        <StatCard label="Projects"         value={projects.length}                                            icon="🏗️" color={COLORS.teal} />
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 4, borderBottom: `2px solid ${COLORS.border}`, marginBottom: 24 }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ padding: "10px 20px", fontSize: 14, fontWeight: 700, border: "none", background: "none", cursor: "pointer", color: tab === t.id ? COLORS.primary : COLORS.muted, borderBottom: tab === t.id ? `2px solid ${COLORS.primary}` : "2px solid transparent", marginBottom: -2 }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Overview tab ── */}
+      {tab === "overview" && (
+        <div>
+          <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 800 }}>Active Programs</h3>
+          {programs.length === 0 ? (
+            <div style={{ background: "#fff", borderRadius: 16, padding: 40, textAlign: "center", color: COLORS.muted }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>🌱</div>
+              <div>No programs yet. Create your first program to get started.</div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16, marginBottom: 32 }}>
+              {programs.map(p => {
+                const t = PROGRAM_TYPE_LABELS[p.type] || { icon: "🌱", color: COLORS.primary };
+                return (
+                  <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px #0001", borderLeft: `4px solid ${t.color}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                      <div style={{ fontSize: 28 }}>{p.icon || t.icon}</div>
+                      <span style={{ background: t.color + "15", color: t.color, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                        {p._count?.beneficiaries || 0} enrolled
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 4 }}>{p.name}</div>
+                    <p style={{ fontSize: 12, color: COLORS.muted, margin: "0 0 12px", lineHeight: 1.5 }}>{p.description?.slice(0, 100)}{p.description?.length > 100 ? "…" : ""}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Two engines explainer */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            <div style={{ background: "#FEF2F2", borderRadius: 16, padding: 20, border: "1px solid #FECACA" }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>🚨</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: COLORS.danger, marginBottom: 6 }}>Emergency Response</div>
+              <div style={{ fontSize: 12, color: COLORS.muted, lineHeight: 1.7 }}>Report → Verify → Sponsor → Deliver → Close.<br />One-time emergency cases managed in the main dashboard.</div>
+            </div>
+            <div style={{ background: "#F0FDF4", borderRadius: 16, padding: 20, border: "1px solid #BBF7D0" }}>
+              <div style={{ fontSize: 24, marginBottom: 8 }}>🌱</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: COLORS.secondary, marginBottom: 6 }}>Long-Term Programs</div>
+              <div style={{ fontSize: 12, color: COLORS.muted, lineHeight: 1.7 }}>Enroll → Verify → Sponsor Match → Monthly Updates → Graduation.<br />Continuous care for children, students, patients, and families.</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Beneficiaries tab ── */}
+      {tab === "beneficiaries" && (
+        <div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+            {["","pending_verification","verified","seeking_sponsor","sponsored","completed"].map(s => (
+              <button key={s} onClick={() => setFilterStatus(s)}
+                style={{ padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: `1.5px solid ${filterStatus === s ? COLORS.primary : COLORS.border}`, background: filterStatus === s ? COLORS.primary : "#fff", color: filterStatus === s ? "#fff" : COLORS.muted, cursor: "pointer" }}>
+                {s === "" ? `All (${beneficiaries.length})` : s.replace(/_/g," ") + ` (${beneficiaries.filter(b=>b.status===s).length})`}
+              </button>
+            ))}
+          </div>
+
+          {filteredBens.length === 0 ? (
+            <div style={{ background: "#fff", borderRadius: 16, padding: 40, textAlign: "center", color: COLORS.muted }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>👶</div>
+              {beneficiaries.length === 0 ? "No beneficiaries enrolled yet." : "No beneficiaries with this status."}
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {filteredBens.map(b => {
+                const pt = PROGRAM_TYPE_LABELS[b.programType] || { icon: "👤", color: COLORS.primary };
+                const activeSponsor = b.sponsorships?.[0];
+                return (
+                  <div key={b.id} style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 2px 8px #0001", border: `1px solid ${COLORS.border}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: pt.color, background: pt.color + "12", borderRadius: 20, padding: "2px 10px" }}>{pt.icon} {b.publicId}</span>
+                          <BeneficiaryStatusBadge status={b.status} />
+                          <span style={{ fontSize: 11, color: COLORS.muted, background: "#F3F4F6", borderRadius: 20, padding: "2px 8px" }}>{pt.label}</span>
+                        </div>
+                        <div style={{ fontSize: 15, fontWeight: 800 }}>{b.privateFullName || "Beneficiary"}</div>
+                        <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
+                          📍 {b.publicCity || "—"}{b.publicRegion ? `, ${b.publicRegion}` : ""} · {b.publicAge ? `${b.publicAge} yrs` : ""} {b.publicGender ? `· ${b.publicGender}` : ""}
+                        </div>
+                        <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>
+                          Program: <strong>{b.program?.name || "—"}</strong> · Monthly need: <strong style={{ color: COLORS.secondary }}>${b.monthlyNeed}/mo</strong>
+                        </div>
+                        {activeSponsor && (
+                          <div style={{ fontSize: 12, color: "#065F46", marginTop: 2, fontWeight: 600 }}>
+                            ❤️ Active sponsorship: ${activeSponsor.monthlyAmount}/mo ({activeSponsor.type})
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: COLORS.muted, marginTop: 2 }}>
+                          {b._count?.monthlyUpdates || 0} monthly updates · Enrolled {new Date(b.enrolledAt).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignSelf: "flex-start" }}>
+                        {isAdmin && b.status === "pending_verification" && <>
+                          <Btn variant="success" size="sm" onClick={() => handleVerify(b.id, "seeking_sponsor")}>✅ Verify & Publish</Btn>
+                          <Btn variant="danger" size="sm" onClick={() => handleVerify(b.id, "on_hold")}>⏸ Hold</Btn>
+                        </>}
+                        {isAdmin && b.status === "verified" && (
+                          <Btn variant="primary" size="sm" onClick={() => handleVerify(b.id, "seeking_sponsor")}>🤝 Seek Sponsor</Btn>
+                        )}
+                        {["field_team","program_manager"].some(r => r === currentUser?.role) && b.status === "sponsored" && (
+                          <Btn variant="purple" size="sm" onClick={() => setUpdateTarget(b)}>📊 Monthly Update</Btn>
+                        )}
+                        {b.status === "sponsored" && isAdmin && (
+                          <Btn variant="purple" size="sm" onClick={() => setUpdateTarget(b)}>📊 Submit Update</Btn>
+                        )}
+                        {isAdmin && b.status === "sponsored" && (
+                          <Btn variant="muted" size="sm" onClick={() => handleVerify(b.id, "completed")}>🏁 Complete</Btn>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Projects tab ── */}
+      {tab === "projects" && (
+        <div>
+          {projects.length === 0 ? (
+            <div style={{ background: "#fff", borderRadius: 16, padding: 40, textAlign: "center", color: COLORS.muted }}>
+              <div style={{ fontSize: 40, marginBottom: 8 }}>🏗️</div>
+              No community projects yet.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {projects.map(p => {
+                const cat = PROJECT_CAT_LABELS[p.category] || { icon: "🌍", label: p.category };
+                const pct = p.fundingGoal > 0 ? Math.min(100, Math.round((p.totalRaised / p.fundingGoal) * 100)) : 0;
+                const statusColors = { seeking_funding: "#F59E0B", funded: "#10B981", in_progress: "#3B82F6", completed: "#5A6E8A" };
+                return (
+                  <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 2px 8px #0001", border: `1px solid ${COLORS.border}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.teal, background: COLORS.teal + "12", borderRadius: 20, padding: "2px 10px" }}>{cat.icon} {p.publicId}</span>
+                          <span style={{ background: (statusColors[p.status] || COLORS.muted) + "20", color: statusColors[p.status] || COLORS.muted, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
+                            {p.status.replace(/_/g," ").toUpperCase()}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 15, fontWeight: 800 }}>{p.title}</div>
+                        <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>📍 {p.location}, {p.region} · {p.populationSize ? `${p.populationSize.toLocaleString()} people` : ""}</div>
+                        <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center" }}>
+                          <div style={{ background: COLORS.border, borderRadius: 20, height: 6, flex: 1, overflow: "hidden" }}>
+                            <div style={{ background: pct >= 100 ? COLORS.secondary : COLORS.primary, width: `${pct}%`, height: "100%", borderRadius: 20 }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary }}>{pct}%</span>
+                          <span style={{ fontSize: 12, color: COLORS.muted }}>${p.totalRaised.toLocaleString()} / ${p.fundingGoal.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      {isAdmin && (
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {p.status === "seeking_funding" && pct >= 100 && (
+                            <Btn variant="success" size="sm" onClick={async () => { await projectsApi.updateStatus(p.id, { status: "funded" }); load(); showToast("✅ Project marked as funded!"); }}>Mark Funded</Btn>
+                          )}
+                          {p.status === "funded" && (
+                            <Btn variant="teal" size="sm" onClick={async () => { await projectsApi.updateStatus(p.id, { status: "in_progress" }); load(); showToast("🔨 Project started!"); }}>Start Project</Btn>
+                          )}
+                          {p.status === "in_progress" && (
+                            <Btn variant="primary" size="sm" onClick={async () => { await projectsApi.updateStatus(p.id, { status: "completed" }); load(); showToast("🏁 Project completed!"); }}>Mark Complete</Btn>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modals */}
+      {showEnroll && <EnrollBeneficiaryModal programs={programs} onClose={() => setShowEnroll(false)} onDone={load} showToast={showToast} />}
+      {showCreateProg && <CreateProgramModal onClose={() => setShowCreateProg(false)} onDone={load} showToast={showToast} />}
+      {showCreateProj && <CreateProjectModal onClose={() => setShowCreateProj(false)} onDone={load} showToast={showToast} />}
+      {updateTarget && <MonthlyUpdateModal beneficiary={updateTarget} onClose={() => setUpdateTarget(null)} showToast={showToast} />}
+    </div>
+  );
+};
+
+// ── Program Manager Dashboard ──────────────────────────────────────────────────
+const ProgramManagerDashboard = ({ currentUser, showToast }) => {
+  return (
+    <div>
+      <h2 style={{ margin: "0 0 4px", fontSize: 24, fontWeight: 800 }}>🌱 Program Manager Dashboard</h2>
+      <p style={{ margin: "0 0 24px", color: COLORS.muted }}>Welcome, {currentUser.fullname} — manage long-term beneficiaries and monthly updates</p>
+      <ProgramsDashboard currentUser={currentUser} showToast={showToast} />
     </div>
   );
 };
@@ -3163,6 +3982,7 @@ const ROLE_MAP = {
   observer:            "observer",
   verification_office: "verification_office",
   field_team:          "field_team",
+  program_manager:     "program_manager",
 };
 
 const ROLE_LABELS = {
@@ -3171,6 +3991,7 @@ const ROLE_LABELS = {
   field_team:          { icon: "🗺️", label: "Field Agent" },
   donor:               { icon: "❤️", label: "Donor / Sponsor" },
   super_admin:         { icon: "🛡️", label: "Super Admin" },
+  program_manager:     { icon: "🌱", label: "Program Manager" },
 };
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────
@@ -3448,7 +4269,7 @@ export default function KafaaleQaadApp() {
   }
 
   // ─── Access denied guard ────────────────────────────────────────────────
-  const VALID_ROLES = ["observer","verification_office","field_team","donor","super_admin"];
+  const VALID_ROLES = ["observer","verification_office","field_team","donor","super_admin","program_manager"];
   if (!VALID_ROLES.includes(internalRole)) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: COLORS.bg }}>
@@ -3491,7 +4312,11 @@ export default function KafaaleQaadApp() {
         onViewCase={setSelectedCase} onAddUser={() => setShowAddUser(true)} onDeleteUser={handleDeleteUser}
         onChangeRole={handleChangeRole} onExport={() => setShowExport(true)} isSuperAdmin={authUser?.role === "super_admin"}
         onConfirmDonation={handleConfirmDonation} onComplete={setCompleteCase}
-        onStartDelivery={setDeliveryAssign} onFullReport={setFullReportId} />
+        onStartDelivery={setDeliveryAssign} onFullReport={setFullReportId}
+        currentUser={currentUser} showToast={showToast} />
+    ),
+    program_manager: (
+      <ProgramManagerDashboard currentUser={currentUser} showToast={showToast} />
     ),
   };
 

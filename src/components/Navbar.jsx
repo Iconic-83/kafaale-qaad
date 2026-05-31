@@ -43,6 +43,7 @@ export default function Navbar() {
     { to: "/donate",      label: `❤️ ${t("navDonate")}` },
     { to: "/contact",     label: t("navContact")        },
     { to: "/partners",   label: `🤝 Partners`          },
+    { to: "/programs",   label: `🌱 Programs`          },
   ];
 
   const isActive = (path) => path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
