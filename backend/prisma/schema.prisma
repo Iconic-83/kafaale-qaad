@@ -54,15 +54,26 @@ model Case {
   privateVictimName   String?
   privateVictimPhone  String?
   privateAddress      String?
+  privateDistrict     String?
   privateGpsLat       Float?
   privateGpsLng       Float?
   privateFamilySize   Int?
   privateVictimAge    Int?
   privateVictimGender String?
-  privateDescription  String?   // nullable — some cases start without full description
+  privateDescription  String?
   privateNotes        String?
+  privateGuardianName String?
 
   caseRef         String?  @unique  // e.g. KQ-2026-0001
+
+  // Case type & needs
+  caseType        String   @default("emergency") // emergency | child_support | community_report
+  needsChecklist  String[]                        // education, food, medical, shelter, clothing, disability
+  programRecommendation String?                   // child_sponsorship | education | medical | family_care
+
+  // Community report fields
+  communityVillageName String?
+  communityChildCount  Int?
 
   category        String   @default("other")
   emergencyLevel  String   @default("medium")
@@ -242,6 +253,8 @@ enum AdminAction {
   completed
   role_changed
   user_deleted
+  requested_more_info
+  enrolled_as_beneficiary
 }
 
 enum NotificationType {

@@ -10,16 +10,22 @@ const CreateCaseSchema = z.object({
   privateVictimName:   z.string().min(2).max(100).optional(),
   privateVictimPhone:  z.string().max(20).optional(),
   privateAddress:      z.string().max(500).optional(),
+  privateDistrict:     z.string().max(100).optional(),
   privateGpsLat:       z.number().min(-90).max(90).optional(),
   privateGpsLng:       z.number().min(-180).max(180).optional(),
   privateFamilySize:   z.number().int().min(1).max(50).optional(),
   privateVictimAge:    z.number().int().min(0).max(120).optional(),
   privateVictimGender: z.enum(['male','female','other']).optional(),
-  privateDescription:  z.string().min(20).max(3000),
+  privateDescription:  z.string().min(10).max(3000),
   privateNotes:        z.string().max(1000).optional(),
-  category:            z.enum(['food','medical','shelter','orphan','disaster','education','other']),
+  privateGuardianName: z.string().max(100).optional(),
+  category:            z.enum(['food','medical','shelter','orphan','disaster','education','child_support','family_support','other']),
   emergencyLevel:      z.enum(['low','medium','high','critical']),
   targetGoal:          z.number().positive().max(1000000).optional(),
+  caseType:            z.enum(['emergency','child_support','community_report']).optional(),
+  needsChecklist:      z.array(z.string()).optional(),
+  communityVillageName: z.string().max(200).optional(),
+  communityChildCount:  z.number().int().min(1).max(10000).optional(),
 });
 
 // GET /api/cases — Public cases feed (waiting_for_sponsor + completed)
@@ -93,7 +99,14 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
     const count = await prisma.case.count();
     const caseRef = `KQ-${year}-${String(count + 1).padStart(4, '0')}`;
     const kase = await prisma.case.create({
-      data: { reporterId: req.user!.id, ...data, status: 'pending_review', caseRef },
+      data: {
+        reporterId: req.user!.id,
+        ...data,
+        needsChecklist: data.needsChecklist || [],
+        caseType: data.caseType || 'emergency',
+        status: 'pending_review',
+        caseRef,
+      },
     });
     // Notify admins
     const admins = await prisma.user.findMany({ where: { role: { in: ['admin','super_admin'] }, isActive: true }, select: { id: true } });

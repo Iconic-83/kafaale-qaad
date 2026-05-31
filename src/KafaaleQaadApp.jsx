@@ -605,47 +605,91 @@ const CaseDetailModal = ({ c, currentUser, onClose, onUpdateCase, onSponsor }) =
 };
 
 // ─── REPORT CASE MODAL ─────────────────────────────────────────────────────
+const REPORT_CATEGORIES = [
+  // Child & family support
+  { value: "child_support",   label: "👶 Child Support",        type: "child_support",  desc: "Orphan, vulnerable child needing long-term support" },
+  { value: "education",       label: "🎓 Education Support",     type: "child_support",  desc: "Child needing school fees, books, uniforms" },
+  { value: "orphan",          label: "🏠 Orphan Care",           type: "child_support",  desc: "Child with no parents or guardian support" },
+  { value: "medical",         label: "🩺 Medical Support",       type: "child_support",  desc: "Child needing ongoing medical treatment" },
+  { value: "family_support",  label: "👨‍👩‍👧 Family Support",      type: "child_support",  desc: "Vulnerable family needing monthly support" },
+  // Emergency
+  { value: "food",            label: "🍚 Food Emergency",        type: "emergency",      desc: "Urgent food insecurity — immediate help needed" },
+  { value: "shelter",         label: "🏚️ Emergency Shelter",     type: "emergency",      desc: "Displacement, flooding, structural damage" },
+  { value: "disaster",        label: "🌊 Disaster Relief",       type: "emergency",      desc: "Natural disaster, crisis, urgent relief" },
+  { value: "other",           label: "📌 Other",                 type: "emergency",      desc: "Anything not covered above" },
+];
+
+const NEEDS_OPTIONS = [
+  { value: "education",  label: "🎓 Education / School Fees" },
+  { value: "food",       label: "🍚 Food Support" },
+  { value: "medical",    label: "🩺 Medical Care" },
+  { value: "shelter",    label: "🏠 Shelter / Housing" },
+  { value: "clothing",   label: "👗 Clothing / Uniform" },
+  { value: "disability", label: "♿ Disability Support" },
+];
+
 const ReportCaseModal = ({ onClose, onSubmit, currentUser }) => {
+  const [reportMode, setReportMode] = useState(""); // "" | "individual" | "community"
   const [form, setForm] = useState({
     privateVictimName:   "",
     privateVictimAge:    "",
     privateVictimGender: "female",
     privateVictimPhone:  "",
     privateAddress:      "",
+    privateDistrict:     "",
     privateFamilySize:   "",
     privateDescription:  "",
     privateNotes:        "",
-    category:            "food",
-    emergencyLevel:      "high",
+    privateGuardianName: "",
+    category:            "child_support",
+    emergencyLevel:      "medium",
     targetGoal:          "",
+    needsChecklist:      [],
+    communityVillageName: "",
+    communityChildCount:  "",
   });
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const toggleNeed = (val) => setForm(f => ({
+    ...f,
+    needsChecklist: f.needsChecklist.includes(val) ? f.needsChecklist.filter(x => x !== val) : [...f.needsChecklist, val],
+  }));
+
+  const selectedCategory = REPORT_CATEGORIES.find(c => c.value === form.category);
+  const isCommunity = reportMode === "community";
+  const isChildType = selectedCategory?.type === "child_support";
 
   const handleSubmit = async () => {
     setError("");
-    if (!form.privateVictimName.trim()) return setError("Victim name is required");
-    if (form.privateDescription.trim().length < 20) return setError("Description must be at least 20 characters");
-    if (!form.privateAddress.trim()) return setError("Location / address is required");
+    if (!isCommunity && !form.privateVictimName.trim()) return setError("Name is required");
+    if (!form.privateDescription.trim() || form.privateDescription.trim().length < 10) return setError("Please describe the situation (min. 10 characters)");
+    if (!isCommunity && !form.privateAddress.trim() && !form.privateDistrict.trim()) return setError("Location is required");
+    if (isCommunity && !form.communityVillageName.trim()) return setError("Village/community name is required");
+    if (isCommunity && !form.communityChildCount) return setError("Number of children is required");
 
     setLoading(true);
     try {
       const payload = {
-        privateVictimName:   form.privateVictimName.trim(),
-        privateDescription:  form.privateDescription.trim(),
-        privateAddress:      form.privateAddress.trim(),
-        category:            form.category,
-        emergencyLevel:      form.emergencyLevel,
-        ...(form.privateVictimAge    && { privateVictimAge:    parseInt(form.privateVictimAge)  }),
-        ...(form.privateVictimGender && { privateVictimGender: form.privateVictimGender }),
-        ...(form.privateVictimPhone  && { privateVictimPhone:  form.privateVictimPhone.trim() }),
-        ...(form.privateFamilySize   && { privateFamilySize:   parseInt(form.privateFamilySize) }),
-        ...(form.privateNotes        && { privateNotes:        form.privateNotes.trim() }),
-        ...(form.targetGoal          && { targetGoal:          parseFloat(form.targetGoal) }),
+        category:         form.category,
+        emergencyLevel:   form.emergencyLevel,
+        privateDescription: form.privateDescription.trim(),
+        caseType:         isCommunity ? "community_report" : (isChildType ? "child_support" : "emergency"),
+        needsChecklist:   form.needsChecklist,
+        ...(form.privateVictimName    && { privateVictimName:   form.privateVictimName.trim() }),
+        ...(form.privateVictimAge     && { privateVictimAge:    parseInt(form.privateVictimAge) }),
+        ...(form.privateVictimGender  && { privateVictimGender: form.privateVictimGender }),
+        ...(form.privateVictimPhone   && { privateVictimPhone:  form.privateVictimPhone.trim() }),
+        ...(form.privateAddress       && { privateAddress:      form.privateAddress.trim() }),
+        ...(form.privateDistrict      && { privateDistrict:     form.privateDistrict.trim() }),
+        ...(form.privateFamilySize    && { privateFamilySize:   parseInt(form.privateFamilySize) }),
+        ...(form.privateNotes         && { privateNotes:        form.privateNotes.trim() }),
+        ...(form.privateGuardianName  && { privateGuardianName: form.privateGuardianName.trim() }),
+        ...(form.targetGoal           && { targetGoal:          parseFloat(form.targetGoal) }),
+        ...(isCommunity && form.communityVillageName && { communityVillageName: form.communityVillageName.trim() }),
+        ...(isCommunity && form.communityChildCount  && { communityChildCount:  parseInt(form.communityChildCount) }),
       };
       const result = await casesApi.submit(payload);
-      // Submission succeeded — tell parent to reload
       onSubmit(result);
       onClose();
     } catch (e) {
@@ -655,67 +699,139 @@ const ReportCaseModal = ({ onClose, onSubmit, currentUser }) => {
     }
   };
 
-  const CATEGORIES = [
-    { value: "food",      label: "🍚 Food Insecurity"     },
-    { value: "medical",   label: "🏥 Medical Emergency"   },
-    { value: "shelter",   label: "🏠 Shelter / Housing"   },
-    { value: "orphan",    label: "👶 Orphan / Child Aid"  },
-    { value: "disaster",  label: "🌊 Disaster Relief"     },
-    { value: "education", label: "📚 Education Support"   },
-    { value: "other",     label: "📌 Other"               },
-  ];
+  // ── Step 0: Choose report mode ───────────────────────────────────────────
+  if (!reportMode) return (
+    <Modal title="📝 New Report" onClose={onClose} wide>
+      <p style={{ color: COLORS.muted, fontSize: 14, marginBottom: 24 }}>What type of report are you submitting?</p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+        <button onClick={() => setReportMode("individual")}
+          style={{ background: "#fff", border: `2px solid ${COLORS.primary}`, borderRadius: 16, padding: "24px 20px", cursor: "pointer", textAlign: "left" }}>
+          <div style={{ fontSize: 36, marginBottom: 10 }}>👤</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.primary, marginBottom: 6 }}>Individual Report</div>
+          <div style={{ fontSize: 13, color: COLORS.muted, lineHeight: 1.6 }}>
+            One child, one person, or one family needing support.
+            Examples: orphan needing school fees, child needing medical care, family needing monthly food.
+          </div>
+          <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: COLORS.primary }}>→ Start Individual Report</div>
+        </button>
+        <button onClick={() => setReportMode("community")}
+          style={{ background: "#fff", border: `2px solid ${COLORS.secondary}`, borderRadius: 16, padding: "24px 20px", cursor: "pointer", textAlign: "left" }}>
+          <div style={{ fontSize: 36, marginBottom: 10 }}>🏘️</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.secondary, marginBottom: 6 }}>Community Report</div>
+          <div style={{ fontSize: 13, color: COLORS.muted, lineHeight: 1.6 }}>
+            Many children or families in one village or area.
+            Examples: 100 children need school fees in Village X, entire IDP camp needs food.
+          </div>
+          <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: COLORS.secondary }}>→ Start Community Report</div>
+        </button>
+      </div>
+    </Modal>
+  );
 
   return (
-    <Modal title="📝 Report New Case" onClose={onClose} wide>
+    <Modal title={isCommunity ? "🏘️ Community Report" : "👤 Individual Report"} onClose={onClose} wide>
       {/* Privacy note */}
       <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#065F46" }}>
-        🔐 All personal details you enter are <strong>private and encrypted</strong>. Only verified admins and field agents can see this information. Donors never see victim names, phones, or addresses.
+        🔐 All personal information is <strong>private</strong>. Only admins and field agents see it. Sponsors never see names, phones, or exact addresses.
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
-        {/* Left: victim info */}
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.primary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>🔐 Private Victim Information</div>
-          <Input label="Victim Full Name *" value={form.privateVictimName}
-            onChange={e => set("privateVictimName", e.target.value)} placeholder="Full name" />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-            <Input label="Age" type="number" value={form.privateVictimAge}
-              onChange={e => set("privateVictimAge", e.target.value)} placeholder="Years" />
-            <Select label="Gender" value={form.privateVictimGender} onChange={e => set("privateVictimGender", e.target.value)}>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="other">Other</option>
-            </Select>
+      {/* Category selector */}
+      <div style={{ marginBottom: 20 }}>
+        <label style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, display: "block", marginBottom: 10 }}>What kind of support is needed? *</label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 8 }}>
+          {REPORT_CATEGORIES.filter(c => isCommunity ? c.type === "child_support" : true).map(cat => (
+            <button key={cat.value} onClick={() => set("category", cat.value)}
+              style={{ padding: "10px 12px", borderRadius: 10, border: `2px solid ${form.category === cat.value ? COLORS.primary : COLORS.border}`, background: form.category === cat.value ? COLORS.primary + "10" : "#fff", cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: form.category === cat.value ? COLORS.primary : COLORS.text }}>{cat.label}</div>
+              <div style={{ fontSize: 10, color: COLORS.muted, marginTop: 3, lineHeight: 1.4 }}>{cat.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Needs checklist */}
+      {(isChildType || isCommunity) && (
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: COLORS.text, display: "block", marginBottom: 10 }}>Current Needs (select all that apply)</label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {NEEDS_OPTIONS.map(n => (
+              <label key={n.value} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 20, border: `2px solid ${form.needsChecklist.includes(n.value) ? COLORS.secondary : COLORS.border}`, background: form.needsChecklist.includes(n.value) ? COLORS.secondary + "12" : "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700, color: form.needsChecklist.includes(n.value) ? COLORS.secondary : COLORS.muted }}>
+                <input type="checkbox" checked={form.needsChecklist.includes(n.value)} onChange={() => toggleNeed(n.value)} style={{ display: "none" }} />
+                {form.needsChecklist.includes(n.value) ? "✅" : "○"} {n.label}
+              </label>
+            ))}
           </div>
-          <Input label="Phone Number" value={form.privateVictimPhone}
-            onChange={e => set("privateVictimPhone", e.target.value)} placeholder="+252 61 xxx xxxx" />
-          <Input label="Family Size (no. of people)" type="number" value={form.privateFamilySize}
-            onChange={e => set("privateFamilySize", e.target.value)} placeholder="e.g. 5" />
-          <Input label="Address / Location *" value={form.privateAddress}
-            onChange={e => set("privateAddress", e.target.value)} placeholder="District, City, Region" />
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
+        {/* Left: subject info */}
+        <div>
+          {isCommunity ? (
+            <>
+              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.secondary, textTransform: "uppercase", marginBottom: 12 }}>🏘️ Community Information</div>
+              <Input label="Village / Community Name *" value={form.communityVillageName}
+                onChange={e => set("communityVillageName", e.target.value)} placeholder="e.g. Daryeel Village" />
+              <Input label="Number of Children *" type="number" value={form.communityChildCount}
+                onChange={e => set("communityChildCount", e.target.value)} placeholder="e.g. 100" />
+              <Input label="District / Region *" value={form.privateDistrict}
+                onChange={e => set("privateDistrict", e.target.value)} placeholder="e.g. Lower Shabelle" />
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.primary, textTransform: "uppercase", marginBottom: 12 }}>🔐 Private Information</div>
+              <Input label="Full Name *" value={form.privateVictimName}
+                onChange={e => set("privateVictimName", e.target.value)} placeholder={isChildType ? "Child's full name" : "Person's full name"} />
+              {isChildType && (
+                <Input label="Guardian / Parent Name" value={form.privateGuardianName}
+                  onChange={e => set("privateGuardianName", e.target.value)} placeholder="Guardian's name" />
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Input label="Age" type="number" value={form.privateVictimAge}
+                  onChange={e => set("privateVictimAge", e.target.value)} placeholder="Years" />
+                <Select label="Gender" value={form.privateVictimGender} onChange={e => set("privateVictimGender", e.target.value)}>
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="other">Other</option>
+                </Select>
+              </div>
+              <Input label="Phone / Contact" value={form.privateVictimPhone}
+                onChange={e => set("privateVictimPhone", e.target.value)} placeholder="+252 61 xxx xxxx" />
+              <Input label="Family Size" type="number" value={form.privateFamilySize}
+                onChange={e => set("privateFamilySize", e.target.value)} placeholder="No. of people" />
+              <Input label="District / Neighbourhood" value={form.privateDistrict}
+                onChange={e => set("privateDistrict", e.target.value)} placeholder="e.g. Hodan District" />
+              <Input label="Full Address" value={form.privateAddress}
+                onChange={e => set("privateAddress", e.target.value)} placeholder="Street, building, landmarks" />
+            </>
+          )}
         </div>
 
-        {/* Right: case details */}
+        {/* Right: situation */}
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.primary, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>📋 Case Details</div>
-          <Select label="Category *" value={form.category} onChange={e => set("category", e.target.value)}>
-            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </Select>
-          <Select label="Urgency Level *" value={form.emergencyLevel} onChange={e => set("emergencyLevel", e.target.value)}>
-            <option value="critical">🚨 Critical — Life-threatening, immediate help needed</option>
-            <option value="high">🔴 High — Urgent within days</option>
+          <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.primary, textTransform: "uppercase", marginBottom: 12 }}>📋 Situation Details</div>
+
+          <Select label="Urgency *" value={form.emergencyLevel} onChange={e => set("emergencyLevel", e.target.value)}>
+            <option value="critical">🚨 Critical — Immediate action needed</option>
+            <option value="high">🔴 High — Within days</option>
             <option value="medium">🟡 Medium — Within a week</option>
-            <option value="low">🟢 Low — Stable but needs support</option>
+            <option value="low">🟢 Low — Stable, ongoing need</option>
           </Select>
-          <Input label="Estimated Amount Needed (USD)" type="number" value={form.targetGoal}
-            onChange={e => set("targetGoal", e.target.value)} placeholder="e.g. 800" />
-          <Textarea label="Situation Description * (min. 20 characters)" value={form.privateDescription}
+
+          <Textarea label={isCommunity ? "Community Situation * (Why do they need support?)" : "Why does this person need support? *"}
+            value={form.privateDescription}
             onChange={e => set("privateDescription", e.target.value)}
-            placeholder="Describe the full situation — what happened, why they need help, what is urgently needed…"
-            style={{ minHeight: 120 }} />
+            placeholder={isCommunity
+              ? "Describe the community situation — e.g. Families cannot afford school fees. Children are dropping out. 100 children in Village X need sponsorship."
+              : "Describe the situation in detail — what happened, why they need help, what their daily life is like, what is urgently needed."}
+            style={{ minHeight: 130 }} />
+
+          <Input label="Estimated Monthly Need (USD)" type="number" value={form.targetGoal}
+            onChange={e => set("targetGoal", e.target.value)} placeholder={isCommunity ? "e.g. 3000" : "e.g. 35"} />
+
           <Textarea label="Additional Notes (optional)" value={form.privateNotes}
             onChange={e => set("privateNotes", e.target.value)}
-            placeholder="Any other relevant information for the verification team…" />
+            placeholder="Any extra context for the verification team — school name, hospital, documents available…" />
         </div>
       </div>
 
@@ -726,13 +842,14 @@ const ReportCaseModal = ({ onClose, onSubmit, currentUser }) => {
       )}
 
       <div style={{ background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#92400E", marginTop: 16 }}>
-        📋 After submission you will see this case immediately in your dashboard with status <strong>Pending Verification</strong>. Admin will assign a field agent to investigate.
+        📋 After submission: status → <strong>Pending Review</strong>. The {isCommunity ? "community" : "child/person"} will not be visible to sponsors until a field team investigates and admin approves.
       </div>
 
       <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
-        <Btn variant="muted" onClick={onClose} style={{ flex: 1 }} disabled={loading}>Cancel</Btn>
-        <Btn variant="primary" onClick={handleSubmit} disabled={loading} style={{ flex: 2 }}>
-          {loading ? "Submitting…" : "📤 Submit Case Report"}
+        <Btn variant="muted" onClick={() => setReportMode("")} disabled={loading}>← Back</Btn>
+        <Btn variant="muted" onClick={onClose} disabled={loading}>Cancel</Btn>
+        <Btn variant="primary" onClick={handleSubmit} disabled={loading} style={{ flex: 1 }}>
+          {loading ? "Submitting…" : isCommunity ? "🏘️ Submit Community Report" : "📤 Submit Report"}
         </Btn>
       </div>
     </Modal>
@@ -1120,6 +1237,137 @@ const AssignDeliveryModal = ({ caseItem, agents, onClose, onDone, showToast }) =
   );
 };
 
+// ─── REQUEST MORE INFO MODAL ────────────────────────────────────────────────
+const RequestMoreInfoModal = ({ caseItem, onClose, onDone, showToast }) => {
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handle = async () => {
+    if (!message.trim()) return;
+    setLoading(true);
+    try {
+      await adminApi.requestMoreInfo(caseItem.id, message.trim());
+      showToast("📋 Info request sent to reporter");
+      onDone && onDone();
+      onClose();
+    } catch (e) { showToast(e.message || "Failed", "error"); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <Modal title={`📋 Request More Information — ${caseItem.id}`} onClose={onClose}>
+      <div style={{ background: "#EFF6FF", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: COLORS.primary }}>
+        The reporter will receive a notification asking them to provide additional information before verification can proceed.
+      </div>
+      <Textarea label="What information is needed? *" value={message} onChange={e => setMessage(e.target.value)}
+        placeholder="e.g. Please upload a school letter, provide the guardian's contact number, or clarify the child's current living situation…"
+        style={{ minHeight: 100 }} />
+      <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+        <Btn variant="ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</Btn>
+        <Btn variant="primary" onClick={handle} disabled={!message.trim() || loading} style={{ flex: 2 }}>
+          {loading ? "Sending…" : "📋 Send Request to Reporter"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
+// ─── ENROLL AS BENEFICIARY MODAL ────────────────────────────────────────────
+const EnrollBeneficiaryFromCaseModal = ({ caseItem, onClose, onDone, showToast }) => {
+  const [programs, setPrograms] = useState([]);
+  const [form, setForm] = useState({
+    programId: "",
+    programType: "child_sponsorship",
+    monthlyNeed: "",
+    publicStory: "",
+    publicNeedsDesc: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    programsApi.list().then(p => {
+      if (Array.isArray(p)) { setPrograms(p); if (p[0]) set("programId", p[0].id); }
+    }).catch(() => {});
+  }, []);
+
+  const needsDesc = (caseItem._raw?.needsChecklist || []).join(", ") || "";
+  const handle = async () => {
+    if (!form.programId || !form.monthlyNeed) return showToast("Program and monthly need are required", "error");
+    setLoading(true);
+    try {
+      const result = await adminApi.enrollBeneficiary(caseItem.id, {
+        ...form,
+        monthlyNeed: parseFloat(form.monthlyNeed),
+      });
+      showToast(`✅ Enrolled as ${result.publicId} — now seeking sponsor!`);
+      onDone && onDone();
+      onClose();
+    } catch (e) { showToast(e.message || "Failed to enroll", "error"); }
+    finally { setLoading(false); }
+  };
+
+  const PTYPES = [
+    { value: "child_sponsorship", label: "👶 Child Sponsorship" },
+    { value: "education",         label: "🎓 Education" },
+    { value: "medical",           label: "🩺 Medical" },
+    { value: "family_care",       label: "🏠 Family Care" },
+  ];
+
+  return (
+    <Modal title={`🌱 Enroll as Program Beneficiary — ${caseItem.id}`} onClose={onClose} wide>
+      {/* Case summary */}
+      <div style={{ background: "#F0FDF4", borderRadius: 12, padding: "14px 18px", marginBottom: 20, border: "1px solid #BBF7D0" }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: "#166534" }}>
+          {caseItem.victim_name} · 📍 {caseItem.location}
+        </div>
+        {needsDesc && (
+          <div style={{ fontSize: 12, color: "#047857", marginTop: 4 }}>Reported needs: {needsDesc}</div>
+        )}
+        {caseItem._raw?.programRecommendation && (
+          <div style={{ marginTop: 6, fontSize: 12, fontWeight: 700, color: "#065F46", background: "#D1FAE5", display: "inline-block", borderRadius: 20, padding: "2px 10px" }}>
+            🔍 Field team recommendation: {caseItem._raw.programRecommendation.replace(/_/g, " ")}
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 20 }}>
+        <div>
+          <Select label="Program *" value={form.programId} onChange={e => set("programId", e.target.value)}>
+            <option value="">— Select program —</option>
+            {programs.map(p => <option key={p.id} value={p.id}>{p.icon} {p.name}</option>)}
+          </Select>
+          <Select label="Program Type *" value={form.programType} onChange={e => set("programType", e.target.value)}>
+            {PTYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+          </Select>
+          <Input label="Monthly Need (USD) *" type="number" value={form.monthlyNeed}
+            onChange={e => set("monthlyNeed", e.target.value)} placeholder="e.g. 35" />
+          <Input label="Public Needs Description" value={form.publicNeedsDesc}
+            onChange={e => set("publicNeedsDesc", e.target.value)}
+            placeholder={needsDesc || "e.g. School fees + food + uniform"} />
+        </div>
+        <div>
+          <Textarea label="Public Story (what sponsors will see)" value={form.publicStory}
+            onChange={e => set("publicStory", e.target.value)}
+            placeholder="Write a safe story without private details — no name, phone, or exact address. Sponsors will see this."
+            style={{ minHeight: 160 }} />
+        </div>
+      </div>
+
+      <div style={{ background: "#EFF6FF", borderRadius: 10, padding: "10px 14px", marginTop: 12, fontSize: 12, color: COLORS.primary }}>
+        ℹ️ The case will be marked as <strong>Completed</strong> and the beneficiary will be enrolled with status <strong>Seeking Sponsor</strong>. Private data (name, address, phone) remains hidden from the public profile.
+      </div>
+
+      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+        <Btn variant="ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</Btn>
+        <Btn variant="success" onClick={handle} disabled={!form.programId || !form.monthlyNeed || loading} style={{ flex: 2 }}>
+          {loading ? "Enrolling…" : "🌱 Enroll as Beneficiary"}
+        </Btn>
+      </div>
+    </Modal>
+  );
+};
+
 // ─── REJECT CASE MODAL ──────────────────────────────────────────────────────
 const RejectCaseModal = ({ caseItem, onClose, onDone, showToast }) => {
   const [reason, setReason] = useState("");
@@ -1229,6 +1477,7 @@ const InvestigationModal = ({ caseItem, onClose, onDone, showToast }) => {
     fraudRiskNotes: "",
     verificationStatus: "verified",
     officialNotes: "",
+    programRecommendation: caseItem._raw?.programRecommendation || (["child_support","education","orphan","family_support"].includes(caseItem._raw?.category) ? "child_sponsorship" : "emergency"),
   });
   const [loading, setLoading] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -1301,6 +1550,14 @@ const InvestigationModal = ({ caseItem, onClose, onDone, showToast }) => {
             <option value="mobile_money">📱 Mobile Money (EVC/Zaad)</option>
             <option value="goods_in_kind">📦 Goods in Kind</option>
             <option value="medical_services">🏥 Medical Services</option>
+          </Select>
+
+          <Select label="Program Recommendation" value={form.programRecommendation} onChange={e => set("programRecommendation", e.target.value)}>
+            <option value="emergency">🚨 Emergency Response (one-time aid)</option>
+            <option value="child_sponsorship">👶 Child Sponsorship (monthly)</option>
+            <option value="education">🎓 Education Program (monthly)</option>
+            <option value="medical">🩺 Medical Continuity (monthly)</option>
+            <option value="family_care">🏠 Family Care Program (monthly)</option>
           </Select>
 
           <div style={{ fontWeight: 700, fontSize: 13, color: COLORS.primary, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5, marginTop: 8 }}>Fraud Risk Assessment</div>
@@ -2250,7 +2507,7 @@ const ObserverDashboard = ({ cases, currentUser, onReport, onViewCase }) => {
   );
 };
 
-const VerificationDashboard = ({ cases, agents, donations = [], onViewCase, onAssign, onReject, onPublish, onViewReport, onConfirmDonation, onComplete, onStartDelivery }) => {
+const VerificationDashboard = ({ cases, agents, donations = [], onViewCase, onAssign, onReject, onPublish, onViewReport, onConfirmDonation, onComplete, onStartDelivery, onRequestInfo, onEnroll }) => {
   const [tab, setTab] = useState("workflow");
   const [donFilter, setDonFilter] = useState("all");
 
@@ -2289,11 +2546,17 @@ const VerificationDashboard = ({ cases, agents, donations = [], onViewCase, onAs
         {c.status === "Pending Verification" && <>
           <Btn variant="primary" size="sm" onClick={() => onAssign(c)}>🗺️ Assign Team</Btn>
           <Btn variant="success" size="sm" onClick={() => onPublish(c)}>✅ Approve & Publish</Btn>
+          <Btn variant="teal"   size="sm" onClick={() => onRequestInfo && onRequestInfo(c)}>📋 Request Info</Btn>
           <Btn variant="danger"  size="sm" onClick={() => onReject(c)}>❌ Reject</Btn>
         </>}
         {c.status === "Awaiting Approval" && <>
-          <Btn variant="purple" size="sm" onClick={() => onViewReport(c)}>📋 View Field Report</Btn>
-          <Btn variant="success" size="sm" onClick={() => onPublish(c)}>✅ Approve & Publish</Btn>
+          <Btn variant="purple" size="sm" onClick={() => onViewReport(c)}>📋 Field Report</Btn>
+          {(c._raw?.caseType === "child_support" || ["child_support","education","orphan","family_support","medical"].includes(c._raw?.category)) ? (
+            <Btn variant="success" size="sm" onClick={() => onEnroll && onEnroll(c)}>🌱 Enroll in Program</Btn>
+          ) : (
+            <Btn variant="success" size="sm" onClick={() => onPublish(c)}>✅ Approve & Publish</Btn>
+          )}
+          <Btn variant="success" size="sm" onClick={() => onPublish(c)}>✅ Publish as Emergency</Btn>
           <Btn variant="danger"  size="sm" onClick={() => onReject(c)}>❌ Reject</Btn>
         </>}
         {["Under Review","Investigating"].includes(c.status) && (
@@ -4030,6 +4293,8 @@ export default function KafaaleQaadApp() {
     team_id:          c.assignedAgentId,
     findings:         c.fieldInvestigation?.officialNotes || "",
     donation_amount:  c.totalRaised || 0,
+    caseType:         c.caseType || "emergency",
+    needsChecklist:   c.needsChecklist || [],
     target_goal:      c.targetGoal  || 0,
     media_files: [], proof_files: [],
     fieldInvestigation: c.fieldInvestigation,
@@ -4059,6 +4324,8 @@ export default function KafaaleQaadApp() {
   const [investigateCase,   setInvestigateCase]  = useState(null);
   const [publishCase,       setPublishCase]      = useState(null);
   const [rejectCase,        setRejectCase]       = useState(null);
+  const [requestInfoCase,   setRequestInfoCase]  = useState(null);
+  const [enrollCase,        setEnrollCase]       = useState(null);
   const [fieldReportCase,   setFieldReportCase]  = useState(null);
   const [deliveryCase,      setDeliveryCase]     = useState(null);
   const [deliveryAssign,    setDeliveryAssign]   = useState(null);
@@ -4296,7 +4563,8 @@ export default function KafaaleQaadApp() {
         onViewCase={setSelectedCase} onAssign={setAssignCase} onReject={setRejectCase}
         onPublish={setPublishCase} onViewReport={setFieldReportCase}
         onConfirmDonation={handleConfirmDonation} onComplete={setCompleteCase}
-        onStartDelivery={setDeliveryAssign} />
+        onStartDelivery={setDeliveryAssign}
+        onRequestInfo={setRequestInfoCase} onEnroll={setEnrollCase} />
     ),
     field_team: (
       <FieldTeamDashboard cases={filteredCases} currentUser={currentUser}
@@ -4452,6 +4720,15 @@ export default function KafaaleQaadApp() {
       {rejectCase && (
         <RejectCaseModal caseItem={rejectCase} onClose={() => setRejectCase(null)}
           onDone={handleCaseStatusUpdate} showToast={showToast} />
+      )}
+      {requestInfoCase && (
+        <RequestMoreInfoModal caseItem={requestInfoCase} onClose={() => setRequestInfoCase(null)}
+          onDone={() => reloadCases()} showToast={showToast} />
+      )}
+      {enrollCase && (
+        <EnrollBeneficiaryFromCaseModal caseItem={enrollCase} onClose={() => setEnrollCase(null)}
+          onDone={() => { reloadCases(); showToast("🌱 Child enrolled in program and seeking sponsor!"); }}
+          showToast={showToast} />
       )}
       {fieldReportCase && (
         <FieldReportModal caseItem={fieldReportCase} onClose={() => setFieldReportCase(null)} />

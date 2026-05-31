@@ -55,6 +55,8 @@ export const admin = {
   confirmDonation:  (id)                      => req(`/admin/donations/${id}/confirm`,         { method: 'PATCH' }),
   assignDelivery:   (id, agentId)             => req(`/admin/cases/${id}/assign-delivery`,     { method: 'PATCH', body: JSON.stringify({ agentId }) }),
   completeCase:     (id, notes)               => req(`/admin/cases/${id}/complete`,            { method: 'PATCH', body: JSON.stringify({ adminNotes: notes }) }),
+  requestMoreInfo:  (id, message)             => req(`/admin/cases/${id}/request-info`,        { method: 'PATCH', body: JSON.stringify({ message }) }),
+  enrollBeneficiary:(id, data)               => req(`/admin/cases/${id}/enroll-beneficiary`,  { method: 'POST',  body: JSON.stringify(data) }),
 };
 
 // ── Donations endpoints ───────────────────────────────────────────

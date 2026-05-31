@@ -337,6 +337,72 @@ router.delete('/users/:id', async (req: AuthRequest, res: Response) => {
 });
 
 // GET /api/admin/audit — Audit log
+// PATCH /api/admin/cases/:id/request-info — Request more information from reporter
+router.patch('/cases/:id/request-info', async (req: AuthRequest, res: Response) => {
+  try {
+    const { message } = req.body;
+    if (!message?.trim()) return res.status(400).json({ error: 'Message required' });
+
+    await prisma.case.update({ where: { id: req.params.id }, data: { status: 'pending_review', privateNotes: `[INFO REQUESTED] ${message}` } });
+    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, caseId: req.params.id, action: 'requested_more_info', notes: message } });
+
+    // Notify reporter
+    const kase = await prisma.case.findUnique({ where: { id: req.params.id }, select: { reporterId: true } });
+    if (kase?.reporterId) {
+      await prisma.notification.create({ data: { userId: kase.reporterId, caseId: req.params.id, type: 'case_submitted', title: '📋 More Information Needed', message: `Admin has requested additional information: ${message}` } });
+    }
+    res.json({ success: true });
+  } catch { res.status(500).json({ error: 'Failed' }); }
+});
+
+// POST /api/admin/cases/:id/enroll-beneficiary — Convert verified case to program beneficiary
+router.post('/cases/:id/enroll-beneficiary', async (req: AuthRequest, res: Response) => {
+  try {
+    const { programId, programType, monthlyNeed, publicStory, publicNeedsDesc } = req.body;
+    if (!programId || !programType) return res.status(400).json({ error: 'programId and programType required' });
+
+    const kase = await prisma.case.findUnique({ where: { id: req.params.id } });
+    if (!kase) return res.status(404).json({ error: 'Case not found' });
+
+    const year = new Date().getFullYear();
+    const count = await prisma.beneficiary.count();
+    const prefix = programType === 'child_sponsorship' ? 'CSP' : programType === 'education' ? 'EDU' : programType === 'medical' ? 'MED' : 'FAM';
+    const publicId = `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
+
+    const beneficiary = await prisma.beneficiary.create({
+      data: {
+        publicId,
+        programId,
+        programType,
+        privateFullName: kase.privateVictimName || undefined,
+        privateGuardianName: kase.privateGuardianName || undefined,
+        privateGuardianPhone: kase.privateVictimPhone || undefined,
+        privateAddress: kase.privateAddress || undefined,
+        privateNotes: kase.privateNotes || undefined,
+        publicAge: kase.privateVictimAge || undefined,
+        publicGender: kase.privateVictimGender || undefined,
+        publicRegion: kase.publicCity || kase.privateDistrict || undefined,
+        publicCity: kase.publicCity || undefined,
+        publicNeedsDesc: publicNeedsDesc || (kase.needsChecklist?.join(', ') || undefined),
+        publicStory: publicStory || kase.publicStory || undefined,
+        monthlyNeed: monthlyNeed || 0,
+        status: 'seeking_sponsor',
+        verifiedAt: new Date(),
+        verifiedById: req.user!.id,
+        enrolledBy: req.user!.id,
+      },
+    });
+
+    // Update case status
+    await prisma.case.update({ where: { id: req.params.id }, data: { status: 'completed', completedAt: new Date() } });
+    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, caseId: req.params.id, action: 'enrolled_as_beneficiary', notes: `Enrolled as ${publicId}` } });
+
+    res.status(201).json({ beneficiary, publicId });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/audit', async (_req: AuthRequest, res: Response) => {
   try {
     const logs = await prisma.adminAuditLog.findMany({

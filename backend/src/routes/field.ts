@@ -30,6 +30,7 @@ const InvestigationSchema = z.object({
   fraudRiskNotes: z.string().max(500).optional(),
   verificationStatus: z.enum(['verified','rejected','needs_review']),
   officialNotes: z.string().max(2000).optional(),
+  programRecommendation: z.enum(['child_sponsorship','education','medical','family_care','emergency']).optional(),
 });
 
 router.post('/investigate', async (req: AuthRequest, res: Response) => {
@@ -46,7 +47,11 @@ router.post('/investigate', async (req: AuthRequest, res: Response) => {
     });
     await prisma.case.update({
       where: { id: data.caseId },
-      data: { status: 'investigation_completed', investigationCompletedAt: new Date() },
+      data: {
+        status: 'investigation_completed',
+        investigationCompletedAt: new Date(),
+        ...(data.programRecommendation && { programRecommendation: data.programRecommendation }),
+      },
     });
     const admins = await prisma.user.findMany({ where: { role: { in: ['admin','super_admin'] } }, select: { id: true } });
     await prisma.notification.createMany({
