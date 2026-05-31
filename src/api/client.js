@@ -1,5 +1,7 @@
 // ─── Kafaale Qaad — Central API Client ───────────────────────────────────
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const IS_DEV = import.meta.env.DEV;
+const API = import.meta.env.VITE_API_URL
+  || (IS_DEV ? 'http://localhost:4000/api' : 'https://determined-grace-production-e07b.up.railway.app/api');
 
 // ── Auth helpers ─────────────────────────────────────────────────
 export const getToken = () => localStorage.getItem('kf_token');
