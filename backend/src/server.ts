@@ -7,7 +7,10 @@ import http from 'http';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
 
-dotenv.config();
+// Load .env only in development — in production Railway injects all env vars directly
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 import authRoutes from './routes/auth';
 import casesRoutes from './routes/cases';
