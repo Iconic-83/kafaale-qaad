@@ -56,16 +56,37 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/cases/my — Reporter's own cases
+// GET /api/cases/my — Reporter's own cases list
 router.get('/my', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const cases = await prisma.case.findMany({
       where: { reporterId: req.user!.id },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, caseRef: true, category: true, emergencyLevel: true, status: true, publicTitle: true, privateDescription: true, targetGoal: true, totalRaised: true, createdAt: true, rejectionReason: true },
+      select: { id: true, caseRef: true, category: true, caseType: true, emergencyLevel: true, status: true, publicTitle: true, privateDescription: true, privateDistrict: true, publicCity: true, targetGoal: true, totalRaised: true, createdAt: true, rejectionReason: true },
     });
-    res.json(cases);
+    res.json({ cases });
   } catch { res.status(500).json({ error: 'Failed to retrieve your cases' }); }
+});
+
+// GET /api/cases/my/:id — Reporter's own case detail (private data)
+router.get('/my/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const kase = await prisma.case.findFirst({
+      where: { id: req.params.id, reporterId: req.user!.id },
+      select: {
+        id: true, caseRef: true, category: true, caseType: true, emergencyLevel: true, status: true,
+        privateVictimName: true, privateDistrict: true, privateFamilySize: true, privateDescription: true,
+        needsChecklist: true, publicTitle: true, publicCity: true, publicCountry: true,
+        targetGoal: true, totalRaised: true, rejectionReason: true,
+        createdAt: true, updatedAt: true, teamAssignedAt: true, sponsoredAt: true, completedAt: true,
+        mediaFiles: { select: { id: true, url: true, type: true, isPublic: true } },
+        fieldInvestigation: { select: { verificationStatus: true, createdAt: true, deliveryFeasible: true } },
+        deliveryProof: { select: { deliveryDate: true, deliveryMethod: true, amountDelivered: true, adminConfirmed: true } },
+      },
+    });
+    if (!kase) return res.status(404).json({ error: 'Case not found' });
+    res.json({ case: kase });
+  } catch { res.status(500).json({ error: 'Failed to retrieve case' }); }
 });
 
 // GET /api/cases/:id — Public case detail
