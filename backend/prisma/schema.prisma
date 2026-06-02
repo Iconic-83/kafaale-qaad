@@ -24,6 +24,7 @@ model User {
   city              String?
   organization      String?
   isActive          Boolean   @default(true)
+  expoPushToken     String?
   lastLoginAt       DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

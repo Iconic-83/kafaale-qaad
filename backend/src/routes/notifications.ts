@@ -6,12 +6,12 @@ router.use(authenticate);
 
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
-    const notifs = await prisma.notification.findMany({
+    const notifications = await prisma.notification.findMany({
       where: { userId: req.user!.id },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
-    res.json(notifs);
+    res.json({ notifications });
   } catch { res.status(500).json({ error: 'Failed' }); }
 });
 

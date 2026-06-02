@@ -76,6 +76,16 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 });
 
+// POST /api/auth/push-token — Save Expo push token for this device
+router.post('/push-token', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { token } = req.body;
+    if (!token || typeof token !== 'string') return res.status(400).json({ error: 'Token required' });
+    await prisma.user.update({ where: { id: req.user!.id }, data: { expoPushToken: token } });
+    res.json({ message: 'Push token saved' });
+  } catch { res.status(500).json({ error: 'Failed to save push token' }); }
+});
+
 // GET /api/auth/me — Get current user profile
 router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   try {
