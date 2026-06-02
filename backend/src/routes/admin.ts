@@ -100,6 +100,13 @@ router.patch('/cases/:id/assign-delivery', async (req: AuthRequest, res: Respons
     const agent = await prisma.user.findUnique({ where: { id: agentId } });
     if (!agent || agent.role !== 'field_agent') return res.status(400).json({ error: 'Invalid field agent' });
 
+    const existing = await prisma.case.findUnique({ where: { id: req.params.id }, select: { status: true } });
+    if (!existing) return res.status(404).json({ error: 'Case not found' });
+    const assignableStatuses = ['sponsored', 'delivering'];
+    if (!assignableStatuses.includes(existing.status)) {
+      return res.status(400).json({ error: `Cannot assign delivery — case is in '${existing.status}' status` });
+    }
+
     const kase = await prisma.case.update({
       where: { id: req.params.id },
       data:  { assignedAgentId: agentId, status: 'delivering' },
@@ -154,8 +161,9 @@ router.get('/stats', async (_req: AuthRequest, res: Response) => {
   } catch { res.status(500).json({ error: 'Failed to retrieve stats' }); }
 });
 
-// GET /api/admin/users — All users
-router.get('/users', async (_req: AuthRequest, res: Response) => {
+// GET /api/admin/users — All users (admin/super_admin only — not verification_office)
+router.get('/users', async (req: AuthRequest, res: Response) => {
+  if (!['admin','super_admin'].includes(req.user!.role)) return res.status(403).json({ error: 'Forbidden' });
   try {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
@@ -165,8 +173,9 @@ router.get('/users', async (_req: AuthRequest, res: Response) => {
   } catch { res.status(500).json({ error: 'Failed to retrieve users' }); }
 });
 
-// GET /api/admin/donations — All donations with full details
-router.get('/donations', async (_req: AuthRequest, res: Response) => {
+// GET /api/admin/donations — All donations with full details (admin/super_admin only)
+router.get('/donations', async (req: AuthRequest, res: Response) => {
+  if (!['admin','super_admin'].includes(req.user!.role)) return res.status(403).json({ error: 'Forbidden' });
   try {
     const [donationList, totals] = await Promise.all([
       prisma.donation.findMany({

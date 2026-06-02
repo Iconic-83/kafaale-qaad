@@ -14,21 +14,19 @@ const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
   }
 });
 
-// ── Disk Storage ─────────────────────────────────────────
-const storage = multer.diskStorage({
-  destination: (req: Request, file, cb) => {
-    const folder = req.path.includes('field') ? 'field'
-      : req.path.includes('delivery') ? 'delivery'
-      : req.path.includes('profile') ? 'profiles'
-      : 'cases';
-    cb(null, path.join(UPLOAD_DIR, folder));
-  },
-  filename: (req: Request, file, cb) => {
-    const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${unique}${ext}`);
-  },
-});
+// ── Disk Storage — folder is explicit, never derived from request path ──────
+function makeStorage(folder: 'cases' | 'field' | 'delivery' | 'profiles') {
+  return multer.diskStorage({
+    destination: (_req: Request, _file, cb) => {
+      cb(null, path.join(UPLOAD_DIR, folder));
+    },
+    filename: (_req: Request, file, cb) => {
+      const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${unique}${ext}`);
+    },
+  });
+}
 
 // ── File Filter — Only safe types ────────────────────────
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
@@ -53,8 +51,11 @@ const limits = {
   files: 10,                   // Max 10 files per upload
 };
 
-// ── Export multer instances ─────────────────────────────
-export const upload = multer({ storage, fileFilter, limits });
+// ── Named upload instances — use the correct one per route ─────────────────
+export const uploadCases    = multer({ storage: makeStorage('cases'),    fileFilter, limits });
+export const uploadField    = multer({ storage: makeStorage('field'),    fileFilter, limits });
+export const uploadDelivery = multer({ storage: makeStorage('delivery'), fileFilter, limits });
+export const uploadProfiles = multer({ storage: makeStorage('profiles'), fileFilter, limits });
 
 /** Build public URL for an uploaded file */
 export function buildFileUrl(req: Request, filename: string, folder: string): string {

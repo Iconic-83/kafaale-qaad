@@ -17,7 +17,7 @@ const RegisterSchema = z.object({
   city: z.string().max(100).optional(),
   organization: z.string().max(200).optional(),
   preferredLanguage: z.enum(['en', 'so', 'ar', 'fr', 'es', 'tr']).default('en'),
-  role: z.enum(['guest', 'reporter', 'donor', 'field_agent']).default('donor'),
+  role: z.enum(['reporter', 'donor']).default('donor'),
 });
 
 const LoginSchema = z.object({

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import type { AuthRequest } from '../middleware/auth';
+import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { prisma } from '../prisma/client';
 import { sysLog } from '../services/logger';
 
@@ -115,13 +115,6 @@ To register on the platform:
 4. Select your role: Reporter (to report cases) or Donor/Sponsor (to fund cases)
 5. Your account is created immediately
 6. Field agents, verification officers, and admins are added directly by system administrators
-
-Demo accounts available for testing (password: Kafaale123!):
-- superadmin@kafaale.org — Super Admin
-- admin@kafaale.org — Admin / Verification Officer
-- agent@kafaale.org — Field Agent
-- donor@kafaale.org — Donor
-- reporter@kafaale.org — Reporter
 
 ═══════════════════════════════════════════════════════
 HOW TO SPONSOR / DONATE
@@ -312,7 +305,7 @@ const DEMO_RESPONSES: Record<string, string> = {
 
   payment: `Kafaale Qaad accepts the following payment methods:\n\n💳 Stripe — Credit/debit cards (Visa, Mastercard, Amex, etc.) — for international donors\n🅿️ PayPal — For international donors who prefer PayPal\n🏦 Bank Transfer — SWIFT international or local bank transfers\n📱 Ama Gateway — Somali local mobile money (for donors in Somalia)\n\nAll payments are:\n• Encrypted end-to-end\n• PCI DSS Level 1 certified (highest standard)\n• Held in secure escrow until delivery is confirmed\n• Tax certificates issued automatically\n• Anonymous donations supported\n• Any currency accepted (auto-converted)\n\nYour money CANNOT be released to the field until a verified delivery proof is uploaded.`,
 
-  register: `To join Kafaale Qaad:\n\n1. Go to /login on the website\n2. Click "Register"\n3. Fill in: Full name, email, country, city, phone (optional), and password (min 8 chars)\n4. Choose your role:\n   • 📝 Reporter — to report emergency cases in your community\n   • 💳 Donor/Sponsor — to fund verified cases\n5. Account created immediately — no waiting period\n\nField agents, verification officers, and admins are onboarded directly by our team (contact partners@kafaale.so).\n\nTest accounts (password: Kafaale123!):\n• superadmin@kafaale.org\n• admin@kafaale.org\n• agent@kafaale.org\n• donor@kafaale.org\n• reporter@kafaale.org`,
+  register: `To join Kafaale Qaad:\n\n1. Go to /login on the website\n2. Click "Register"\n3. Fill in: Full name, email, country, city, phone (optional), and password (min 8 chars)\n4. Choose your role:\n   • 📝 Reporter — to report emergency cases in your community\n   • 💳 Donor/Sponsor — to fund verified cases\n5. Account created immediately — no waiting period\n\nField agents, verification officers, and admins are onboarded directly by our team (contact partners@kafaale.so).`,
 
   category: `Cases on Kafaale Qaad are organized into 7 categories:\n\n🍚 FOOD — Hunger, malnutrition, food insecurity, emergency rations\n🏥 MEDICAL — Illness, injury, surgery costs, medicine, hospital care\n🏠 SHELTER — Homelessness, displacement, flood-damaged homes, temporary housing\n👶 ORPHAN — Children without parents needing care, education, housing\n🌪️ DISASTER — Floods, drought, storms, fire — sudden emergency situations\n📚 EDUCATION — School fees, books, uniforms, university costs\n🌍 OTHER — Any emergency that doesn't fit the above categories\n\nYou can filter cases by category on the /cases page to find what matters most to you.`,
 
@@ -477,7 +470,7 @@ INSTRUCTIONS FOR RESPONDING:
 });
 
 // POST /api/ai/sanitize/:caseId — Admin triggers AI sanitization
-router.post('/sanitize/:caseId', async (req: AuthRequest, res: Response) => {
+router.post('/sanitize/:caseId', authenticate, requireRole(['admin','super_admin','verification_office']), async (req: AuthRequest, res: Response) => {
   try {
     const kase = await prisma.case.findUnique({
       where: { id: req.params.caseId },

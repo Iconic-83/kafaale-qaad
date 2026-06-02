@@ -9,7 +9,7 @@ router.get('/', async (_req: Request, res: Response) => {
       prisma.case.count({ where: { status: 'completed' } }),
       prisma.case.count({ where: { status: { in: ['waiting_for_sponsor','sponsored','delivering'] } } }),
       prisma.donation.aggregate({ where: { status: 'confirmed' }, _sum: { amount: true }, _count: true }),
-      prisma.case.aggregate({ where: { status: 'completed' }, _sum: { privateFamilySize: true } }),
+      prisma.case.count({ where: { status: 'completed' } }),
     ]);
     res.json({
       totalCasesPublished: totalCases,
@@ -17,7 +17,7 @@ router.get('/', async (_req: Request, res: Response) => {
       casesActive: activeCases,
       totalRaised: donationStats._sum.amount || 0,
       totalDonations: donationStats._count,
-      familiesHelped: familiesHelped._sum.privateFamilySize || 0,
+      familiesHelped,
       countriesReached: 1,
       verificationRate: 100,
     });

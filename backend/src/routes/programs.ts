@@ -172,6 +172,17 @@ router.get('/beneficiaries/:id/updates', async (req: Request, res: Response) => 
 // POST /api/programs/beneficiaries/:id/updates — Field team submits monthly update
 router.post('/beneficiaries/:id/updates', authenticate, async (req: AuthRequest, res: Response) => {
   if (!isField(req.user!.role) && !isAdmin(req.user!.role)) return res.status(403).json({ error: 'Forbidden' });
+
+  // Verify beneficiary exists and is in an updatable state
+  const beneficiary = await prisma.beneficiary.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, status: true, programId: true },
+  });
+  if (!beneficiary) return res.status(404).json({ error: 'Beneficiary not found' });
+  if (!['seeking_sponsor','sponsored','active'].includes(beneficiary.status)) {
+    return res.status(400).json({ error: 'Updates cannot be submitted for a graduated or inactive beneficiary' });
+  }
+
   const schema = z.object({
     month: z.number().int().min(1).max(12),
     year: z.number().int().min(2024).max(2100),

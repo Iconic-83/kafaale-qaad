@@ -87,6 +87,9 @@ router.post('/:id/contribute', authenticate, async (req: AuthRequest, res: Respo
     const data = schema.parse(req.body);
     const project = await prisma.communityProject.findUnique({ where: { id: req.params.id } });
     if (!project) return res.status(404).json({ error: 'Project not found' });
+    if (project.status !== 'seeking_funding') {
+      return res.status(400).json({ error: 'This project is not currently accepting contributions' });
+    }
 
     const contribution = await prisma.projectContribution.create({
       data: {
@@ -98,16 +101,28 @@ router.post('/:id/contribute', authenticate, async (req: AuthRequest, res: Respo
       },
     });
 
-    // Update total raised
-    await prisma.communityProject.update({
-      where: { id: req.params.id },
-      data: { totalRaised: { increment: data.amount } },
-    });
+    // totalRaised is incremented only when admin confirms the contribution — not here
 
     res.status(201).json(contribution);
   } catch (e: any) {
     res.status(400).json({ error: e.message });
   }
+});
+
+// PATCH /api/projects/contributions/:contributionId/confirm — Admin confirms a contribution
+router.patch('/contributions/:contributionId/confirm', authenticate, async (req: AuthRequest, res: Response) => {
+  if (!isAdmin(req.user!.role)) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const contribution = await prisma.projectContribution.update({
+      where: { id: req.params.contributionId },
+      data:  { status: 'confirmed' },
+    });
+    await prisma.communityProject.update({
+      where: { id: contribution.projectId },
+      data:  { totalRaised: { increment: contribution.amount } },
+    });
+    res.json({ message: 'Contribution confirmed', contributionId: contribution.id });
+  } catch { res.status(500).json({ error: 'Failed to confirm contribution' }); }
 });
 
 // PATCH /api/projects/:id/status — Admin update project status/phases
