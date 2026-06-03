@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../prisma/client';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { sysLog } from '../services/logger';
+import { fraudDetectionService } from '../services/fraudDetectionService';
 
 const router = Router();
 router.use(authenticate, requireRole([
@@ -447,6 +448,62 @@ router.get('/audit', async (_req: AuthRequest, res: Response) => {
     });
     res.json({ logs });
   } catch { res.status(500).json({ error: 'Failed to retrieve audit log' }); }
+});
+
+// GET /api/admin/fraud — Fraud dashboard: high-risk cases + suspicious reporters
+router.get('/fraud', async (_req: AuthRequest, res: Response) => {
+  try {
+    const [highRiskCases, suspiciousReporters, recentFlags] = await Promise.all([
+      fraudDetectionService.getFraudAudits(),
+      // Reporters with >50% rejection rate and >1 case
+      prisma.user.findMany({
+        where: { role: 'reporter', isActive: true },
+        select: {
+          id: true, name: true, email: true, createdAt: true,
+          _count: { select: { reportedCases: true } },
+        },
+      }).then(async (reporters) => {
+        const withRates = await Promise.all(reporters.map(async (r) => {
+          const rejected = await prisma.case.count({ where: { reporterId: r.id, status: 'rejected' } });
+          const total = r._count.reportedCases;
+          return { ...r, total, rejected, rejectionRate: total > 1 ? Math.round((rejected / total) * 100) : 0 };
+        }));
+        return withRates.filter(r => r.total > 1 && r.rejectionRate > 50).sort((a, b) => b.rejectionRate - a.rejectionRate);
+      }),
+      // Cases near GPS clusters
+      prisma.case.findMany({
+        where: { status: { in: ['pending_review','under_review','team_assigned'] }, privateGpsLat: { not: null } },
+        select: { id: true, caseRef: true, category: true, privateGpsLat: true, privateGpsLng: true, privateDistrict: true, createdAt: true, reporterId: true },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+    ]);
+    res.json({ highRiskCases, suspiciousReporters, recentCasesForClusterCheck: recentFlags });
+  } catch { res.status(500).json({ error: 'Failed to load fraud dashboard' }); }
+});
+
+// PATCH /api/admin/cases/:id/fraud-score — Run fraud analysis on a specific case
+router.patch('/cases/:id/fraud-score', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await fraudDetectionService.scoreCaseRisk(req.params.id);
+    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, caseId: req.params.id, action: 'approved', notes: `Fraud analysis run: score=${result.riskScore}, level=${result.riskLevel}` } });
+    res.json(result);
+  } catch (e: any) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/admin/users/:id/suspend — Suspend/ban a user (blacklist)
+router.patch('/users/:id/suspend', async (req: AuthRequest, res: Response) => {
+  try {
+    if (!['admin','super_admin'].includes(req.user!.role)) return res.status(403).json({ error: 'Forbidden' });
+    const { reason, suspend } = req.body;
+    const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: 'User not found' });
+    if (target.role === 'super_admin') return res.status(400).json({ error: 'Cannot suspend a Super Admin' });
+    const updated = await prisma.user.update({ where: { id: req.params.id }, data: { isActive: suspend === false ? false : true } });
+    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, action: suspend === false ? 'suspended_user' : 'reinstated_user', notes: `${suspend === false ? 'Suspended' : 'Reinstated'} user ${target.email}. Reason: ${reason || 'no reason given'}` } });
+    sysLog.info(`Admin ${req.user!.email} ${suspend === false ? 'suspended' : 'reinstated'} user ${target.email}`);
+    res.json({ message: `User ${suspend === false ? 'suspended' : 'reinstated'}`, userId: updated.id, isActive: updated.isActive });
+  } catch { res.status(500).json({ error: 'Failed to update user status' }); }
 });
 
 // GET /api/admin/field-agents — All active field agents

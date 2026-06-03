@@ -59,15 +59,48 @@ class FraudDetectionService {
 
     // 2. Reporter history check
     if (kase.reporter) {
-      const reporterCases = await prisma.case.count({
-        where: { reporterId: kase.reporterId! },
-      });
-      const rejectedCases = await prisma.case.count({
-        where: { reporterId: kase.reporterId!, status: 'rejected' },
-      });
+      const reporterCases = await prisma.case.count({ where: { reporterId: kase.reporterId! } });
+      const rejectedCases = await prisma.case.count({ where: { reporterId: kase.reporterId!, status: 'rejected' } });
       if (reporterCases > 1 && rejectedCases / reporterCases > 0.5) {
         flags.push(`Reporter has high rejection rate: ${rejectedCases}/${reporterCases} cases rejected`);
         riskScore += 25;
+      }
+      // Reporter banned check
+      if (!kase.reporter.isActive) {
+        flags.push('Reporter account is suspended/banned');
+        riskScore += 50;
+      }
+    }
+
+    // 3. GPS duplicate proximity detection (~500m radius)
+    if (kase.privateGpsLat && kase.privateGpsLng) {
+      const nearbyCases = await prisma.case.findMany({
+        where: {
+          id: { not: kase.id },
+          privateGpsLat: { gte: kase.privateGpsLat - 0.005, lte: kase.privateGpsLat + 0.005 },
+          privateGpsLng: { gte: kase.privateGpsLng - 0.005, lte: kase.privateGpsLng + 0.005 },
+          createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }, // last 30 days
+        },
+        select: { id: true, caseRef: true, status: true },
+      });
+      if (nearbyCases.length > 0) {
+        flags.push(`${nearbyCases.length} other case(s) within 500m in the last 30 days: ${nearbyCases.map(c => c.caseRef).join(', ')}`);
+        riskScore += Math.min(30, nearbyCases.length * 10);
+      }
+    }
+
+    // 4. Same victim name in recent cases
+    if (kase.privateVictimName) {
+      const nameDupes = await prisma.case.count({
+        where: {
+          id: { not: kase.id },
+          privateVictimName: { equals: kase.privateVictimName, mode: 'insensitive' },
+          createdAt: { gte: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) },
+        },
+      });
+      if (nameDupes > 0) {
+        flags.push(`Same victim name found in ${nameDupes} other case(s) in the last 60 days`);
+        riskScore += 20;
       }
     }
 

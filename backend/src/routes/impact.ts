@@ -2,24 +2,56 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../prisma/client';
 const router = Router();
 
+// GET /api/impact — Full M&E KPI dashboard
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const [totalCases, completedCases, activeCases, donationStats, familiesHelped] = await Promise.all([
+    const [
+      totalCases, completedCases, activeCases,
+      donationStats, deliveryStats,
+      activeSponsorships, childrenSponsored,
+      projectStats, beneficiaryStats,
+      medicalCases, waterProjects,
+    ] = await Promise.all([
       prisma.case.count({ where: { status: { in: ['waiting_for_sponsor','sponsored','delivering','completed'] } } }),
       prisma.case.count({ where: { status: 'completed' } }),
       prisma.case.count({ where: { status: { in: ['waiting_for_sponsor','sponsored','delivering'] } } }),
       prisma.donation.aggregate({ where: { status: 'confirmed' }, _sum: { amount: true }, _count: true }),
-      prisma.case.count({ where: { status: 'completed' } }),
+      prisma.deliveryProof.aggregate({ _sum: { amountDelivered: true }, _count: true }),
+      prisma.sponsorship.count({ where: { status: 'active' } }),
+      prisma.beneficiary.count({ where: { programType: 'child_sponsorship', status: 'sponsored' } }),
+      prisma.communityProject.aggregate({ _count: true, _sum: { totalRaised: true } }),
+      prisma.beneficiary.count({ where: { status: { in: ['sponsored','completed','verified'] } } }),
+      prisma.case.count({ where: { category: 'medical', status: 'completed' } }),
+      prisma.communityProject.count({ where: { category: 'water', status: { in: ['in_progress','completed'] } } }),
     ]);
+
     res.json({
-      totalCasesPublished: totalCases,
-      casesCompleted: completedCases,
-      casesActive: activeCases,
-      totalRaised: donationStats._sum.amount || 0,
-      totalDonations: donationStats._count,
-      familiesHelped,
-      countriesReached: 1,
-      verificationRate: 100,
+      // Cases
+      totalCasesPublished:    totalCases,
+      casesCompleted:         completedCases,
+      casesActive:            activeCases,
+      verificationRate:       100,
+      familiesHelped:         completedCases,
+
+      // Financial
+      totalRaised:            Number(donationStats._sum.amount || 0),
+      totalDonations:         donationStats._count,
+      totalDelivered:         Number(deliveryStats._sum.amountDelivered || 0),
+      deliveriesCompleted:    deliveryStats._count,
+
+      // Programs
+      activeSponsorships,
+      childrenSponsored,
+      beneficiariesSupported: beneficiaryStats,
+
+      // Projects
+      totalProjects:          projectStats._count,
+      projectFunding:         Number(projectStats._sum.totalRaised || 0),
+      waterProjectsActive:    waterProjects,
+
+      // Medical
+      medicalCasesCompleted:  medicalCases,
+      countriesReached:       1,
     });
   } catch { res.status(500).json({ error: 'Failed to retrieve impact stats' }); }
 });

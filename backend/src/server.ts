@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -10,6 +11,15 @@ import rateLimit from 'express-rate-limit';
 // Load .env only in development — in production Railway injects all env vars directly
 if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
+}
+
+// Sentry must init before anything else
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: 0.2,
+  });
 }
 
 import authRoutes from './routes/auth';
@@ -151,7 +161,7 @@ app.use((_req, res) => {
 // ── Global error handler ─────────────────────────────────────────────────────
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   sysLog.error('Unhandled error', { message: err.message, stack: IS_PROD ? undefined : err.stack });
-  // Never leak stack traces in production
+  if (process.env.SENTRY_DSN) Sentry.captureException(err);
   res.status(500).json({ error: IS_PROD ? 'Internal server error' : err.message });
 });
 

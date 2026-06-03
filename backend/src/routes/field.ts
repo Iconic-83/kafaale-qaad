@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../prisma/client';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { uploadField, uploadDelivery, processUploads } from '../middleware/upload';
+import { fraudDetectionService } from '../services/fraudDetectionService';
 const router = Router();
 router.use(authenticate, requireRole(['field_agent','admin','super_admin','office_staff']));
 
@@ -64,10 +65,56 @@ async function investigateHandler(req: AuthRequest, res: Response) {
         ...(data.programRecommendation && { programRecommendation: data.programRecommendation }),
       },
     });
-    const admins = await prisma.user.findMany({ where: { role: { in: ['admin','super_admin'] } }, select: { id: true } });
-    await prisma.notification.createMany({
-      data: admins.map(a => ({ userId: a.id, caseId: kase.id, type: 'investigation_completed', title: '📋 Investigation Complete', message: `Field investigation submitted for case. Ready for AI sanitization.` })),
-    });
+    // Auto-trigger fraud scoring (non-blocking)
+    fraudDetectionService.scoreCaseRisk(data.caseId).catch(() => {});
+
+    // Auto-trigger AI sanitization if ANTHROPIC_API_KEY is set (non-blocking)
+    if (process.env.ANTHROPIC_API_KEY) {
+      setImmediate(async () => {
+        try {
+          const { sanitizeCaseWithAI } = await import('../services/aiSanitizationService');
+          const fullCase = await prisma.case.findUnique({ where: { id: data.caseId }, include: { fieldInvestigation: true } }) as any;
+          if (!fullCase) return;
+          const result = await sanitizeCaseWithAI({
+            caseId: fullCase.id,
+            victimDescription: fullCase.privateDescription || '',
+            victimLocation: fullCase.privateAddress || fullCase.privateDistrict || 'Somalia',
+            victimSituation: fullCase.privateDescription || '',
+            category: fullCase.category,
+            emergencyLevel: fullCase.emergencyLevel,
+            estimatedAmount: fullCase.fieldInvestigation?.estimatedAmountNeeded || 0,
+            agentNotes: fullCase.fieldInvestigation?.officialNotes || '',
+          });
+          // Only auto-publish if confidence >= 70
+          if (result.confidenceScore >= 70) {
+            await prisma.aiPublicData.upsert({
+              where: { caseId: fullCase.id },
+              update: { generatedTitle: result.generatedTitle, generatedStory: result.generatedStory, generatedCategory: fullCase.category, generatedCity: result.generatedCity, generatedUrgency: result.generatedUrgency, safeMediaUrls: result.safeMediaUrls, piiDetected: result.piiDetected, piiRemoved: result.piiRemoved, confidenceScore: result.confidenceScore, tokensUsed: result.tokensUsed, updatedAt: new Date() },
+              create: { caseId: fullCase.id, generatedTitle: result.generatedTitle, generatedStory: result.generatedStory, generatedCategory: fullCase.category, generatedCity: result.generatedCity, generatedUrgency: result.generatedUrgency, safeMediaUrls: result.safeMediaUrls, piiDetected: result.piiDetected, piiRemoved: result.piiRemoved, confidenceScore: result.confidenceScore, tokensUsed: result.tokensUsed },
+            });
+            await prisma.case.update({ where: { id: fullCase.id }, data: { status: 'ai_sanitized', aiSanitizedAt: new Date() } });
+          }
+          // Notify office + admins regardless
+          const notifyRoles = ['admin','super_admin','office_staff'];
+          const staff = await prisma.user.findMany({ where: { role: { in: notifyRoles }, isActive: true }, select: { id: true } });
+          await prisma.notification.createMany({
+            data: staff.map(s => ({ userId: s.id, caseId: fullCase.id, type: 'investigation_completed' as const, title: result.confidenceScore >= 70 ? '🤖 AI Sanitized — Ready for Review' : '📋 Investigation Complete — Manual AI Needed', message: result.confidenceScore >= 70 ? `AI processed case (confidence: ${result.confidenceScore}%). Please review before publishing.` : `AI confidence too low (${result.confidenceScore}%). Manual sanitization required.` })),
+          });
+        } catch (e: any) {
+          // AI failure — notify admins to manually sanitize
+          const staff = await prisma.user.findMany({ where: { role: { in: ['admin','super_admin'] }, isActive: true }, select: { id: true } }).catch(() => []);
+          await prisma.notification.createMany({ data: staff.map(s => ({ userId: s.id, caseId: data.caseId, type: 'investigation_completed' as const, title: '⚠️ AI Unavailable — Manual Review Needed', message: `AI sanitization failed: ${e.message}. Please sanitize this case manually before publishing.` })) }).catch(() => {});
+        }
+      });
+    } else {
+      // No AI key — just notify office/admins
+      const notifyRoles = ['admin','super_admin','office_staff'];
+      const staff = await prisma.user.findMany({ where: { role: { in: notifyRoles }, isActive: true }, select: { id: true } });
+      await prisma.notification.createMany({
+        data: staff.map(s => ({ userId: s.id, caseId: kase.id, type: 'investigation_completed' as const, title: '📋 Investigation Complete', message: `Field investigation submitted. Manual AI sanitization required before publishing.` })),
+      });
+    }
+
     res.status(201).json({ message: 'Investigation submitted', investigationId: investigation.id });
   } catch (err: any) {
     if (err instanceof z.ZodError) return res.status(400).json({ error: 'Validation failed', details: err.issues });
