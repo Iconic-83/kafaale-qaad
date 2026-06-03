@@ -5,7 +5,9 @@ import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { sysLog } from '../services/logger';
 
 const router = Router();
-router.use(authenticate, requireRole(['admin','super_admin','verification_office']));
+router.use(authenticate, requireRole([
+  'admin','super_admin','office_staff','program_manager','project_manager',
+]));
 
 // GET /api/admin/cases — All cases with full details
 router.get('/cases', async (req: AuthRequest, res: Response) => {
@@ -419,8 +421,21 @@ router.get('/audit', async (_req: AuthRequest, res: Response) => {
       take: 100,
       include: { admin: { select: { name: true, email: true } }, case: { select: { id: true, category: true, emergencyLevel: true } } },
     });
-    res.json(logs);
+    res.json({ logs });
   } catch { res.status(500).json({ error: 'Failed to retrieve audit log' }); }
+});
+
+// GET /api/admin/field-agents — All active field agents
+router.get('/field-agents', async (_req: AuthRequest, res: Response) => {
+  try {
+    const agents = await prisma.user.findMany({
+      where: { role: 'field_agent', isActive: true },
+      select: { id: true, name: true, email: true, phone: true, city: true, organization: true, createdAt: true,
+        _count: { select: { assignedCases: true } } },
+      orderBy: { name: 'asc' },
+    });
+    res.json({ agents });
+  } catch { res.status(500).json({ error: 'Failed to retrieve field agents' }); }
 });
 
 export default router;

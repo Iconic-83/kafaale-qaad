@@ -14,14 +14,27 @@ const DonationSchema = z.object({
 });
 
 router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
+  // Idempotency: client sends Idempotency-Key header to prevent duplicate submissions
+  const idempotencyKey = req.headers['idempotency-key'] as string | undefined;
+  if (idempotencyKey) {
+    const existing = await prisma.idempotencyKey.findUnique({ where: { key: idempotencyKey } }).catch(() => null);
+    if (existing) return res.status(200).json({ message: 'Donation already submitted', idempotent: true });
+  }
+
   try {
     const data = DonationSchema.parse(req.body);
     const kase = await prisma.case.findUnique({ where: { id: data.caseId } });
     if (!kase || !['waiting_for_sponsor','sponsored'].includes(kase.status)) return res.status(400).json({ error: 'Case not available for donation' });
+
     const donation = await prisma.donation.create({
       data: { donorId: req.user!.id, ...data, status: 'pending' },
     });
-    res.status(201).json({ message: 'Donation submitted', donationId: donation.id, status: 'pending' });
+
+    if (idempotencyKey) {
+      await prisma.idempotencyKey.create({ data: { key: idempotencyKey } }).catch(() => {});
+    }
+
+    res.status(201).json({ message: 'Donation submitted', donationId: donation.id, donation: { id: donation.id, amount: donation.amount }, status: 'pending' });
   } catch (err: any) {
     if (err instanceof z.ZodError) return res.status(400).json({ error: 'Validation failed', details: err.issues });
     res.status(500).json({ error: 'Donation failed' });

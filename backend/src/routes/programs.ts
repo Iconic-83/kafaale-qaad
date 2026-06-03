@@ -98,7 +98,7 @@ router.get('/beneficiaries/admin', authenticate, async (req: AuthRequest, res: R
 router.get('/beneficiaries/:id', async (req: Request, res: Response) => {
   try {
     const beneficiary = await prisma.beneficiary.findUnique({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       include: {
         program: { select: { id: true, name: true, type: true, icon: true, color: true } },
         monthlyUpdates: { where: { isPublished: true }, orderBy: [{ year: 'desc' }, { month: 'desc' }], take: 6 },
@@ -312,6 +312,34 @@ router.get('/stats', async (_req: Request, res: Response) => {
     ]);
     res.json({ programs, totalBeneficiaries, activeSponsorships, totalProjects });
   } catch { res.status(500).json({ error: 'Failed to fetch stats' }); }
+});
+
+// PATCH /api/programs/beneficiaries/:id/transfer — Move beneficiary to a different program type
+router.patch('/beneficiaries/:id/transfer', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { toProgramType, reason } = z.object({
+      toProgramType: z.string().min(1),
+      reason:        z.string().max(500).optional(),
+    }).parse(req.body);
+
+    const beneficiary = await prisma.beneficiary.findUnique({ where: { id: req.params.id } });
+    if (!beneficiary) return res.status(404).json({ error: 'Beneficiary not found' });
+    if (beneficiary.programType === toProgramType) return res.status(400).json({ error: 'Beneficiary is already in that program type' });
+
+    const updated = await prisma.beneficiary.update({
+      where: { id: req.params.id },
+      data: {
+        programType: toProgramType,
+        privateNotes: reason
+          ? `[Transferred from ${beneficiary.programType} to ${toProgramType}] ${reason}`
+          : `[Transferred from ${beneficiary.programType} to ${toProgramType}]`,
+      },
+    });
+    res.json({ message: 'Beneficiary transferred successfully', beneficiary: updated });
+  } catch (err: any) {
+    if (err instanceof z.ZodError) return res.status(400).json({ error: 'Validation failed', details: err.issues });
+    res.status(500).json({ error: 'Transfer failed' });
+  }
 });
 
 export default router;

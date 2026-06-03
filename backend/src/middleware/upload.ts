@@ -1,69 +1,76 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { Request } from 'express';
+import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
+import { Request, Response, NextFunction } from 'express';
 
-// ── Storage Location ────────────────────────────────────
-const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
-
-// Ensure upload directories exist
-['cases', 'field', 'delivery', 'profiles'].forEach((dir) => {
-  const fullPath = path.join(UPLOAD_DIR, dir);
-  if (!fs.existsSync(fullPath)) {
-    fs.mkdirSync(fullPath, { recursive: true });
+// ── Supabase Storage (production) ───────────────────────
+let _supabase: ReturnType<typeof createClient> | null = null;
+function getSupabase() {
+  if (!_supabase && process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY) {
+    _supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   }
-});
-
-// ── Disk Storage — folder is explicit, never derived from request path ──────
-function makeStorage(folder: 'cases' | 'field' | 'delivery' | 'profiles') {
-  return multer.diskStorage({
-    destination: (_req: Request, _file, cb) => {
-      cb(null, path.join(UPLOAD_DIR, folder));
-    },
-    filename: (_req: Request, file, cb) => {
-      const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      const ext = path.extname(file.originalname).toLowerCase();
-      cb(null, `${unique}${ext}`);
-    },
-  });
+  return _supabase;
 }
 
-// ── File Filter — Only safe types ────────────────────────
+export async function uploadToStorage(buffer: Buffer, originalName: string, mimeType: string, folder: string): Promise<string> {
+  const ext  = path.extname(originalName).toLowerCase() || '.bin';
+  const name = `${folder}/${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
+
+  const sb = getSupabase();
+  if (sb) {
+    const { error } = await sb.storage.from('kafaale-media').upload(name, buffer, { contentType: mimeType });
+    if (error) throw new Error(`Supabase upload failed: ${error.message}`);
+    return sb.storage.from('kafaale-media').getPublicUrl(name).data.publicUrl;
+  }
+
+  // Fallback: local disk for development
+  const localPath = path.join(process.cwd(), 'uploads', name);
+  fs.mkdirSync(path.dirname(localPath), { recursive: true });
+  fs.writeFileSync(localPath, buffer);
+  const base = process.env.BASE_URL || 'http://localhost:4000';
+  return `${base}/uploads/${name}`;
+}
+
+// ── Multer — memory storage so we can pipe to Supabase ─
+const ALLOWED = new Set([
+  'image/jpeg','image/jpg','image/png','image/webp',
+  'video/mp4','video/quicktime','video/avi','video/webm',
+  'application/pdf','application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+]);
+
 const fileFilter = (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedImages = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  const allowedVideos = ['video/mp4', 'video/quicktime', 'video/avi'];
-  const allowedDocs = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ];
-
-  if ([...allowedImages, ...allowedVideos, ...allowedDocs].includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error(`File type ${file.mimetype} is not allowed`));
-  }
+  ALLOWED.has(file.mimetype) ? cb(null, true) : cb(new Error(`File type not allowed: ${file.mimetype}`));
 };
 
-// ── Limits ─────────────────────────────────────────────
-const limits = {
-  fileSize: 20 * 1024 * 1024, // 20MB per file
-  files: 10,                   // Max 10 files per upload
-};
+const limits = { fileSize: 50 * 1024 * 1024, files: 15 };
 
-// ── Named upload instances — use the correct one per route ─────────────────
-export const uploadCases    = multer({ storage: makeStorage('cases'),    fileFilter, limits });
-export const uploadField    = multer({ storage: makeStorage('field'),    fileFilter, limits });
-export const uploadDelivery = multer({ storage: makeStorage('delivery'), fileFilter, limits });
-export const uploadProfiles = multer({ storage: makeStorage('profiles'), fileFilter, limits });
+export const uploadCases    = multer({ storage: multer.memoryStorage(), fileFilter, limits });
+export const uploadField    = multer({ storage: multer.memoryStorage(), fileFilter, limits });
+export const uploadDelivery = multer({ storage: multer.memoryStorage(), fileFilter, limits });
+export const uploadProfiles = multer({ storage: multer.memoryStorage(), fileFilter, limits });
 
-/** Build public URL for an uploaded file */
-export function buildFileUrl(req: Request, filename: string, folder: string): string {
-  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-  return `${baseUrl}/uploads/${folder}/${filename}`;
+/** Process in-memory multer files → upload to storage → attach URLs to req */
+export async function processUploads(folder: string, fields: string[], req: Request, _res: Response, next: NextFunction) {
+  try {
+    const files = (req.files as Express.Multer.File[]) || [];
+    if (files.length === 0) return next();
+
+    const byField: Record<string, string[]> = {};
+    for (const f of files) {
+      if (!fields.includes(f.fieldname)) continue;
+      const url = await uploadToStorage(f.buffer, f.originalname, f.mimetype, folder);
+      (byField[f.fieldname] = byField[f.fieldname] || []).push(url);
+    }
+    (req as any).uploadedByField = byField;
+    (req as any).uploadedUrls    = Object.values(byField).flat();
+    next();
+  } catch (err) { next(err); }
 }
 
-/** Get media type from mimetype */
 export function getMediaType(mimetype: string): 'image' | 'video' | 'document' {
   if (mimetype.startsWith('image/')) return 'image';
   if (mimetype.startsWith('video/')) return 'video';

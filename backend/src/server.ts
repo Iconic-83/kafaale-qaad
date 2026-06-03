@@ -24,6 +24,7 @@ import partnersRoutes from './routes/partners';
 import programsRoutes from './routes/programs';
 import projectsRoutes from './routes/projects';
 import searchRoutes from './routes/search';
+import messagesRoutes from './routes/messages';
 import { sysLog } from './services/logger';
 
 const app = express();
@@ -127,6 +128,7 @@ app.use('/api/impact',        impactRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/ai',            aiLimiter, aiRoutes);
 app.use('/api/partners',      partnersRoutes);
+app.use('/api/messages',      messagesRoutes);
 app.use('/api/programs',      programsRoutes);
 app.use('/api/projects',      projectsRoutes);
 app.use('/api/search',        searchRoutes);

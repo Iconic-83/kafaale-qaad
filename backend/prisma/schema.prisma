@@ -38,6 +38,9 @@ model User {
   sponsorships        Sponsorship[]       @relation("UserSponsorships")
   monthlyUpdates      MonthlyUpdate[]     @relation("UserMonthlyUpdates")
   projectContributions ProjectContribution[] @relation("UserProjectContributions")
+  sentMessages        Message[]           @relation("MessageSender")
+  messageThreadsAsA   MessageThread[]     @relation("ThreadParticipantA")
+  messageThreadsAsB   MessageThread[]     @relation("ThreadParticipantB")
 
   @@index([role])
   @@index([email])
@@ -586,4 +589,49 @@ model Partner {
   @@index([isVerified, isActive])
   @@index([type])
   @@index([featuredOrder])
+}
+
+// ─── OTP / Password Reset ────────────────────────────────────────────────────
+model OtpRecord {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// ─── Messaging ────────────────────────────────────────────────────────────────
+model MessageThread {
+  id           String   @id @default(cuid())
+  participantA String
+  participantB String
+  userA        User     @relation("ThreadParticipantA", fields: [participantA], references: [id])
+  userB        User     @relation("ThreadParticipantB", fields: [participantB], references: [id])
+  caseId       String?
+  lastMessage  String   @default("")
+  lastAt       DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  messages     Message[]
+
+  @@unique([participantA, participantB])
+  @@index([participantA])
+  @@index([participantB])
+}
+
+model Message {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    MessageThread @relation(fields: [threadId], references: [id])
+  senderId  String
+  sender    User          @relation("MessageSender", fields: [senderId], references: [id])
+  text      String
+  isRead    Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  @@index([threadId])
+  @@index([senderId])
 }

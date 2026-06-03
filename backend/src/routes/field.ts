@@ -2,8 +2,9 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { prisma } from '../prisma/client';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
+import { uploadField, uploadDelivery, processUploads } from '../middleware/upload';
 const router = Router();
-router.use(authenticate, requireRole(['field_agent','admin','super_admin']));
+router.use(authenticate, requireRole(['field_agent','admin','super_admin','office_staff']));
 
 router.get('/assignments', async (req: AuthRequest, res: Response) => {
   try {
@@ -33,7 +34,17 @@ const InvestigationSchema = z.object({
   programRecommendation: z.enum(['child_sponsorship','education','medical','family_care','emergency']).optional(),
 });
 
-router.post('/investigate', async (req: AuthRequest, res: Response) => {
+router.post('/investigate',
+  uploadField.fields([{ name: 'photos', maxCount: 10 }, { name: 'videos', maxCount: 3 }]),
+  async (req: AuthRequest, res: Response) => {
+    await new Promise<void>((resolve, reject) => {
+      processUploads('field', ['photos','videos'], req, res, (err) => err ? reject(err) : resolve());
+    }).catch(() => {});
+    return investigateHandler(req, res);
+  }
+);
+
+async function investigateHandler(req: AuthRequest, res: Response) {
   try {
     const data = InvestigationSchema.parse(req.body);
     const kase = await prisma.case.findUnique({ where: { id: data.caseId } });
@@ -62,7 +73,7 @@ router.post('/investigate', async (req: AuthRequest, res: Response) => {
     if (err instanceof z.ZodError) return res.status(400).json({ error: 'Validation failed', details: err.issues });
     res.status(500).json({ error: 'Failed to submit investigation' });
   }
-});
+}
 
 // ── Delivery Proof Schema ───────────────────────────────────────────────────
 const DeliverySchema = z.object({
@@ -75,7 +86,17 @@ const DeliverySchema = z.object({
 });
 
 // POST /api/field/delivery — Field agent submits delivery proof
-router.post('/delivery', async (req: AuthRequest, res: Response) => {
+router.post('/delivery',
+  uploadDelivery.fields([{ name: 'photos', maxCount: 8 }]),
+  async (req: AuthRequest, res: Response) => {
+    await new Promise<void>((resolve, reject) => {
+      processUploads('delivery', ['photos'], req, res, (err) => err ? reject(err) : resolve());
+    }).catch(() => {});
+    return deliveryHandler(req, res);
+  }
+);
+
+async function deliveryHandler(req: AuthRequest, res: Response) {
   try {
     const data = DeliverySchema.parse(req.body);
     const kase = await prisma.case.findUnique({ where: { id: data.caseId } });
@@ -86,6 +107,7 @@ router.post('/delivery', async (req: AuthRequest, res: Response) => {
     }
 
     // Create or update delivery proof record
+    const photoUrls: string[] = (req as any).uploadedByField?.photos || [];
     const proof = await prisma.deliveryProof.upsert({
       where:  { caseId: data.caseId },
       update: {
@@ -95,6 +117,7 @@ router.post('/delivery', async (req: AuthRequest, res: Response) => {
         amountDelivered: data.amountDelivered,
         recipientName:   data.recipientName,
         deliveryNotes:   data.deliveryNotes,
+        photoUrls:       photoUrls,
         updatedAt:       new Date(),
       },
       create: {
@@ -105,6 +128,7 @@ router.post('/delivery', async (req: AuthRequest, res: Response) => {
         amountDelivered: data.amountDelivered,
         recipientName:   data.recipientName,
         deliveryNotes:   data.deliveryNotes,
+        photoUrls:       photoUrls,
       },
     });
 
@@ -144,6 +168,6 @@ router.post('/delivery', async (req: AuthRequest, res: Response) => {
     if (err instanceof z.ZodError) return res.status(400).json({ error: 'Validation failed', details: err.issues });
     res.status(500).json({ error: 'Failed to submit delivery proof' });
   }
-});
+}
 
 export default router;
