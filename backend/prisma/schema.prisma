@@ -41,6 +41,7 @@ model User {
   sentMessages        Message[]           @relation("MessageSender")
   messageThreadsAsA   MessageThread[]     @relation("ThreadParticipantA")
   messageThreadsAsB   MessageThread[]     @relation("ThreadParticipantB")
+  vaultDocuments      VaultDocument[]
 
   @@index([role])
   @@index([email])
@@ -634,4 +635,22 @@ model Message {
 
   @@index([threadId])
   @@index([senderId])
+}
+
+// ─── Document Vault ───────────────────────────────────────────────────────────
+model VaultDocument {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title     String
+  filename  String
+  url       String
+  type      String   @default("other") // report | receipt | contract | medical | verification | other
+  mimeType  String?
+  sizeBytes Int?
+  caseRef   String?
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([ownerId, type])
 }

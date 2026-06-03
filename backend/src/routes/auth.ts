@@ -239,4 +239,29 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   }
 });
 
+// PATCH /api/auth/change-password — Change password for logged-in user
+router.patch('/change-password', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = z.object({
+      currentPassword: z.string().min(1),
+      newPassword:     z.string().min(8),
+    }).parse(req.body);
+
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) return res.status(400).json({ error: 'Current password is incorrect' });
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: req.user!.id }, data: { password: hashed } });
+
+    sysLog.info(`Password changed for user ${req.user!.id}`);
+    res.json({ message: 'Password changed successfully.' });
+  } catch (err: any) {
+    if (err instanceof z.ZodError) return res.status(400).json({ error: 'Validation failed', details: err.issues });
+    res.status(500).json({ error: 'Password change failed' });
+  }
+});
+
 export default router;

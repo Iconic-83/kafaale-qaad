@@ -35,6 +35,7 @@ import programsRoutes from './routes/programs';
 import projectsRoutes from './routes/projects';
 import searchRoutes from './routes/search';
 import messagesRoutes from './routes/messages';
+import vaultRoutes from './routes/vault';
 import { sysLog } from './services/logger';
 
 const app = express();
@@ -142,6 +143,7 @@ app.use('/api/messages',      messagesRoutes);
 app.use('/api/programs',      programsRoutes);
 app.use('/api/projects',      projectsRoutes);
 app.use('/api/search',        searchRoutes);
+app.use('/api/vault',         vaultRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
