@@ -56,7 +56,11 @@ export const uploadProfiles = multer({ storage: multer.memoryStorage(), fileFilt
 /** Process in-memory multer files → upload to storage → attach URLs to req */
 export async function processUploads(folder: string, fields: string[], req: Request, _res: Response, next: NextFunction) {
   try {
-    const files = (req.files as Express.Multer.File[]) || [];
+    // req.files is a dict when using .fields(), flat array when using .array()
+    const raw = req.files;
+    const files: Express.Multer.File[] = Array.isArray(raw)
+      ? raw
+      : raw ? Object.values(raw as Record<string, Express.Multer.File[]>).flat() : [];
     if (files.length === 0) return next();
 
     const byField: Record<string, string[]> = {};
