@@ -57,7 +57,7 @@ export const uploadProfiles = multer({ storage: multer.memoryStorage(), fileFilt
 export async function processUploads(folder: string, fields: string[], req: Request, _res: Response, next: NextFunction) {
   try {
     // req.files is a dict when using .fields(), flat array when using .array()
-    const raw = req.files;
+    const raw = (req as any).files;
     const files: any[] = Array.isArray(raw)
       ? raw
       : raw ? Object.values(raw as Record<string, any[]>).flat() : [];
