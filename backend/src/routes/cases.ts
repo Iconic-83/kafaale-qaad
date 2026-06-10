@@ -131,19 +131,33 @@ router.post('/',
 
       const data = CreateCaseSchema.parse(req.body);
       const year = new Date().getFullYear();
-      const count = await prisma.case.count();
-      const caseRef = `KQ-${year}-${String(count + 1).padStart(4, '0')}`;
 
-      const kase = await prisma.case.create({
-        data: {
-          reporterId:    req.user!.id,
-          ...data,
-          needsChecklist: data.needsChecklist || [],
-          caseType:      data.caseType || 'emergency',
-          status:        'pending_review',
-          caseRef,
-        },
-      });
+      // Use random suffix to prevent race-condition duplicate caseRef on concurrent submissions
+      let kase: Awaited<ReturnType<typeof prisma.case.create>>;
+      let attempts = 0;
+      while (true) {
+        const count = await prisma.case.count();
+        const suffix = attempts > 0
+          ? `${String(count + 1).padStart(4, '0')}-${Math.floor(Math.random() * 100)}`
+          : String(count + 1).padStart(4, '0');
+        const caseRef = `KQ-${year}-${suffix}`;
+        try {
+          kase = await prisma.case.create({
+            data: {
+              reporterId:    req.user!.id,
+              ...data,
+              needsChecklist: data.needsChecklist || [],
+              caseType:      data.caseType || 'emergency',
+              status:        'pending_review',
+              caseRef,
+            },
+          });
+          break;
+        } catch (createErr: any) {
+          if (createErr.code === 'P2002' && ++attempts < 5) continue; // unique constraint — retry
+          throw createErr;
+        }
+      }
 
       // Store uploaded file URLs in CaseMedia
       const uploaded = (req as any).uploadedByField || {};

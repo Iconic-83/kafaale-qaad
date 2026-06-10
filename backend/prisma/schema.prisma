@@ -257,6 +257,7 @@ enum AdminAction {
   reinstated_user
   delivery_assigned
   donation_confirmed
+  donation_refunded
   completed
   role_changed
   user_deleted

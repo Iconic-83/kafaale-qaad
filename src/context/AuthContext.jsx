@@ -11,23 +11,32 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const data = await authApi.login(email, password);
-      setAuth(data.user, data.token);
-      setUser(data.user);
+      if (data.token) {
+        setAuth(data.user, data.token);
+        setUser(data.user);
+      }
       return data;
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const register = async (formData) => {
     setLoading(true);
     try {
       const data = await authApi.register(formData);
-      setAuth(data.user, data.token);
-      setUser(data.user);
+      if (data.token) {
+        setAuth(data.user, data.token);
+        setUser(data.user);
+      }
       return data;
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
+    authApi.logout().catch(() => {});
     clearAuth();
     setUser(null);
   };

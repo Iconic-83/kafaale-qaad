@@ -29,6 +29,8 @@ export const auth = {
   login:    (email, password) => req('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
   register: (data)            => req('/auth/register', { method: 'POST', body: JSON.stringify(data) }),
   me:       ()                => req('/auth/me'),
+  logout:   ()                => req('/auth/logout', { method: 'POST' }),
+  refresh:  ()                => req('/auth/refresh', { method: 'POST' }),
 };
 
 // ── Cases endpoints ───────────────────────────────────────────────

@@ -5,8 +5,8 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
-const isAdmin = (role: string) => ['admin','super_admin','program_manager','verification_office'].includes(role);
-const isField = (role: string) => ['field_agent','field_team','program_manager'].includes(role);
+const isAdmin = (role: string) => ['admin','super_admin','program_manager','office_staff'].includes(role);
+const isField = (role: string) => ['field_agent','program_manager','office_staff'].includes(role);
 
 // ── Programs ─────────────────────────────────────────────────────────────────
 
@@ -133,16 +133,28 @@ router.post('/beneficiaries', authenticate, async (req: AuthRequest, res: Respon
   });
   try {
     const data = schema.parse(req.body);
-    // Generate public ID
-    const count = await prisma.beneficiary.count();
     const year = new Date().getFullYear();
     const prefix = data.programType === 'child_sponsorship' ? 'CSP' : data.programType === 'education' ? 'EDU' : data.programType === 'medical' ? 'MED' : 'FAM';
-    const publicId = `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
 
-    const beneficiary = await prisma.beneficiary.create({
-      data: { ...data, publicId, enrolledBy: req.user!.id, status: 'pending_verification' },
-      include: { program: true },
-    });
+    let beneficiary: any;
+    let attempts = 0;
+    while (true) {
+      const count = await prisma.beneficiary.count();
+      const suffix = attempts > 0
+        ? `${String(count + 1).padStart(3, '0')}-${Math.floor(Math.random() * 100)}`
+        : String(count + 1).padStart(3, '0');
+      const publicId = `${prefix}-${year}-${suffix}`;
+      try {
+        beneficiary = await prisma.beneficiary.create({
+          data: { ...data, publicId, enrolledBy: req.user!.id, status: 'pending_verification' },
+          include: { program: true },
+        });
+        break;
+      } catch (createErr: any) {
+        if (createErr.code === 'P2002' && ++attempts < 5) continue;
+        throw createErr;
+      }
+    }
     res.status(201).json(beneficiary);
   } catch (e: any) {
     res.status(400).json({ error: e.message });

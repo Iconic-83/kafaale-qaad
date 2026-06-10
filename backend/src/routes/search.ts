@@ -50,7 +50,7 @@ router.get('/', async (req: Request, res: Response) => {
         select: {
           id: true, publicId: true, title: true, category: true,
           location: true, region: true, status: true,
-          targetAmount: true, raisedAmount: true,
+          fundingGoal: true, totalRaised: true,
         },
       }),
 

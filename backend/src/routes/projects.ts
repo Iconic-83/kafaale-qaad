@@ -65,12 +65,26 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   });
   try {
     const data = schema.parse(req.body);
-    const count = await prisma.communityProject.count();
     const year = new Date().getFullYear();
-    const publicId = `CP-${year}-${String(count + 1).padStart(3, '0')}`;
-    const project = await prisma.communityProject.create({
-      data: { ...data, publicId, createdById: req.user!.id, status: 'seeking_funding' },
-    });
+
+    let project: any;
+    let attempts = 0;
+    while (true) {
+      const count = await prisma.communityProject.count();
+      const suffix = attempts > 0
+        ? `${String(count + 1).padStart(3, '0')}-${Math.floor(Math.random() * 100)}`
+        : String(count + 1).padStart(3, '0');
+      const publicId = `CP-${year}-${suffix}`;
+      try {
+        project = await prisma.communityProject.create({
+          data: { ...data, publicId, createdById: req.user!.id, status: 'seeking_funding' },
+        });
+        break;
+      } catch (createErr: any) {
+        if (createErr.code === 'P2002' && ++attempts < 5) continue;
+        throw createErr;
+      }
+    }
     res.status(201).json(project);
   } catch (e: any) {
     res.status(400).json({ error: e.message });

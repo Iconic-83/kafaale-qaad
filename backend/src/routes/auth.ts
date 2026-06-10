@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
 import { prisma } from '../prisma/client';
-import { authenticate, AuthRequest } from '../middleware/auth';
+import { authenticate, AuthRequest, tokenBlacklist } from '../middleware/auth';
 import { sysLog } from '../services/logger';
 
 const router = Router();
@@ -289,11 +289,63 @@ router.patch('/change-password', authenticate, async (req: AuthRequest, res: Res
     await prisma.user.update({ where: { id: req.user!.id }, data: { password: hashed } });
 
     sysLog.info(`Password changed for user ${req.user!.id}`);
-    res.json({ message: 'Password changed successfully.' });
+
+    // Invalidate current token so user must re-login with new password
+    const oldToken = req.headers.authorization?.split(' ')[1];
+    if (oldToken) {
+      const decoded = jwt.decode(oldToken) as any;
+      if (decoded?.exp) tokenBlacklist.set(oldToken, decoded.exp * 1000);
+    }
+
+    res.json({ message: 'Password changed successfully. Please log in again.' });
   } catch (err: any) {
     if (err instanceof z.ZodError) return res.status(400).json({ error: 'Validation failed', details: err.issues });
     res.status(500).json({ error: 'Password change failed' });
   }
+});
+
+// POST /api/auth/refresh — issue a fresh 7-day token (rotates the old one out)
+router.post('/refresh', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { id: true, role: true, email: true, isActive: true, isApproved: true },
+    });
+    if (!user || !user.isActive)    return res.status(401).json({ error: 'Account is no longer active' });
+    if (!user.isApproved)           return res.status(401).json({ error: 'Account pending approval' });
+
+    // Blacklist the old token so it cannot be reused
+    const oldToken = req.headers.authorization?.split(' ')[1];
+    if (oldToken) {
+      const decoded = jwt.decode(oldToken) as any;
+      if (decoded?.exp) tokenBlacklist.set(oldToken, decoded.exp * 1000);
+    }
+
+    const token = jwt.sign({ id: user.id, role: user.role, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    sysLog.info(`🔄 Token refreshed for user ${user.email}`);
+    res.json({ token });
+  } catch { res.status(500).json({ error: 'Token refresh failed' }); }
+});
+
+// POST /api/auth/logout — server-side token revocation + clears push token
+router.post('/logout', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    // Blacklist the current token
+    const token = req.headers.authorization?.split(' ')[1];
+    if (token) {
+      const decoded = jwt.decode(token) as any;
+      if (decoded?.exp) tokenBlacklist.set(token, decoded.exp * 1000);
+    }
+
+    // Stop push notifications after logout
+    await prisma.user.update({
+      where: { id: req.user!.id },
+      data:  { expoPushToken: null },
+    }).catch(() => {});
+
+    sysLog.info(`👋 User ${req.user!.email} logged out`);
+    res.json({ message: 'Logged out successfully' });
+  } catch { res.status(500).json({ error: 'Logout failed' }); }
 });
 
 export default router;

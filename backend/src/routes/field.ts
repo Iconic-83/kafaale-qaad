@@ -4,6 +4,7 @@ import { prisma } from '../prisma/client';
 import { authenticate, requireRole, AuthRequest } from '../middleware/auth';
 import { uploadField, uploadDelivery, processUploads } from '../middleware/upload';
 import { fraudDetectionService } from '../services/fraudDetectionService';
+import { sysLog } from '../services/logger';
 const router = Router();
 router.use(authenticate, requireRole(['field_agent','admin','super_admin','office_staff']));
 
@@ -38,9 +39,14 @@ const InvestigationSchema = z.object({
 router.post('/investigate',
   uploadField.fields([{ name: 'photos', maxCount: 10 }, { name: 'videos', maxCount: 3 }]),
   async (req: AuthRequest, res: Response) => {
-    await new Promise<void>((resolve, reject) => {
-      processUploads('field', ['photos','videos'], req, res, (err) => err ? reject(err) : resolve());
-    }).catch(() => {});
+    try {
+      await new Promise<void>((resolve, reject) => {
+        processUploads('field', ['photos','videos'], req, res, (err) => err ? reject(err) : resolve());
+      });
+    } catch (uploadErr: any) {
+      sysLog.warn('Field investigation upload error (non-blocking)', { error: uploadErr.message });
+      // Upload failure is non-blocking — investigation still proceeds without files
+    }
     return investigateHandler(req, res);
   }
 );
@@ -136,9 +142,13 @@ const DeliverySchema = z.object({
 router.post('/delivery',
   uploadDelivery.fields([{ name: 'photos', maxCount: 8 }]),
   async (req: AuthRequest, res: Response) => {
-    await new Promise<void>((resolve, reject) => {
-      processUploads('delivery', ['photos'], req, res, (err) => err ? reject(err) : resolve());
-    }).catch(() => {});
+    try {
+      await new Promise<void>((resolve, reject) => {
+        processUploads('delivery', ['photos'], req, res, (err) => err ? reject(err) : resolve());
+      });
+    } catch (uploadErr: any) {
+      sysLog.warn('Delivery proof upload error (non-blocking)', { error: uploadErr.message });
+    }
     return deliveryHandler(req, res);
   }
 );

@@ -37,6 +37,8 @@ import searchRoutes from './routes/search';
 import messagesRoutes from './routes/messages';
 import vaultRoutes from './routes/vault';
 import { sysLog } from './services/logger';
+import { socketService } from './services/socketService';
+import { prisma } from './prisma/client';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -174,6 +176,22 @@ if (!process.env.VERCEL) {
     console.log(`🚀 Kafaale API running → http://localhost:${PORT}`);
     console.log(`📡 Health check: http://localhost:${PORT}/health`);
     console.log(`🔒 CORS origins: ${[...ALLOWED_ORIGINS].join(', ')}`);
+
+    // Initialize WebSocket gateway (must be after server.listen)
+    socketService.init(server);
+
+    // Hourly OTP cleanup — remove expired/used OTP records to prevent unbounded growth
+    setInterval(async () => {
+      try {
+        const cutoff = new Date(Date.now() - 60 * 60 * 1000); // older than 1 hour
+        const { count } = await prisma.otpRecord.deleteMany({
+          where: { OR: [{ used: true }, { expiresAt: { lt: cutoff } }] },
+        });
+        if (count > 0) sysLog.info(`🧹 OTP cleanup: removed ${count} expired/used records`);
+      } catch (e: any) {
+        sysLog.warn('OTP cleanup failed', { error: e.message });
+      }
+    }, 60 * 60 * 1000);
   });
 }
 

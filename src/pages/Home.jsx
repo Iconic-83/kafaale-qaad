@@ -13,10 +13,11 @@ const C = {
 const URGENCY_COLOR = { Low: "#10B981", Medium: "#F59E0B", High: "#C0392B", Critical: "#7C3AED" };
 const URGENCY_BG    = { Low: "#D1FAE5", Medium: "#FEF3C7", High: "#FEE2E2", Critical: "#EDE9FE" };
 
+// Privacy: no hardcoded names — featured cases are loaded live from the API
 const FEATURED_CASES = [
-  { id: "C002", name: "Mohamud Ali",   age: 67, location: "Mogadishu, Bondhere", urgency: "High",     funded: 68, goal: "$850",  desc: "Elderly man with chronic illness needs medication and food support. Medical records verified.", color: "#C0392B" },
-  { id: "C001", name: "Amina Hassan",  age: 34, location: "Mogadishu, Hodan",    urgency: "Critical", funded: 45, goal: "$1,200",desc: "Single mother of 4 lost her home in flooding. Family confirmed displaced in makeshift shelter.", color: "#7C3AED" },
-  { id: "C005", name: "Xalimo Osman",  age: 19, location: "Mogadishu, Wadajir",  urgency: "Medium",   funded: 82, goal: "$600",  desc: "Young orphan with no family support seeking education assistance and safe shelter.", color: "#F59E0B" },
+  { id: "sample-1", name: "Anonymous",  age: null, location: "Mogadishu Region", urgency: "High",     funded: 68, goal: "$850",  desc: "Elderly community member with chronic illness needs medication and food support. Case verified.", color: "#C0392B" },
+  { id: "sample-2", name: "Anonymous",  age: null, location: "Mogadishu Region", urgency: "Critical", funded: 45, goal: "$1,200",desc: "Family displaced by flooding needs immediate shelter and essential supplies. Situation confirmed.", color: "#7C3AED" },
+  { id: "sample-3", name: "Anonymous",  age: null, location: "Mogadishu Region", urgency: "Medium",   funded: 82, goal: "$600",  desc: "Young person with no family support seeking education assistance and safe shelter.", color: "#F59E0B" },
 ];
 
 export default function Home() {

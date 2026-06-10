@@ -287,7 +287,7 @@ router.patch('/donations/:id/refund', async (req: AuthRequest, res: Response) =>
     await prisma.$transaction([
       prisma.donation.update({ where: { id: req.params.id }, data: { status: 'refunded' } }),
       ...(wasConfirmed ? [prisma.case.update({ where: { id: donation.caseId }, data: { totalRaised: { decrement: donation.amount } } })] : []),
-      prisma.adminAuditLog.create({ data: { adminId: req.user!.id, caseId: donation.caseId, action: 'donation_confirmed', notes: `REFUND: $${donation.amount} — reason: ${reason}` } }),
+      prisma.adminAuditLog.create({ data: { adminId: req.user!.id, caseId: donation.caseId, action: 'donation_refunded', notes: `REFUND: $${donation.amount} — reason: ${reason}` } }),
     ]);
     await prisma.notification.create({ data: { userId: donation.donorId, caseId: donation.caseId, type: 'donation_confirmed', title: '↩️ Donation Refunded', message: `Your donation of $${donation.amount} has been marked for refund. Reason: ${reason}` } });
     res.json({ message: 'Refund processed', donationId: donation.id });
@@ -447,39 +447,54 @@ router.post('/cases/:id/enroll-beneficiary', async (req: AuthRequest, res: Respo
     if (!kase) return res.status(404).json({ error: 'Case not found' });
 
     const year = new Date().getFullYear();
-    const count = await prisma.beneficiary.count();
     const prefix = programType === 'child_sponsorship' ? 'CSP' : programType === 'education' ? 'EDU' : programType === 'medical' ? 'MED' : 'FAM';
-    const publicId = `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
 
-    const beneficiary = await prisma.beneficiary.create({
-      data: {
-        publicId,
-        programId,
-        programType,
-        privateFullName: kase.privateVictimName || undefined,
-        privateGuardianName: kase.privateGuardianName || undefined,
-        privateGuardianPhone: kase.privateVictimPhone || undefined,
-        privateAddress: kase.privateAddress || undefined,
-        privateNotes: kase.privateNotes || undefined,
-        publicAge: kase.privateVictimAge || undefined,
-        publicGender: kase.privateVictimGender || undefined,
-        publicRegion: kase.publicCity || kase.privateDistrict || undefined,
-        publicCity: kase.publicCity || undefined,
-        publicNeedsDesc: publicNeedsDesc || (kase.needsChecklist?.join(', ') || undefined),
-        publicStory: publicStory || kase.publicStory || undefined,
-        monthlyNeed: monthlyNeed || 0,
-        status: 'seeking_sponsor',
-        verifiedAt: new Date(),
-        verifiedById: req.user!.id,
-        enrolledBy: req.user!.id,
-      },
-    });
+    // Retry loop to handle concurrent enrollment race conditions on publicId unique constraint
+    let beneficiary: any;
+    let enrolledPublicId = '';
+    let attempts = 0;
+    while (true) {
+      const count = await prisma.beneficiary.count();
+      const suffix = attempts > 0
+        ? `${String(count + 1).padStart(3, '0')}-${Math.floor(Math.random() * 100)}`
+        : String(count + 1).padStart(3, '0');
+      enrolledPublicId = `${prefix}-${year}-${suffix}`;
+      try {
+        beneficiary = await prisma.beneficiary.create({
+          data: {
+            publicId: enrolledPublicId,
+            programId,
+            programType,
+            privateFullName: kase.privateVictimName || undefined,
+            privateGuardianName: kase.privateGuardianName || undefined,
+            privateGuardianPhone: kase.privateVictimPhone || undefined,
+            privateAddress: kase.privateAddress || undefined,
+            privateNotes: kase.privateNotes || undefined,
+            publicAge: kase.privateVictimAge || undefined,
+            publicGender: kase.privateVictimGender || undefined,
+            publicRegion: kase.publicCity || kase.privateDistrict || undefined,
+            publicCity: kase.publicCity || undefined,
+            publicNeedsDesc: publicNeedsDesc || (kase.needsChecklist?.join(', ') || undefined),
+            publicStory: publicStory || kase.publicStory || undefined,
+            monthlyNeed: monthlyNeed || 0,
+            status: 'seeking_sponsor',
+            verifiedAt: new Date(),
+            verifiedById: req.user!.id,
+            enrolledBy: req.user!.id,
+          },
+        });
+        break;
+      } catch (createErr: any) {
+        if (createErr.code === 'P2002' && ++attempts < 5) continue;
+        throw createErr;
+      }
+    }
 
     // Update case status
     await prisma.case.update({ where: { id: req.params.id }, data: { status: 'completed', completedAt: new Date() } });
-    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, caseId: req.params.id, action: 'enrolled_as_beneficiary', notes: `Enrolled as ${publicId}` } });
+    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, caseId: req.params.id, action: 'enrolled_as_beneficiary', notes: `Enrolled as ${enrolledPublicId}` } });
 
-    res.status(201).json({ beneficiary, publicId });
+    res.status(201).json({ beneficiary, publicId: enrolledPublicId });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -545,10 +560,12 @@ router.patch('/users/:id/suspend', async (req: AuthRequest, res: Response) => {
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!target) return res.status(404).json({ error: 'User not found' });
     if (target.role === 'super_admin') return res.status(400).json({ error: 'Cannot suspend a Super Admin' });
-    const updated = await prisma.user.update({ where: { id: req.params.id }, data: { isActive: suspend === false ? false : true } });
-    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, action: suspend === false ? 'suspended_user' : 'reinstated_user', notes: `${suspend === false ? 'Suspended' : 'Reinstated'} user ${target.email}. Reason: ${reason || 'no reason given'}` } });
-    sysLog.info(`Admin ${req.user!.email} ${suspend === false ? 'suspended' : 'reinstated'} user ${target.email}`);
-    res.json({ message: `User ${suspend === false ? 'suspended' : 'reinstated'}`, userId: updated.id, isActive: updated.isActive });
+    // suspend=true → deactivate (isActive:false); suspend=false → reinstate (isActive:true)
+    const isSuspending = suspend === true;
+    const updated = await prisma.user.update({ where: { id: req.params.id }, data: { isActive: !isSuspending } });
+    await prisma.adminAuditLog.create({ data: { adminId: req.user!.id, action: isSuspending ? 'suspended_user' : 'reinstated_user', notes: `${isSuspending ? 'Suspended' : 'Reinstated'} user ${target.email}. Reason: ${reason || 'no reason given'}` } });
+    sysLog.info(`Admin ${req.user!.email} ${isSuspending ? 'suspended' : 'reinstated'} user ${target.email}`);
+    res.json({ message: `User ${isSuspending ? 'suspended' : 'reinstated'}`, userId: updated.id, isActive: updated.isActive });
   } catch { res.status(500).json({ error: 'Failed to update user status' }); }
 });
 

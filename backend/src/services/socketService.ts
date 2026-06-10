@@ -7,13 +7,27 @@ class SocketService {
 
   init(server: HttpServer) {
     try {
+      const allowedOrigins = [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        'http://localhost:3000',
+        'https://kafaale-qaad.vercel.app',
+        'https://kafaale-qaad1.vercel.app',
+        process.env.FRONTEND_URL,
+      ].filter(Boolean) as string[];
+
       this.io = new SocketServer(server, {
         cors: {
-          origin: '*',
+          origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+            if (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:')) return callback(null, true);
+            callback(new Error(`WebSocket CORS: origin ${origin} not allowed`));
+          },
           methods: ['GET', 'POST'],
           credentials: true,
         },
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
       });
 
       this.io.on('connection', (socket) => {
