@@ -42,10 +42,23 @@ router.get('/:id', async (req: Request, res: Response) => {
   try {
     const project = await prisma.communityProject.findFirst({
       where: { OR: [{ id: String(req.params.id) }, { publicId: String(req.params.id) }] },
-      include: { contributions: { include: { donor: { select: { name: true } } }, orderBy: { createdAt: 'desc' } } },
+      include: {
+        contributions: {
+          where: { status: 'confirmed' },
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, amount: true, type: true, createdAt: true, isAnonymous: true, donor: { select: { name: true } } },
+        },
+      },
     });
     if (!project) return res.status(404).json({ error: 'Project not found' });
-    res.json(project);
+    const safe = {
+      ...project,
+      contributions: project.contributions.map(c => ({
+        ...c,
+        donor: c.isAnonymous ? { name: 'Anonymous' } : c.donor,
+      })),
+    };
+    res.json(safe);
   } catch { res.status(500).json({ error: 'Failed to fetch project' }); }
 });
 
