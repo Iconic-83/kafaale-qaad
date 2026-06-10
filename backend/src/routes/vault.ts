@@ -1,11 +1,20 @@
-import { Router } from 'express';
-import multer from 'multer';
+import { Router, Request } from 'express';
+import multer, { FileFilterCallback } from 'multer';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { uploadToStorage } from '../middleware/upload';
 import { prisma } from '../prisma/client';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+const VAULT_ALLOWED = new Set([
+  'image/jpeg','image/jpg','image/png','image/webp',
+  'application/pdf','application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+]);
+const vaultFilter = (_req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
+  VAULT_ALLOWED.has(file.mimetype) ? cb(null, true) : cb(new Error(`File type not allowed: ${file.mimetype}`));
+};
+const upload = multer({ storage: multer.memoryStorage(), fileFilter: vaultFilter, limits: { fileSize: 25 * 1024 * 1024 } });
 
 // GET /api/vault — list authenticated user's documents
 router.get('/', authenticate, async (req: AuthRequest, res) => {
