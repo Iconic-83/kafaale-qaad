@@ -112,10 +112,20 @@ export default function Navbar() {
     show("contact")    && { to: "/contact",       label: "Contact"     },
   ].filter(Boolean);
 
-  const isActive  = (path) => path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
+  const isActive    = (path) => path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
   const groupActive = (items) => items?.some(i => i.to && isActive(i.to));
-  const closeAll  = () => { setOpenDrop(null); setMenuOpen(false); };
-  const toggle    = (id) => { setOpenDrop(v => v === id ? null : id); setMenuOpen(false); };
+  const closeAll    = () => { setOpenDrop(null); setMenuOpen(false); };
+  const toggle      = (id) => { setOpenDrop(v => v === id ? null : id); setMenuOpen(false); };
+
+  // Hover helpers — small delay so moving from button to panel doesn't flicker
+  const hoverTimers = {};
+  const hoverOpen  = (id) => {
+    clearTimeout(hoverTimers[id]);
+    setOpenDrop(id);
+  };
+  const hoverClose = (id) => {
+    hoverTimers[id] = setTimeout(() => setOpenDrop(v => v === id ? null : v), 120);
+  };
 
   return (
     <>
@@ -154,8 +164,11 @@ export default function Navbar() {
               const active = groupActive(item.items);
               const isOpen = openDrop === item.id;
               return (
-                <div key={item.id} style={{ position: "relative" }}>
-                  <button onClick={() => toggle(item.id)} style={{
+                <div key={item.id} style={{ position: "relative" }}
+                  onMouseEnter={() => hoverOpen(item.id)}
+                  onMouseLeave={() => hoverClose(item.id)}
+                >
+                  <button style={{
                     display: "flex", alignItems: "center", gap: 4,
                     padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600,
                     border: "none", cursor: "pointer", whiteSpace: "nowrap",
@@ -169,37 +182,31 @@ export default function Navbar() {
                   </button>
                   {isOpen && (
                     <div style={{
-                      position: "absolute", top: "calc(100% + 8px)",
+                      position: "absolute", top: "calc(100% + 2px)",
                       left: item.id === "more" ? "auto" : "50%",
                       right: item.id === "more" ? 0 : "auto",
                       transform: item.id === "more" ? "none" : "translateX(-50%)",
                       background: "#fff", borderRadius: 14,
                       boxShadow: "0 8px 40px rgba(0,38,81,0.16)",
-                      zIndex: 600, minWidth: 230,
+                      zIndex: 600, minWidth: 210,
                       border: `1px solid ${B.border}`, overflow: "hidden",
+                      paddingTop: 4, paddingBottom: 4,
                     }}>
-                      {/* Dropdown header label */}
-                      <div style={{ padding: "9px 16px 7px", borderBottom: `1px solid ${B.border}`, background: B.bg }}>
-                        <span style={{ fontSize: 10, fontWeight: 800, color: B.muted, textTransform: "uppercase", letterSpacing: 1.5 }}>{item.label}</span>
-                      </div>
                       {item.items.map((sub, si) => (
                         <Link key={sub.to} to={sub.to} onClick={closeAll} style={{
-                          display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+                          display: "block", padding: "11px 18px",
                           textDecoration: "none",
                           color: isActive(sub.to) ? B.blue : B.text,
-                          background: isActive(sub.to) ? B.blue + "08" : "#fff",
+                          background: isActive(sub.to) ? B.blue + "08" : "transparent",
                           borderBottom: si < item.items.length - 1 ? `1px solid ${B.border}` : "none",
                           transition: "background .12s",
+                          fontSize: 13, fontWeight: isActive(sub.to) ? 700 : 600,
                         }}
                           onMouseOver={e => { if (!isActive(sub.to)) e.currentTarget.style.background = B.bg; }}
-                          onMouseOut={e  => { if (!isActive(sub.to)) e.currentTarget.style.background = "#fff"; }}
+                          onMouseOut={e  => { if (!isActive(sub.to)) e.currentTarget.style.background = "transparent"; }}
                         >
-                          <span style={{ fontSize: 18, width: 26, textAlign: "center", flexShrink: 0 }}>{sub.icon}</span>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{sub.label}</div>
-                            {sub.desc && <div style={{ fontSize: 11, color: B.muted, marginTop: 2 }}>{sub.desc}</div>}
-                          </div>
-                          {isActive(sub.to) && <span style={{ marginLeft: "auto", color: B.blue, fontSize: 12, fontWeight: 800 }}>●</span>}
+                          {sub.label}
+                          {sub.desc && <div style={{ fontSize: 11, color: B.muted, marginTop: 2, fontWeight: 400 }}>{sub.desc}</div>}
                         </Link>
                       ))}
                     </div>
@@ -313,18 +320,12 @@ export default function Navbar() {
                   )}
                 </div>
               ) : (
-                <div style={{ display: "flex", gap: 8 }}>
-                  <Link to="/login" style={{
-                    padding: "8px 16px", border: `1.5px solid ${B.blue}`,
-                    color: B.blue, borderRadius: 9, fontSize: 13, fontWeight: 700, textDecoration: "none",
-                  }}>{t("signIn")}</Link>
-                  <Link to="/login?tab=register" style={{
-                    padding: "8px 18px",
-                    background: `linear-gradient(135deg, ${B.blue}, ${B.navy})`,
-                    color: "#fff", borderRadius: 9, fontSize: 13, fontWeight: 800, textDecoration: "none",
-                    boxShadow: `0 3px 10px ${B.blue}40`,
-                  }}>{t("register")}</Link>
-                </div>
+                <Link to="/login" style={{
+                  padding: "9px 22px",
+                  background: `linear-gradient(135deg, ${B.blue}, ${B.navy})`,
+                  color: "#fff", borderRadius: 9, fontSize: 13, fontWeight: 800, textDecoration: "none",
+                  boxShadow: `0 3px 10px ${B.blue}40`,
+                }}>Sign In</Link>
               )}
             </div>
 

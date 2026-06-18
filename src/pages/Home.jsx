@@ -72,8 +72,13 @@ export default function Home() {
     "GPS-tracked deliveries",
     "Secure escrow payments",
     "Real-time donor updates",
-    "PCI DSS Level 1",
   ];
+
+  // Stats bar visibility from admin settings
+  const [showStats] = useState(() => {
+    try { const s = JSON.parse(localStorage.getItem("kf_site_settings") || "{}"); return s.showStats !== false; }
+    catch { return true; }
+  });
 
   /* ─── Shared style atoms ──────────────────────────────────────────────── */
   const pad  = isMobile ? "0 20px" : "0 32px";
@@ -135,12 +140,9 @@ export default function Home() {
             </div>
 
             {/* Trust strip */}
-            <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:isMobile?10:24, marginTop:44, paddingTop:36, borderTop:"1px solid rgba(255,255,255,0.14)" }}>
+            <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:isMobile?10:28, marginTop:44, paddingTop:36, borderTop:"1px solid rgba(255,255,255,0.14)" }}>
               {TRUST.map(t => (
-                <div key={t} style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, fontWeight:600, opacity:0.82 }}>
-                  <span style={{ width:16, height:16, borderRadius:"50%", background:"rgba(75,125,25,0.9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:900, flexShrink:0 }}>✓</span>
-                  {t}
-                </div>
+                <span key={t} style={{ fontSize:12, fontWeight:600, opacity:0.82 }}>{t}</span>
               ))}
             </div>
           </div>
@@ -148,96 +150,24 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════════ STATS ══════════════════════════════ */}
-      <section style={{ background:"#fff", borderBottom:`1px solid ${C.border}` }}>
-        <div style={{ maxWidth:1280, margin:"0 auto", padding: isMobile?"0 20px":"0 32px",
-          display:"grid", gridTemplateColumns: isMobile?"repeat(2,1fr)":"repeat(4,1fr)" }}>
-          {STATS.map((s, i) => (
-            <div key={i} style={{
-              padding: isMobile?"28px 16px":"40px 28px", textAlign:"center",
-              borderRight: (!isMobile && i<3) ? `1px solid ${C.border}` : "none",
-              borderBottom: (isMobile && i<2) ? `1px solid ${C.border}` : "none",
-            }}>
-              <div style={{ fontSize:32, marginBottom:6 }}>{s.icon}</div>
-              <div className="kf-stat-num" style={{ color:s.color }}>{s.val}</div>
-              <div style={{ fontSize:13, color:C.muted, fontWeight:500, marginTop:5 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-
-      {/* ══════════════════════════ FEATURED CASES ══════════════════════════ */}
-      <section style={sec("#fff")}>
-        <div style={wrap}>
-          {/* Header */}
-          <div style={{ display:"flex", flexDirection: isMobile?"column":"row", justifyContent:"space-between", alignItems: isMobile?"flex-start":"flex-end", gap:16, marginBottom: isMobile?32:48 }}>
-            <div>
-              <span className="kf-badge" style={{ background:"#FDF2F8", color:"#9D174D" }}>{P.cases_badge}</span>
-              <hr className="kf-rule" />
-              <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 8px", letterSpacing:-0.4 }}>{P.cases_title}</h2>
-              <p style={{ fontSize:15, color:C.muted, margin:0 }}>{P.cases_sub}</p>
-            </div>
-            <Link to="/cases" className="kf-btn kf-btn-outline"
-              style={{ padding:"11px 24px", borderRadius:10, fontSize:13, fontWeight:700, whiteSpace:"nowrap", border:`2px solid ${C.primary}` }}>
-              {P.cases_viewall} →
-            </Link>
-          </div>
-
-          {/* Case cards */}
-          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(3,1fr)", gap: isMobile?16:24 }}>
-            {FEATURED_CASES.map(c => (
-              <div key={c.id} className="kf-card" style={{
-                background:"#fff", borderRadius:20, overflow:"hidden",
-                boxShadow:"0 2px 16px rgba(0,38,81,0.07)", border:`1px solid ${C.border}`,
+      {showStats && (
+        <section style={{ background:"#fff", borderBottom:`1px solid ${C.border}` }}>
+          <div style={{ maxWidth:1280, margin:"0 auto", padding: isMobile?"0 20px":"0 32px",
+            display:"grid", gridTemplateColumns: isMobile?"repeat(2,1fr)":"repeat(4,1fr)" }}>
+            {STATS.map((s, i) => (
+              <div key={i} style={{
+                padding: isMobile?"28px 16px":"40px 28px", textAlign:"center",
+                borderRight: (!isMobile && i<3) ? `1px solid ${C.border}` : "none",
+                borderBottom: (isMobile && i<2) ? `1px solid ${C.border}` : "none",
               }}>
-                {/* Top urgency stripe */}
-                <div style={{ height:5, background:URGENCY_COLOR[c.urgency] }} />
-                <div style={{ padding: isMobile?20:26 }}>
-                  {/* Header row */}
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-                    <div>
-                      <div style={{ fontSize:10, color:C.muted, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>CASE {c.id}</div>
-                      <div style={{ fontSize:19, fontWeight:900, color:C.text, marginTop:3 }}>{c.name}</div>
-                      <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>{c.age != null ? `Age ${c.age} · ` : ""}📍 {c.location}</div>
-                    </div>
-                    <span style={{
-                      background:URGENCY_BG[c.urgency], color:URGENCY_COLOR[c.urgency],
-                      border:`1px solid ${URGENCY_COLOR[c.urgency]}30`,
-                      borderRadius:100, padding:"4px 11px", fontSize:10, fontWeight:800, whiteSpace:"nowrap",
-                      flexShrink:0, marginLeft:8,
-                    }}>{c.urgency}</span>
-                  </div>
-
-                  <p style={{ fontSize:13, color:"#4A5568", lineHeight:1.65, margin:"0 0 18px" }}>{c.desc}</p>
-
-                  {/* Progress bar */}
-                  <div style={{ marginBottom:20 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
-                      <span style={{ fontSize:11, fontWeight:700, color:URGENCY_COLOR[c.urgency] }}>{c.funded}% funded</span>
-                      <span style={{ fontSize:11, color:C.muted, fontWeight:600 }}>Goal: {c.goal}</span>
-                    </div>
-                    <div className="kf-prog-track">
-                      <div className="kf-prog-fill" style={{ width:`${c.funded}%`, background:`linear-gradient(90deg, ${URGENCY_COLOR[c.urgency]}80, ${URGENCY_COLOR[c.urgency]})` }} />
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div style={{ display:"flex", gap:10 }}>
-                    <Link to="/cases" className="kf-btn kf-btn-outline"
-                      style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:700, textAlign:"center", border:`1.5px solid ${C.primary}` }}>
-                      {P.case_view}
-                    </Link>
-                    <Link to="/donate" className="kf-btn kf-btn-gold"
-                      style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:800, textAlign:"center", border:"none" }}>
-                      {P.case_sponsor}
-                    </Link>
-                  </div>
-                </div>
+                <div className="kf-stat-num" style={{ color:s.color }}>{s.val}</div>
+                <div style={{ fontSize:13, color:C.muted, fontWeight:500, marginTop:5 }}>{s.label}</div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
 
       {/* ══════════════════════════ HOW IT WORKS + STORIES ═══════════════════ */}
       <section style={sec(C.bg)}>
@@ -509,23 +439,35 @@ export default function Home() {
               {/* ── "Share Your Story" banner ── */}
               <div style={{
                 marginTop: isMobile?36:52,
-                background:`linear-gradient(135deg,${C.navy} 0%,${C.primary} 55%,${C.secondary} 100%)`,
-                borderRadius:20, padding: isMobile?"28px 22px":"36px 40px",
+                position:"relative", overflow:"hidden",
+                borderRadius:20,
+                minHeight: isMobile ? 200 : 220,
                 display:"flex", flexDirection: isMobile?"column":"row",
                 alignItems:"center", justifyContent:"space-between", gap:20,
+                padding: isMobile?"28px 22px":"40px 48px",
               }}>
-                <div style={{ color:"#fff" }}>
-                  <div style={{ fontSize: isMobile?20:26, fontWeight:900, marginBottom:8 }}>
+                {/* Background image with overlay */}
+                <div style={{
+                  position:"absolute", inset:0,
+                  backgroundImage:`url("https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1200&q=80")`,
+                  backgroundSize:"cover", backgroundPosition:"center",
+                  filter:"brightness(0.35)",
+                }} />
+                <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg,rgba(0,38,81,0.7) 0%,rgba(75,125,25,0.5) 100%)" }} />
+
+                <div style={{ color:"#fff", position:"relative", zIndex:1 }}>
+                  <div style={{ fontSize: isMobile?20:28, fontWeight:900, marginBottom:10 }}>
                     ✍️ Have a Story to Share?
                   </div>
-                  <p style={{ fontSize:14, opacity:0.85, margin:0, maxWidth:480, lineHeight:1.7 }}>
+                  <p style={{ fontSize:14, opacity:0.9, margin:0, maxWidth:480, lineHeight:1.7 }}>
                     Are you a beneficiary, community member, or field volunteer with a story of change? Submit it — our team will review and publish verified stories to inspire more donors.
                   </p>
                 </div>
                 <Link to="/stories#share" style={{
-                  padding:"13px 30px", borderRadius:12, fontWeight:800, fontSize:14,
+                  position:"relative", zIndex:1,
+                  padding:"14px 32px", borderRadius:12, fontWeight:800, fontSize:15,
                   background:C.gold, color:"#fff", textDecoration:"none", whiteSpace:"nowrap",
-                  boxShadow:`0 4px 16px rgba(0,0,0,0.2)`, flexShrink:0,
+                  boxShadow:`0 4px 20px rgba(0,0,0,0.3)`, flexShrink:0,
                 }}>Share My Story →</Link>
               </div>
 
@@ -533,6 +475,58 @@ export default function Home() {
           </section>
         );
       })()}
+
+      {/* ══════════════════════════ FEATURED CASES ══════════════════════════ */}
+      <section style={sec(C.bg)}>
+        <div style={wrap}>
+          <div style={{ display:"flex", flexDirection: isMobile?"column":"row", justifyContent:"space-between", alignItems: isMobile?"flex-start":"flex-end", gap:16, marginBottom: isMobile?32:48 }}>
+            <div>
+              <span className="kf-badge" style={{ background:"#FDF2F8", color:"#9D174D" }}>{P.cases_badge}</span>
+              <hr className="kf-rule" />
+              <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 8px", letterSpacing:-0.4 }}>{P.cases_title}</h2>
+              <p style={{ fontSize:15, color:C.muted, margin:0 }}>{P.cases_sub}</p>
+            </div>
+            <Link to="/cases" className="kf-btn kf-btn-outline"
+              style={{ padding:"11px 24px", borderRadius:10, fontSize:13, fontWeight:700, whiteSpace:"nowrap", border:`2px solid ${C.primary}` }}>
+              {P.cases_viewall} →
+            </Link>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(3,1fr)", gap: isMobile?16:24 }}>
+            {FEATURED_CASES.map(c => (
+              <div key={c.id} className="kf-card" style={{
+                background:"#fff", borderRadius:20, overflow:"hidden",
+                boxShadow:"0 2px 16px rgba(0,38,81,0.07)", border:`1px solid ${C.border}`,
+              }}>
+                <div style={{ height:5, background:URGENCY_COLOR[c.urgency] }} />
+                <div style={{ padding: isMobile?20:26 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+                    <div>
+                      <div style={{ fontSize:10, color:C.muted, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>CASE {c.id}</div>
+                      <div style={{ fontSize:19, fontWeight:900, color:C.text, marginTop:3 }}>{c.name}</div>
+                      <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>{c.age != null ? `Age ${c.age} · ` : ""}📍 {c.location}</div>
+                    </div>
+                    <span style={{ background:URGENCY_BG[c.urgency], color:URGENCY_COLOR[c.urgency], border:`1px solid ${URGENCY_COLOR[c.urgency]}30`, borderRadius:100, padding:"4px 11px", fontSize:10, fontWeight:800, whiteSpace:"nowrap", flexShrink:0, marginLeft:8 }}>{c.urgency}</span>
+                  </div>
+                  <p style={{ fontSize:13, color:"#4A5568", lineHeight:1.65, margin:"0 0 18px" }}>{c.desc}</p>
+                  <div style={{ marginBottom:20 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
+                      <span style={{ fontSize:11, fontWeight:700, color:URGENCY_COLOR[c.urgency] }}>{c.funded}% funded</span>
+                      <span style={{ fontSize:11, color:C.muted, fontWeight:600 }}>Goal: {c.goal}</span>
+                    </div>
+                    <div className="kf-prog-track">
+                      <div className="kf-prog-fill" style={{ width:`${c.funded}%`, background:`linear-gradient(90deg, ${URGENCY_COLOR[c.urgency]}80, ${URGENCY_COLOR[c.urgency]})` }} />
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:10 }}>
+                    <Link to="/cases" className="kf-btn kf-btn-outline" style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:700, textAlign:"center", border:`1.5px solid ${C.primary}` }}>{P.case_view}</Link>
+                    <Link to="/donate" className="kf-btn kf-btn-gold" style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:800, textAlign:"center", border:"none" }}>{P.case_sponsor}</Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* ══════════════════════════ CTA BANNER ══════════════════════════════ */}
       <section className="kf-hero-dots" style={{
@@ -554,10 +548,6 @@ export default function Home() {
             <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/contact")}
               style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:700, border:"none" }}>
               {P.cta_report}
-            </button>
-            <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/dashboard")}
-              style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:700, border:"none" }}>
-              {P.cta_dashboard}
             </button>
           </div>
         </div>

@@ -3418,6 +3418,7 @@ const SITE_INFO_DEFAULTS = {
   linkedin:   "https://linkedin.com/company/kafaaleqaad",
   heroTitle:  "Transforming Compassion Into Verified Impact",
   heroSub:    "Every donation reaches a verified beneficiary — tracked from field to delivery.",
+  showStats:  true,
 };
 
 const loadPageVis   = () => { try { return { ...Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true])), ...JSON.parse(localStorage.getItem("kf_page_settings")||"{}") }; } catch { return Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true])); } };
@@ -3587,6 +3588,30 @@ const SiteSettingsPanel = ({ showToast, currentUser }) => {
       {/* ── HOMEPAGE CONTENT ── */}
       {settingsTab === "homepage" && (
         <div>
+          {/* Stats bar toggle */}
+          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 20px", marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.navy }}>Stats Bar</div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>Show / hide the 2,400+ Cases · $1.2M · 98.8% · 6 Regions bar below the hero</div>
+              </div>
+              <button onClick={() => {
+                if (!isSuperAdmin) return;
+                setSiteInfo(v => ({ ...v, showStats: !v.showStats }));
+              }} style={{
+                width: 52, height: 28, borderRadius: 99, border: "none", cursor: isSuperAdmin ? "pointer" : "default",
+                background: siteInfo.showStats !== false ? C.secondary : "#D1D5DB",
+                position: "relative", transition: "background .2s", flexShrink: 0,
+              }}>
+                <span style={{
+                  position: "absolute", top: 3, left: siteInfo.showStats !== false ? 26 : 3,
+                  width: 22, height: 22, borderRadius: "50%", background: "#fff",
+                  transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                }} />
+              </button>
+            </div>
+          </div>
+
           <div style={{ display: "grid", gap: 20, maxWidth: 640, marginBottom: 28 }}>
             {[
               { key: "heroTitle", label: "Hero Headline",    rows: 2 },
