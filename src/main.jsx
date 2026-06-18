@@ -33,6 +33,10 @@ import Donate       from './pages/Donate.jsx';
 import Contact        from './pages/Contact.jsx';
 import ImpactPartners from './pages/ImpactPartners.jsx';
 import Programs       from './pages/Programs.jsx';
+import Stories        from './pages/Stories.jsx';
+import Volunteer      from './pages/Volunteer.jsx';
+import FAQ            from './pages/FAQ.jsx';
+import Transparency   from './pages/Transparency.jsx';
 import Login          from './pages/Login.jsx';
 import Dashboard    from './KafaaleQaadApp.jsx';
 
@@ -74,10 +78,14 @@ function App() {
           <Route path="/cases"         element={<Layout><Cases /></Layout>} />
           <Route path="/cases/:id"     element={<Layout><CaseDetail /></Layout>} />
           <Route path="/donate"        element={<Layout><Donate /></Layout>} />
-          <Route path="/contact"         element={<Layout><Contact /></Layout>} />
-          <Route path="/partners"        element={<Layout><ImpactPartners /></Layout>} />
-          <Route path="/programs"        element={<Layout><Programs /></Layout>} />
-          <Route path="/login"         element={<Login />} />
+          <Route path="/contact"          element={<Layout><Contact /></Layout>} />
+          <Route path="/partners"         element={<Layout><ImpactPartners /></Layout>} />
+          <Route path="/programs"         element={<Layout><Programs /></Layout>} />
+          <Route path="/stories"          element={<Layout><Stories /></Layout>} />
+          <Route path="/volunteer"        element={<Layout><Volunteer /></Layout>} />
+          <Route path="/faq"              element={<Layout><FAQ /></Layout>} />
+          <Route path="/transparency"     element={<Layout><Transparency /></Layout>} />
+          <Route path="/login"            element={<Login />} />
           <Route path="/dashboard"     element={<Dashboard />} />
           <Route path="/dashboard/*"   element={<Dashboard />} />
           <Route path="*"             element={<Layout><NotFound /></Layout>} />

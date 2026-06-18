@@ -23,10 +23,11 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const { t, lang, changeLang, LANGUAGES, currentLang } = useLang();
 
-  const [menuOpen,     setMenuOpen]     = useState(false);
-  const [dropOpen,     setDropOpen]     = useState(false);
-  const [langMenuOpen, setLangMenuOpen] = useState(false);
-  const [scrolled,     setScrolled]     = useState(false);
+  const [menuOpen,      setMenuOpen]      = useState(false);
+  const [dropOpen,      setDropOpen]      = useState(false);
+  const [langMenuOpen,  setLangMenuOpen]  = useState(false);
+  const [casesDropOpen, setCasesDropOpen] = useState(false);
+  const [scrolled,      setScrolled]      = useState(false);
   const { isMobile } = useResponsive();
 
   useEffect(() => {
@@ -35,19 +36,40 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const links = [
+  // Flat links (no dropdown) — for mobile drawer
+  const allLinks = [
     { to: "/",            label: t("navHome")       },
     { to: "/about",       label: t("navAbout")      },
     { to: "/how-it-works",label: t("navHowItWorks") },
     { to: "/cases",       label: t("navCases")      },
-    { to: "/donate",      label: t("navDonate")     },
-    { to: "/contact",     label: t("navContact")    },
-    { to: "/partners",    label: "Partners"         },
     { to: "/programs",    label: "Programs"         },
+    { to: "/stories",     label: "Stories"          },
+    { to: "/donate",      label: t("navDonate")     },
+    { to: "/volunteer",   label: "Volunteer"        },
+    { to: "/partners",    label: "Partners"         },
+    { to: "/contact",     label: t("navContact")    },
+  ];
+
+  // Desktop links — Cases & Programs collapsed into one dropdown
+  const desktopLinks = [
+    { to: "/",            label: t("navHome")       },
+    { to: "/about",       label: t("navAbout")      },
+    { to: "/how-it-works",label: t("navHowItWorks") },
+    { dropdown: true, label: "Cases & Programs", items: [
+        { to: "/cases",    label: "All Cases",  icon: "📋" },
+        { to: "/programs", label: "Programs",   icon: "🌱" },
+      ]
+    },
+    { to: "/stories",     label: "Stories"          },
+    { to: "/donate",      label: t("navDonate")     },
+    { to: "/volunteer",   label: "Volunteer"        },
+    { to: "/partners",    label: "Partners"         },
+    { to: "/contact",     label: t("navContact")    },
   ];
 
   const isActive = (path) => path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
-  const closeAll = () => { setMenuOpen(false); setDropOpen(false); setLangMenuOpen(false); };
+  const isCasesActive = location.pathname.startsWith("/cases") || location.pathname.startsWith("/programs");
+  const closeAll = () => { setMenuOpen(false); setDropOpen(false); setLangMenuOpen(false); setCasesDropOpen(false); };
 
   return (
     <>
@@ -71,20 +93,57 @@ export default function Navbar() {
 
           {/* ── Desktop nav links ── */}
           <div className="nav-desktop" style={{ display: "flex", gap: 2, alignItems: "center" }}>
-            {links.map(l => (
-              <Link key={l.to} to={l.to} style={{
-                textDecoration: "none",
-                padding: "8px 13px",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                color:      isActive(l.to) ? B.blue   : B.muted,
-                background: isActive(l.to) ? B.blue + "12" : "transparent",
-                borderBottom: isActive(l.to) ? `2px solid ${B.blue}` : "2px solid transparent",
-                transition: "all .15s",
-                whiteSpace: "nowrap",
-              }}>{l.label}</Link>
-            ))}
+            {desktopLinks.map((l, i) => {
+              if (l.dropdown) {
+                return (
+                  <div key={i} style={{ position: "relative" }}>
+                    <button
+                      onClick={() => { setCasesDropOpen(v => !v); setDropOpen(false); setLangMenuOpen(false); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 4,
+                        padding: "8px 13px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        border: "none", cursor: "pointer", whiteSpace: "nowrap",
+                        color:      isCasesActive ? B.blue   : B.muted,
+                        background: isCasesActive ? B.blue + "12" : "transparent",
+                        borderBottom: isCasesActive ? `2px solid ${B.blue}` : "2px solid transparent",
+                        transition: "all .15s",
+                      }}>
+                      {l.label}
+                      <span style={{ fontSize: 9, transition: "transform .2s", transform: casesDropOpen ? "rotate(180deg)" : "none" }}>▾</span>
+                    </button>
+                    {casesDropOpen && (
+                      <div style={{
+                        position: "absolute", top: "calc(100% + 6px)", left: "50%", transform: "translateX(-50%)",
+                        background: "#fff", borderRadius: 12, boxShadow: `0 8px 32px rgba(0,38,81,0.18)`,
+                        zIndex: 600, minWidth: 180, border: `1px solid ${B.border}`, overflow: "hidden",
+                      }}>
+                        {l.items.map(item => (
+                          <Link key={item.to} to={item.to} onClick={closeAll} style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: "12px 16px", fontSize: 13, fontWeight: 600, textDecoration: "none",
+                            color: isActive(item.to) ? B.blue : B.text,
+                            background: isActive(item.to) ? B.blue + "10" : "#fff",
+                            borderBottom: `1px solid ${B.border}`,
+                          }}>
+                            <span>{item.icon}</span>
+                            <span>{item.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <Link key={l.to} to={l.to} style={{
+                  textDecoration: "none", padding: "8px 13px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  color:      isActive(l.to) ? B.blue   : B.muted,
+                  background: isActive(l.to) ? B.blue + "12" : "transparent",
+                  borderBottom: isActive(l.to) ? `2px solid ${B.blue}` : "2px solid transparent",
+                  transition: "all .15s", whiteSpace: "nowrap",
+                }}>{l.label}</Link>
+              );
+            })}
           </div>
 
           {/* ── Right: Lang + Auth + Hamburger ── */}
@@ -219,7 +278,7 @@ export default function Navbar() {
         {/* ── Mobile dropdown menu ── */}
         {menuOpen && (
           <div style={{ background: "#fff", borderTop: `2px solid ${B.border}`, padding: "12px 20px 24px" }}>
-            {links.map(l => (
+            {allLinks.map(l => (
               <Link key={l.to} to={l.to} onClick={closeAll} style={{
                 display: "block", padding: "13px 16px", borderRadius: 10,
                 fontSize: 15, fontWeight: 600, textDecoration: "none", marginBottom: 4,
@@ -273,7 +332,7 @@ export default function Navbar() {
       </nav>
 
       {/* Close overlay */}
-      {(langMenuOpen || dropOpen) && (
+      {(langMenuOpen || dropOpen || casesDropOpen) && (
         <div onClick={closeAll} style={{ position: "fixed", inset: 0, zIndex: 490 }} />
       )}
 

@@ -104,7 +104,6 @@ export default function Home() {
         {/* ── Video background — drop /public/assets/hero-video.mp4 to activate ── */}
         <video
           autoPlay muted loop playsInline
-          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", zIndex:1 }}
           onCanPlay={e => { e.target.style.opacity = "1"; }}
           style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", zIndex:1, opacity:0, transition:"opacity 0.8s" }}
         >

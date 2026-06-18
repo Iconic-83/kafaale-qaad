@@ -74,8 +74,13 @@ export default function Footer() {
               [P.link_about,  "/about"],
               [P.link_how,    "/how-it-works"],
               [P.link_cases,  "/cases"],
+              ["Programs",    "/programs"],
+              ["Stories",     "/stories"],
               [P.link_donate, "/donate"],
-              ["🤝 Partners",  "/partners"],
+              ["Partners",    "/partners"],
+              ["Volunteer",   "/volunteer"],
+              ["FAQ",         "/faq"],
+              ["Transparency","/transparency"],
             ].map(([label, to]) => (
               <div key={to} style={{ marginBottom: 12 }}>
                 <Link to={to} style={{
