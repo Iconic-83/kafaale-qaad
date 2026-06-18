@@ -19,7 +19,7 @@ export default function Footer() {
   const { isMobile, isTablet } = useResponsive();
   const [logoHover, setLogoHover] = useState(false);
 
-  const gridCols = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "2fr 1fr 1fr 1fr";
+  const gridCols = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "2fr 1fr 1fr";
 
   return (
     <footer style={{
@@ -88,24 +88,6 @@ export default function Footer() {
                 >
                   <span style={{ color: B.green, fontSize: 10 }}>▶</span> {label}
                 </Link>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Roles ── */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: B.gold, letterSpacing: 2, marginBottom: 18, textTransform: "uppercase" }}>
-              {P.roles}
-            </div>
-            {[
-              lang==="so"?"👁️ Warbixiye"      : lang==="ar"?"👁️ مراسل"       : lang==="tr"?"👁️ Muhabir"     : lang==="es"?"👁️ Reportero"    : lang==="fr"?"👁️ Rapporteur"   : "👁️ Reporter",
-              lang==="so"?"🏛️ Xaqiijinta"     : lang==="ar"?"🏛️ التحقق"      : lang==="tr"?"🏛️ Doğrulama"   : lang==="es"?"🏛️ Verificación"  : lang==="fr"?"🏛️ Vérification"  : "🏛️ Verification",
-              lang==="so"?"🗺️ Kooxda Goobta"  : lang==="ar"?"🗺️ الفريق الميداني": lang==="tr"?"🗺️ Saha Ekibi": lang==="es"?"🗺️ Equipo de Campo": lang==="fr"?"🗺️ Équipe Terrain" : "🗺️ Field Team",
-              lang==="so"?"❤️ Deeq-bixiye"    : lang==="ar"?"❤️ متبرع"        : lang==="tr"?"❤️ Bağışçı"     : lang==="es"?"❤️ Donante"       : lang==="fr"?"❤️ Donateur"      : "❤️ Donor",
-              lang==="so"?"🛡️ Maamulaha Sare" : lang==="ar"?"🛡️ المدير العام" : lang==="tr"?"🛡️ Süper Admin" : lang==="es"?"🛡️ Super Admin"   : lang==="fr"?"🛡️ Super Admin"   : "🛡️ Super Admin",
-            ].map(r => (
-              <div key={r} style={{ marginBottom: 10, fontSize: 14, opacity: 0.7, display: "flex", alignItems: "center", gap: 6 }}>
-                {r}
               </div>
             ))}
           </div>

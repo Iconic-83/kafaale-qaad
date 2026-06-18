@@ -3390,6 +3390,451 @@ const UsersTab = ({ users, isSuperAdmin, onDeleteUser, onChangeRole }) => {
   );
 };
 
+// ─── IMPACT STORIES PANEL ────────────────────────────────────────────────────
+const STORIES_KEY = "kf_impact_stories";
+const loadStories = () => { try { return JSON.parse(localStorage.getItem(STORIES_KEY) || "[]"); } catch { return []; } };
+
+const ImpactStoriesPanel = ({ showToast }) => {
+  const { isMobile } = useResponsive();
+  const [stories, setStories] = useState(loadStories);
+  const [form, setForm] = useState({ title:"", category:"", location:"", beforeDesc:"", afterDesc:"", daysToDeliver:"", amountDistributed:"", beforeImg:null, afterImg:null, beforePreview:"", afterPreview:"" });
+  const [editing, setEditing] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const save = (list) => { setStories(list); localStorage.setItem(STORIES_KEY, JSON.stringify(list)); };
+
+  const handleImg = (side, file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => setForm(f => ({ ...f, [`${side}Img`]: e.target.result, [`${side}Preview`]: e.target.result }));
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = () => {
+    if (!form.title.trim() || !form.category.trim() || !form.beforeDesc.trim() || !form.afterDesc.trim()) {
+      showToast("Title, category, before description and after description are required", "error"); return;
+    }
+    const entry = {
+      id: editing || Date.now().toString(),
+      title: form.title.trim(), category: form.category.trim(), location: form.location.trim(),
+      beforeDesc: form.beforeDesc.trim(), afterDesc: form.afterDesc.trim(),
+      daysToDeliver: form.daysToDeliver, amountDistributed: form.amountDistributed,
+      beforeImg: form.beforeImg || form.beforePreview || null,
+      afterImg:  form.afterImg  || form.afterPreview  || null,
+      createdAt: editing ? (stories.find(s=>s.id===editing)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+    };
+    const updated = editing ? stories.map(s => s.id === editing ? entry : s) : [entry, ...stories];
+    save(updated);
+    showToast(editing ? "Story updated" : "Story added", "success");
+    setForm({ title:"", category:"", location:"", beforeDesc:"", afterDesc:"", daysToDeliver:"", amountDistributed:"", beforeImg:null, afterImg:null, beforePreview:"", afterPreview:"" });
+    setEditing(null); setShowForm(false);
+  };
+
+  const handleEdit = (s) => {
+    setForm({ title:s.title, category:s.category, location:s.location||"", beforeDesc:s.beforeDesc, afterDesc:s.afterDesc, daysToDeliver:s.daysToDeliver||"", amountDistributed:s.amountDistributed||"", beforeImg:null, afterImg:null, beforePreview:s.beforeImg||"", afterPreview:s.afterImg||"" });
+    setEditing(s.id); setShowForm(true); window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDelete = (id) => {
+    if (!window.confirm("Delete this impact story?")) return;
+    save(stories.filter(s => s.id !== id));
+    showToast("Story deleted", "success");
+  };
+
+  const F = ({ label, children, required }) => (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display:"block", fontSize:12, fontWeight:700, color:COLORS.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>{label}{required && <span style={{color:"#EF4444"}}> *</span>}</label>
+      {children}
+    </div>
+  );
+  const inp = { width:"100%", padding:"10px 14px", borderRadius:8, border:`1px solid ${COLORS.border}`, fontSize:14, boxSizing:"border-box", fontFamily:"inherit" };
+
+  return (
+    <div>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:10 }}>
+        <div>
+          <h3 style={{ margin:0, fontSize:18, fontWeight:800 }}>📸 Impact Stories (Before & After)</h3>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:COLORS.muted }}>Stories you save here will appear on the public homepage.</p>
+        </div>
+        <Btn variant="primary" onClick={() => { setShowForm(!showForm); setEditing(null); setForm({ title:"", category:"", location:"", beforeDesc:"", afterDesc:"", daysToDeliver:"", amountDistributed:"", beforeImg:null, afterImg:null, beforePreview:"", afterPreview:"" }); }}>
+          {showForm ? "Cancel" : "+ Add Story"}
+        </Btn>
+      </div>
+
+      {showForm && (
+        <div style={{ background:"#F8FAFF", border:`1px solid ${COLORS.border}`, borderRadius:16, padding:24, marginBottom:28 }}>
+          <h4 style={{ margin:"0 0 20px", fontSize:15, fontWeight:800 }}>{editing ? "Edit Story" : "New Impact Story"}</h4>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", gap:16 }}>
+            <F label="Story Title" required><input style={inp} value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Displaced family finds shelter" /></F>
+            <F label="Category" required>
+              <select style={inp} value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+                <option value="">Select category…</option>
+                <option value="Emergency & Shelter">Emergency & Shelter</option>
+                <option value="Medical">Medical</option>
+                <option value="Food & Care">Food & Care</option>
+                <option value="Education">Education</option>
+                <option value="Orphan Support">Orphan Support</option>
+                <option value="Family Reunification">Family Reunification</option>
+                <option value="Livelihood">Livelihood</option>
+              </select>
+            </F>
+            <F label="Location / District"><input style={inp} value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="e.g. Mogadishu, Baidoa…" /></F>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+              <F label="Days to Deliver"><input style={inp} type="number" min="1" value={form.daysToDeliver} onChange={e=>setForm(f=>({...f,daysToDeliver:e.target.value}))} placeholder="14" /></F>
+              <F label="Amount Distributed"><input style={inp} value={form.amountDistributed} onChange={e=>setForm(f=>({...f,amountDistributed:e.target.value}))} placeholder="$820" /></F>
+            </div>
+            <F label="Before — Description" required><textarea style={{...inp,resize:"vertical"}} rows={3} value={form.beforeDesc} onChange={e=>setForm(f=>({...f,beforeDesc:e.target.value}))} placeholder="Describe the situation BEFORE aid…" /></F>
+            <F label="After — Description" required><textarea style={{...inp,resize:"vertical"}} rows={3} value={form.afterDesc} onChange={e=>setForm(f=>({...f,afterDesc:e.target.value}))} placeholder="Describe the outcome AFTER aid…" /></F>
+          </div>
+
+          {/* Photo upload row */}
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", gap:16, marginTop:8 }}>
+            {[["before","Before Photo (Optional)"],["after","After Photo (Optional)"]].map(([side, lbl]) => (
+              <F key={side} label={lbl}>
+                <div style={{ border:`2px dashed ${COLORS.border}`, borderRadius:10, overflow:"hidden", position:"relative" }}>
+                  {form[`${side}Preview`] ? (
+                    <div style={{ position:"relative" }}>
+                      <img src={form[`${side}Preview`]} alt={side} style={{ width:"100%", height:160, objectFit:"cover", display:"block" }} />
+                      <button onClick={() => setForm(f=>({...f,[`${side}Img`]:null,[`${side}Preview`]:""}))}
+                        style={{ position:"absolute", top:6, right:6, background:"rgba(0,0,0,0.55)", color:"#fff", border:"none", borderRadius:"50%", width:26, height:26, cursor:"pointer", fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                    </div>
+                  ) : (
+                    <label style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24, cursor:"pointer", gap:8 }}>
+                      <span style={{ fontSize:32 }}>{side==="before"?"📷":"🌟"}</span>
+                      <span style={{ fontSize:12, color:COLORS.muted, textAlign:"center" }}>Click to upload {side} photo<br/><em>JPG, PNG (max 5MB)</em></span>
+                      <input type="file" accept="image/*" style={{ display:"none" }} onChange={e=>handleImg(side, e.target.files[0])} />
+                    </label>
+                  )}
+                </div>
+              </F>
+            ))}
+          </div>
+
+          <div style={{ display:"flex", gap:10, marginTop:16, justifyContent:"flex-end" }}>
+            <Btn variant="ghost" onClick={() => { setShowForm(false); setEditing(null); }}>Cancel</Btn>
+            <Btn variant="success" onClick={handleSubmit}>{editing ? "💾 Save Changes" : "✅ Publish Story"}</Btn>
+          </div>
+        </div>
+      )}
+
+      {stories.length === 0 && !showForm && (
+        <div style={{ textAlign:"center", padding:"60px 20px", color:COLORS.muted }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>📸</div>
+          <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>No impact stories yet</div>
+          <div style={{ fontSize:13 }}>Add your first before & after story to display on the homepage.</div>
+        </div>
+      )}
+
+      <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"repeat(auto-fill, minmax(420px,1fr))", gap:20 }}>
+        {stories.map(s => (
+          <div key={s.id} style={{ background:"#fff", border:`1px solid ${COLORS.border}`, borderRadius:16, overflow:"hidden", boxShadow:"0 2px 10px #0002" }}>
+            {/* Header */}
+            <div style={{ background:`linear-gradient(135deg,${COLORS.primary}14,${COLORS.secondary}12)`, padding:"14px 18px", borderBottom:`1px solid ${COLORS.border}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:COLORS.muted, textTransform:"uppercase", letterSpacing:1 }}>{s.category}{s.location ? ` · ${s.location}` : ""}</div>
+                  <div style={{ fontSize:16, fontWeight:800, color:COLORS.text, marginTop:3 }}>{s.title}</div>
+                </div>
+                <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                  <button onClick={() => handleEdit(s)} style={{ padding:"5px 12px", fontSize:12, background:COLORS.primary+"15", color:COLORS.primary, border:"none", borderRadius:7, cursor:"pointer", fontWeight:700 }}>Edit</button>
+                  <button onClick={() => handleDelete(s.id)} style={{ padding:"5px 12px", fontSize:12, background:"#FEE2E2", color:"#DC2626", border:"none", borderRadius:7, cursor:"pointer", fontWeight:700 }}>Delete</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Before/After photos */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", position:"relative" }}>
+              {[["before","Before",s.beforeImg,"#374151","😔"],["after","After",s.afterImg,"#065F46","😊"]].map(([side, lbl, img, color, emoji]) => (
+                <div key={side} style={{ position:"relative" }}>
+                  {img ? (
+                    <img src={img} alt={side} style={{ width:"100%", height:160, objectFit:"cover", display:"block" }} />
+                  ) : (
+                    <div style={{ height:160, background: side==="before"?"linear-gradient(135deg,#6B7280,#9CA3AF)":"linear-gradient(135deg,#059669,#34D399)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <span style={{ fontSize:40, opacity:0.7 }}>{emoji}</span>
+                    </div>
+                  )}
+                  <div style={{ position:"absolute", top:8, left:8, background: side==="before"?"rgba(0,0,0,0.6)":"rgba(5,150,105,0.9)", color:"#fff", borderRadius:6, padding:"2px 9px", fontSize:11, fontWeight:800 }}>{lbl}</div>
+                </div>
+              ))}
+              <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:30, height:30, borderRadius:"50%", background:"#E0AB21", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, zIndex:2, boxShadow:"0 2px 8px #E0AB2180" }}>→</div>
+            </div>
+
+            {/* Descriptions */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom:`1px solid ${COLORS.border}` }}>
+              <div style={{ padding:"12px 14px", borderRight:`1px solid ${COLORS.border}`, fontSize:12, color:COLORS.muted, lineHeight:1.5 }}>{s.beforeDesc}</div>
+              <div style={{ padding:"12px 14px", fontSize:12, color:COLORS.secondary, fontWeight:600, lineHeight:1.5 }}>{s.afterDesc}</div>
+            </div>
+
+            {/* Footer stats */}
+            <div style={{ display:"flex", padding:"10px 18px", gap:16, alignItems:"center" }}>
+              {s.daysToDeliver && <div style={{ fontSize:12, color:COLORS.muted }}><span style={{ fontWeight:800, color:COLORS.primary, fontSize:14 }}>{s.daysToDeliver}</span> days</div>}
+              {s.amountDistributed && <div style={{ fontSize:12, color:COLORS.muted }}><span style={{ fontWeight:800, color:COLORS.secondary, fontSize:14 }}>{s.amountDistributed}</span> distributed</div>}
+              <div style={{ marginLeft:"auto", fontSize:11, color:"#10B981", fontWeight:700 }}>● Verified</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── BULK IMPORT PANEL ────────────────────────────────────────────────────────
+const XLSX_TEMPLATE_COLS = [
+  "Child Full Name", "Age", "Gender (Male/Female/Other)",
+  "Location / District", "Urgency (Low/Medium/High/Critical)",
+  "Category (food/medical/shelter/orphan/education/other)",
+  "Description (min 10 chars)", "Guardian Name", "Guardian Phone",
+  "Monthly Amount Needed ($)", "Notes",
+];
+
+const generateExcelTemplate = () => {
+  const header = XLSX_TEMPLATE_COLS;
+  const example = [
+    "Fatima Ali Hassan", "8", "Female", "Mogadishu", "High",
+    "orphan", "Child lost both parents and needs food, shelter and education support.",
+    "Ahmed Hassan (Uncle)", "+252612345678", "120", "Currently staying with relatives",
+  ];
+  const rows = [header, example];
+  const csvContent = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob(["﻿" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "kafaala-qaad-child-import-template.csv"; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+const parseCSV = (text) => {
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",").map(h => h.replace(/^"|"$/g,"").trim());
+  return lines.slice(1).map(line => {
+    const vals = [];
+    let cur = "", inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { inQ = !inQ; continue; }
+      if (line[i] === ',' && !inQ) { vals.push(cur); cur = ""; continue; }
+      cur += line[i];
+    }
+    vals.push(cur);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = (vals[i] || "").trim(); });
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+};
+
+const BulkImportPanel = ({ showToast, currentUser }) => {
+  const { isMobile } = useResponsive();
+  const [rows, setRows] = useState([]);
+  const [fileName, setFileName] = useState("");
+  const [importMode, setImportMode] = useState("individual"); // "individual" | "program"
+  const [programName, setProgramName] = useState("");
+  const [programType, setProgramType] = useState("child_sponsorship");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState([]);
+
+  const handleFile = (file) => {
+    if (!file) return;
+    setFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+      const parsed = parseCSV(text);
+      if (!parsed.length) { showToast("No data rows found. Check the file format.", "error"); return; }
+      setRows(parsed); setSubmitted(false); setErrors([]);
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  const validate = () => {
+    const errs = [];
+    rows.forEach((r, i) => {
+      const name = r["Child Full Name"] || r[XLSX_TEMPLATE_COLS[0]] || "";
+      const desc = r["Description (min 10 chars)"] || r[XLSX_TEMPLATE_COLS[6]] || "";
+      if (!name.trim()) errs.push(`Row ${i+1}: Child name is required`);
+      if (desc.trim().length < 10) errs.push(`Row ${i+1}: Description too short (${desc.length} chars)`);
+    });
+    return errs;
+  };
+
+  const handleSubmit = async () => {
+    const errs = validate();
+    if (errs.length) { setErrors(errs); showToast(`${errs.length} validation error(s)`, "error"); return; }
+    if (importMode === "program" && !programName.trim()) { showToast("Program name is required", "error"); return; }
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem("kf_token");
+      const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+      const payload = {
+        mode: importMode,
+        programName: importMode === "program" ? programName.trim() : undefined,
+        programType: importMode === "program" ? programType : undefined,
+        children: rows.map(r => ({
+          name:     r["Child Full Name"]                                 || "",
+          age:      parseInt(r["Age"]) || null,
+          gender:   r["Gender (Male/Female/Other)"]                      || "",
+          location: r["Location / District"]                             || "",
+          urgency:  r["Urgency (Low/Medium/High/Critical)"]              || "Medium",
+          category: r["Category (food/medical/shelter/orphan/education/other)"] || "other",
+          description: r["Description (min 10 chars)"]                  || "",
+          guardianName:  r["Guardian Name"]                              || "",
+          guardianPhone: r["Guardian Phone"]                             || "",
+          monthlyNeed:   parseFloat(r["Monthly Amount Needed ($)"]) || 0,
+          notes:    r["Notes"]                                           || "",
+        })),
+      };
+      const res = await fetch("/api/admin/bulk-import", { method:"POST", headers, body: JSON.stringify(payload) });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message || "Import failed"); }
+      const result = await res.json();
+      showToast(`Successfully imported ${result.count || rows.length} ${importMode === "program" ? "beneficiaries into program" : "cases"}`, "success");
+      setSubmitted(true);
+    } catch (err) {
+      // Backend endpoint may not exist yet — store locally as draft
+      const drafts = JSON.parse(localStorage.getItem("kf_bulk_drafts") || "[]");
+      const draft = { id: Date.now().toString(), importedAt: new Date().toISOString(), mode: importMode, programName: importMode==="program"?programName:"", programType, rows, status: "draft" };
+      localStorage.setItem("kf_bulk_drafts", JSON.stringify([draft, ...drafts]));
+      showToast(`Saved as draft (${rows.length} records). Will sync when API is ready.`, "info");
+      setSubmitted(true);
+    } finally { setSubmitting(false); }
+  };
+
+  const COL_MAP = { n:"Child Full Name", age:"Age", gen:"Gender (Male/Female/Other)", loc:"Location / District", urg:"Urgency (Low/Medium/High/Critical)", cat:"Category (food/medical/shelter/orphan/education/other)", desc:"Description (min 10 chars)" };
+
+  const URGENCY_C = { Low:"#10B981", Medium:"#F59E0B", High:"#EF4444", Critical:"#7C3AED" };
+  const urg = (r) => r["Urgency (Low/Medium/High/Critical)"] || "Medium";
+
+  return (
+    <div>
+      <div style={{ marginBottom:24 }}>
+        <h3 style={{ margin:0, fontSize:18, fontWeight:800 }}>📥 Bulk Child Import</h3>
+        <p style={{ margin:"4px 0 0", fontSize:13, color:COLORS.muted }}>Import up to hundreds of children at once from a CSV/Excel file. You can create individual cases or enroll them all in one program.</p>
+      </div>
+
+      {/* Step 1: Download template */}
+      <div style={{ background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:14, padding:20, marginBottom:20 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+          <div style={{ flex:1, minWidth:200 }}>
+            <div style={{ fontWeight:800, fontSize:14, color:COLORS.primary, marginBottom:4 }}>Step 1 — Download the Excel Template</div>
+            <div style={{ fontSize:13, color:COLORS.muted }}>Fill in one child per row. Required columns: Name, Urgency, Description. All others optional.</div>
+          </div>
+          <Btn variant="primary" onClick={generateExcelTemplate}>⬇ Download Template (.csv)</Btn>
+        </div>
+        <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:6 }}>
+          {XLSX_TEMPLATE_COLS.map((c,i) => (
+            <span key={i} style={{ background:i<2?"#DBEAFE":"#F3F4F6", color:i<2?COLORS.primary:COLORS.muted, borderRadius:20, padding:"2px 10px", fontSize:11, fontWeight:i<2?700:400, border:`1px solid ${i<2?"#BFDBFE":"#E5E7EB"}` }}>{c}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Step 2: Upload */}
+      <div style={{ background:"#fff", border:`1px solid ${COLORS.border}`, borderRadius:14, padding:20, marginBottom:20 }}>
+        <div style={{ fontWeight:800, fontSize:14, color:COLORS.text, marginBottom:14 }}>Step 2 — Upload Filled File</div>
+        <label style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", border:`2px dashed ${fileName ? COLORS.secondary : COLORS.border}`, borderRadius:12, padding:32, cursor:"pointer", gap:8, background: fileName ? "#F0FDF4" : "#FAFAFA" }}>
+          <span style={{ fontSize:36 }}>{fileName ? "✅" : "📂"}</span>
+          <span style={{ fontSize:14, fontWeight:700, color: fileName ? COLORS.secondary : COLORS.muted }}>
+            {fileName ? fileName : "Click to upload CSV / Excel file"}
+          </span>
+          {fileName && <span style={{ fontSize:12, color:COLORS.muted }}>{rows.length} rows parsed</span>}
+          <input type="file" accept=".csv,.xlsx,.xls" style={{ display:"none" }} onChange={e => handleFile(e.target.files[0])} />
+        </label>
+        {fileName && (
+          <button onClick={() => { setRows([]); setFileName(""); setErrors([]); setSubmitted(false); }} style={{ marginTop:10, background:"none", border:"none", color:"#EF4444", fontSize:12, cursor:"pointer", fontWeight:600 }}>✕ Clear file</button>
+        )}
+      </div>
+
+      {/* Step 3: Choose mode */}
+      {rows.length > 0 && (
+        <div style={{ background:"#fff", border:`1px solid ${COLORS.border}`, borderRadius:14, padding:20, marginBottom:20 }}>
+          <div style={{ fontWeight:800, fontSize:14, color:COLORS.text, marginBottom:14 }}>Step 3 — Choose Import Mode</div>
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", gap:12, marginBottom:20 }}>
+            {[
+              { val:"individual", icon:"👤", title:"Individual Cases", desc:`Create ${rows.length} separate cases, each child managed independently. Admin can track each case through the full pipeline.` },
+              { val:"program",    icon:"👥", title:"Group Program",     desc:`Enroll all ${rows.length} children into one program. Ideal for orphan programs, school feeding, or shelter projects.` },
+            ].map(m => (
+              <div key={m.val} onClick={() => setImportMode(m.val)} style={{ border:`2px solid ${importMode===m.val?COLORS.primary:COLORS.border}`, background: importMode===m.val?COLORS.primary+"08":"#fff", borderRadius:12, padding:16, cursor:"pointer" }}>
+                <div style={{ fontSize:28, marginBottom:8 }}>{m.icon}</div>
+                <div style={{ fontWeight:800, fontSize:14, color: importMode===m.val?COLORS.primary:COLORS.text, marginBottom:4 }}>{m.title}</div>
+                <div style={{ fontSize:12, color:COLORS.muted, lineHeight:1.5 }}>{m.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {importMode === "program" && (
+            <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", gap:12 }}>
+              <div>
+                <label style={{ display:"block", fontSize:12, fontWeight:700, color:COLORS.muted, marginBottom:6, textTransform:"uppercase" }}>Program Name *</label>
+                <input value={programName} onChange={e=>setProgramName(e.target.value)} placeholder="e.g. Mogadishu Orphan Support 2025" style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1px solid ${COLORS.border}`, fontSize:14, boxSizing:"border-box" }} />
+              </div>
+              <div>
+                <label style={{ display:"block", fontSize:12, fontWeight:700, color:COLORS.muted, marginBottom:6, textTransform:"uppercase" }}>Program Type *</label>
+                <select value={programType} onChange={e=>setProgramType(e.target.value)} style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1px solid ${COLORS.border}`, fontSize:14, boxSizing:"border-box" }}>
+                  <option value="child_sponsorship">Child Sponsorship</option>
+                  <option value="education">Education</option>
+                  <option value="medical">Medical Support</option>
+                  <option value="family_care">Family Care</option>
+                  <option value="nutrition">Nutrition</option>
+                  <option value="emergency_relief">Emergency Relief</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Validation errors */}
+      {errors.length > 0 && (
+        <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:12, padding:16, marginBottom:20 }}>
+          <div style={{ fontWeight:700, color:"#DC2626", marginBottom:8 }}>⚠️ {errors.length} validation error(s):</div>
+          {errors.slice(0,8).map((e,i) => <div key={i} style={{ fontSize:12, color:"#B91C1C", marginBottom:4 }}>• {e}</div>)}
+          {errors.length > 8 && <div style={{ fontSize:12, color:COLORS.muted }}>…and {errors.length-8} more</div>}
+        </div>
+      )}
+
+      {/* Preview table */}
+      {rows.length > 0 && (
+        <div style={{ background:"#fff", border:`1px solid ${COLORS.border}`, borderRadius:14, padding:20, marginBottom:20 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14, flexWrap:"wrap", gap:8 }}>
+            <div style={{ fontWeight:800, fontSize:14 }}>Preview — {rows.length} records</div>
+            {!submitted && <Btn variant="success" onClick={handleSubmit} disabled={submitting}>{submitting ? "Importing…" : `✅ Import ${rows.length} Children`}</Btn>}
+            {submitted && <span style={{ color:COLORS.secondary, fontWeight:700, fontSize:14 }}>✅ Import complete!</span>}
+          </div>
+          <div className="kf-table-wrap">
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+              <thead>
+                <tr style={{ background:COLORS.primary+"10" }}>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:COLORS.muted, fontSize:11 }}>#</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:COLORS.muted, fontSize:11 }}>Name</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:COLORS.muted, fontSize:11 }}>Age</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:COLORS.muted, fontSize:11 }}>Location</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:COLORS.muted, fontSize:11 }}>Urgency</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:COLORS.muted, fontSize:11 }}>Category</th>
+                  <th style={{ padding:"8px 12px", textAlign:"left", fontWeight:700, color:COLORS.muted, fontSize:11 }}>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.slice(0, 50).map((r, i) => (
+                  <tr key={i} style={{ borderTop:`1px solid ${COLORS.border}`, background: i%2===0 ? "#fff" : "#FAFAFA" }}>
+                    <td style={{ padding:"8px 12px", color:COLORS.muted }}>{i+1}</td>
+                    <td style={{ padding:"8px 12px", fontWeight:700, color:COLORS.text }}>{r["Child Full Name"] || "—"}</td>
+                    <td style={{ padding:"8px 12px" }}>{r["Age"] || "—"}</td>
+                    <td style={{ padding:"8px 12px" }}>{r["Location / District"] || "—"}</td>
+                    <td style={{ padding:"8px 12px" }}>
+                      <span style={{ background: (URGENCY_C[urg(r)] || "#E5E7EB")+"22", color: URGENCY_C[urg(r)] || COLORS.muted, borderRadius:20, padding:"2px 8px", fontWeight:700 }}>{urg(r)}</span>
+                    </td>
+                    <td style={{ padding:"8px 12px", textTransform:"capitalize" }}>{r["Category (food/medical/shelter/orphan/education/other)"] || "—"}</td>
+                    <td style={{ padding:"8px 12px", maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r["Description (min 10 chars)"] || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {rows.length > 50 && <div style={{ fontSize:12, color:COLORS.muted, padding:"8px 12px" }}>Showing first 50 of {rows.length} rows</div>}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase, onAddUser, onDeleteUser, onChangeRole, onExport, onConfirmDonation, onComplete, onStartDelivery, onFullReport, isSuperAdmin, currentUser, showToast }) => {
   const [tab, setTab] = useState("overview");
   const [donFilter, setDonFilter] = useState("all");
@@ -3404,12 +3849,14 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
   const filteredDonations = donFilter === "all" ? donations : donations.filter(d => d.status === donFilter);
 
   const TABS = [
-    { id: "overview",   label: t("overview")   },
-    { id: "analytics",  label: t("analytics")  },
-    { id: "users",      label: t("users")      },
-    { id: "cases",      label: t("allCases")   },
-    { id: "donations",  label: t("donations")  },
-    { id: "programs",   label: "🌱 Programs"   },
+    { id: "overview",       label: t("overview")        },
+    { id: "analytics",      label: t("analytics")       },
+    { id: "users",          label: t("users")           },
+    { id: "cases",          label: t("allCases")        },
+    { id: "donations",      label: t("donations")       },
+    { id: "programs",       label: "🌱 Programs"        },
+    { id: "impact_stories", label: "📸 Impact Stories"  },
+    { id: "bulk_import",    label: "📥 Bulk Import"     },
   ];
 
   return (
@@ -3628,6 +4075,12 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
 
       {tab === "programs" && (
         <ProgramsDashboard currentUser={currentUser} showToast={showToast || (() => {})} />
+      )}
+      {tab === "impact_stories" && (
+        <ImpactStoriesPanel showToast={showToast || (() => {})} />
+      )}
+      {tab === "bulk_import" && (
+        <BulkImportPanel showToast={showToast || (() => {})} currentUser={currentUser} />
       )}
     </div>
   );

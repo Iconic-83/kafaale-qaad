@@ -614,6 +614,88 @@ router.patch('/users/:id/suspend', async (req: AuthRequest, res: Response) => {
   } catch { res.status(500).json({ error: 'Failed to update user status' }); }
 });
 
+// POST /api/admin/bulk-import — Import multiple children as cases or as program beneficiaries
+router.post('/bulk-import', async (req: AuthRequest, res: Response) => {
+  try {
+    const { mode, programName, programType, children } = req.body as {
+      mode: 'individual' | 'program';
+      programName?: string;
+      programType?: string;
+      children: Array<{
+        name: string; age?: number; gender?: string; location: string;
+        urgency?: string; category?: string; description: string;
+        guardianName?: string; guardianPhone?: string; monthlyNeed?: number; notes?: string;
+      }>;
+    };
+
+    if (!Array.isArray(children) || children.length === 0)
+      return res.status(400).json({ error: 'No children provided' });
+    if (children.length > 500)
+      return res.status(400).json({ error: 'Maximum 500 children per import' });
+
+    const urgencyMap: Record<string, string> = { Low:'low', Medium:'medium', High:'high', Critical:'critical' };
+    const categorySet = new Set(['food','medical','shelter','orphan','education','other','family_support','emergency']);
+
+    let programId: string | undefined;
+    if (mode === 'program') {
+      if (!programName) return res.status(400).json({ error: 'Program name is required for group mode' });
+      try {
+        const program = await (prisma as any).program.create({
+          data: {
+            name: programName, type: programType || 'child_sponsorship',
+            isActive: true, createdById: req.user!.id,
+            description: `Bulk-imported: ${programName}`,
+          },
+        });
+        programId = program.id;
+      } catch {
+        // Program model may not exist in dev schema — proceed without programId
+      }
+    }
+
+    const created: string[] = [];
+    for (const child of children) {
+      if (!child.description || child.description.trim().length < 10) continue;
+      const guardianInfo = [
+        child.guardianName ? `Guardian: ${child.guardianName}` : '',
+        child.guardianPhone ? `Phone: ${child.guardianPhone}` : '',
+        child.notes ? `Notes: ${child.notes}` : '',
+        programId ? `Program: ${programId}` : '',
+      ].filter(Boolean).join(' | ');
+
+      const raw = await prisma.case.create({
+        data: {
+          reporterId: req.user!.id,
+          status: 'pending_review',
+          privateVictimName:   child.name || 'Unknown',
+          privateVictimAge:    child.age  || null,
+          privateVictimGender: child.gender || null,
+          privateAddress:      child.location || null,
+          publicCity:          child.location || null,
+          emergencyLevel:      urgencyMap[child.urgency || 'Medium'] || 'medium',
+          category:            categorySet.has(child.category || '') ? child.category! : 'other',
+          privateDescription:  child.description.trim(),
+          privateNotes:        guardianInfo || null,
+        },
+      });
+      created.push(raw.id);
+    }
+
+    await (prisma as any).adminAuditLog.create({
+      data: {
+        adminId: req.user!.id,
+        action: 'bulk_import',
+        notes: `Imported ${created.length} children as ${mode}${programName ? ` — program: ${programName}` : ''}`,
+      },
+    });
+
+    res.status(201).json({ count: created.length, mode, programId: programId || null, caseIds: created });
+  } catch (err: any) {
+    sysLog.error('Bulk import error:', err);
+    res.status(500).json({ error: 'Bulk import failed', detail: err.message });
+  }
+});
+
 // GET /api/admin/field-agents — All active, approved field agents
 router.get('/field-agents', async (_req: AuthRequest, res: Response) => {
   try {
