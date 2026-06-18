@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useLang } from '../context/LanguageContext.jsx';
 import Logo from '../components/Logo.jsx';
@@ -15,7 +15,8 @@ export default function Login() {
   const { login, register, loading } = useAuth();
   const { t, lang, changeLang, LANGUAGES, currentLang } = useLang();
   const nav = useNavigate();
-  const [tab,          setTab]         = useState('login');
+  const [searchParams] = useSearchParams();
+  const [tab,          setTab]         = useState(searchParams.get('tab') === 'register' ? 'register' : 'login');
   const [error,        setError]       = useState('');
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [form,         setForm]        = useState({ email:'', password:'', name:'', role:'reporter', country:'', city:'', phone:'' });

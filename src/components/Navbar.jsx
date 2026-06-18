@@ -181,7 +181,7 @@ export default function Navbar() {
                     padding: "8px 16px", border: `1.5px solid ${B.blue}`,
                     color: B.blue, borderRadius: 9, fontSize: 13, fontWeight: 700, textDecoration: "none",
                   }}>{t("signIn")}</Link>
-                  <Link to="/login" style={{
+                  <Link to="/login?tab=register" style={{
                     padding: "8px 18px",
                     background: `linear-gradient(135deg, ${B.blue}, ${B.navy})`,
                     color: "#fff", borderRadius: 9, fontSize: 13, fontWeight: 800, textDecoration: "none",
@@ -259,7 +259,7 @@ export default function Navbar() {
                     color: B.blue, borderRadius: 10, fontSize: 14, fontWeight: 700,
                     textDecoration: "none", textAlign: "center",
                   }}>{t("signIn")}</Link>
-                  <Link to="/login" onClick={closeAll} style={{
+                  <Link to="/login?tab=register" onClick={closeAll} style={{
                     padding: "13px",
                     background: `linear-gradient(135deg, ${B.blue}, ${B.navy})`,
                     color: "#fff", borderRadius: 10, fontSize: 14, fontWeight: 800,

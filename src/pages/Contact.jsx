@@ -1,21 +1,60 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useLang } from "../context/LanguageContext.jsx";
 import { PT } from "../translations.js";
+import { useAuth } from "../context/AuthContext.jsx";
+import { cases as casesApi } from "../api/client.js";
 
 const C = { navy: "#002651", primary: "#004B96", secondary: "#4B7D19", accent: "#E0AB21", danger: "#C0392B", muted: "#5A6E8A", bg: "#F4F7FC", border: "#D8E4F0", text: "#0D1F3C", gold: "#E0AB21", green: "#4B7D19", blue: "#004B96" };
 
 export default function Contact() {
   const { lang } = useLang();
   const P = PT.contact[lang] || PT.contact.en;
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [tab,       setTab]      = useState("report");
   const [form,      setForm]     = useState({ name: "", age: "", gender: P.gender_female, location: "", urgency: "Medium", desc: "", phone: "" });
   const [contact,   setContact]  = useState({ name: "", email: "", subject: "", message: "" });
   const [submitted, setSubmitted]= useState(false);
   const [cSubmit,   setCSubmit]  = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [refNum, setRefNum] = useState("");
 
   const set  = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setC = (k, v) => setContact(c => ({ ...c, [k]: v }));
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name || !form.location || !form.desc) return alert("Please fill required fields");
+    if (!user) { navigate("/login?tab=register"); return; }
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const payload = {
+        privateDescription: `Reporter: ${form.name}${form.age ? `, Age: ${form.age}` : ""}, Gender: ${form.gender}, Phone: ${form.phone || "N/A"}\n\n${form.desc}`,
+        category: "other",
+        emergencyLevel: form.urgency.toLowerCase(),
+        privateDistrict: form.location,
+      };
+      const res = await casesApi.submit(payload);
+      setRefNum(res?.caseRef || res?.id || `RPT-${Math.floor(Math.random()*90000)+10000}`);
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err.message || "Submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    const subject = encodeURIComponent(contact.subject || "Contact from Kafaale Qaad website");
+    const body = encodeURIComponent(`Name: ${contact.name}\nEmail: ${contact.email}\n\n${contact.message}`);
+    window.open(`mailto:support@kafaale.so?subject=${subject}&body=${body}`, "_blank");
+    setCSubmit(true);
+  };
 
   const HOW_STEPS = [
     { n: 1, icon: "📝", title: P.step1_title, desc: P.step1_desc },
@@ -110,7 +149,7 @@ export default function Contact() {
                   <h3 style={{ fontSize: 22, fontWeight: 900, color: C.secondary, margin: "0 0 10px" }}>{P.success_title}</h3>
                   <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.7, marginBottom: 24 }}>{P.success_sub}</p>
                   <div style={{ background: "#F0FDF4", borderRadius: 12, padding: 16, marginBottom: 24, textAlign: "left", fontSize: 13, lineHeight: 2 }}>
-                    <div>🔖 {P.ref_lbl} <strong>#RPT-{Math.floor(Math.random()*90000)+10000}</strong></div>
+                    <div>🔖 {P.ref_lbl} <strong>{refNum}</strong></div>
                     <div>📅 {P.submitted_lbl} <strong>{new Date().toLocaleString()}</strong></div>
                     <div>📍 {P.location_lbl} <strong>{form.location}</strong></div>
                     <div>⚡ {P.urgency_lbl} <strong>{form.urgency}</strong></div>
@@ -121,7 +160,7 @@ export default function Contact() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={e => { e.preventDefault(); if (!form.name || !form.location || !form.desc) return alert("Please fill required fields"); setSubmitted(true); }}>
+                <form onSubmit={handleReportSubmit}>
                   <h3 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 24px" }}>{P.report_form_title}</h3>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     <div>
@@ -164,8 +203,18 @@ export default function Contact() {
                     <textarea required value={form.desc} onChange={e => set("desc", e.target.value)} rows={4} placeholder={P.ph_desc}
                       style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit" }} />
                   </div>
-                  <button type="submit" style={{ width: "100%", marginTop: 20, padding: "14px", background: C.primary, color: "#fff", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
-                    {P.submit_report}
+                  {submitError && (
+                    <div style={{ background: "#FEF2F2", border: `1px solid ${C.danger}30`, color: C.danger, padding: "10px 14px", borderRadius: 10, fontSize: 13, marginTop: 12 }}>
+                      ⚠️ {submitError}
+                    </div>
+                  )}
+                  {!user && (
+                    <div style={{ background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#92400E", marginTop: 12 }}>
+                      ℹ️ You must be <strong>signed in as a reporter</strong> to submit cases.
+                    </div>
+                  )}
+                  <button type="submit" disabled={submitting} style={{ width: "100%", marginTop: 20, padding: "14px", background: C.primary, color: "#fff", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 800, cursor: submitting ? "not-allowed" : "pointer", opacity: submitting ? 0.7 : 1 }}>
+                    {submitting ? "⏳ Submitting…" : P.submit_report}
                   </button>
                 </form>
               )
@@ -181,7 +230,7 @@ export default function Contact() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={e => { e.preventDefault(); setCSubmit(true); }}>
+                <form onSubmit={handleContactSubmit}>
                   <h3 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 24px" }}>{P.contact_form_title}</h3>
                   {[
                     { key: "name",    label: P.lbl_cname,   type: "text",  required: true },

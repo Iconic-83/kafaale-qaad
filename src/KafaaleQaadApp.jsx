@@ -157,6 +157,13 @@ const Btn = ({ children, variant = "primary", size = "md", ...props }) => {
 const FileUploadZone = ({ label, accept, multiple = true, files, onAdd, onRemove, note, required, color = COLORS.primary }) => {
   const inputRef = useRef(null);
 
+  // Revoke all blob URLs when the component unmounts to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      files.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); });
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const getIcon = (f) => {
     if (f.preview) return null;
     if (f.name.match(/\.(mp4|mov|avi|webm|mkv)$/i)) return "🎥";
@@ -170,11 +177,17 @@ const FileUploadZone = ({ label, accept, multiple = true, files, onAdd, onRemove
 
   const handleChange = (e) => {
     const selected = Array.from(e.target.files).map(f => ({
-      name: f.name, type: f.type, size: f.size,
+      name: f.name, type: f.type, size: f.size, file: f,
       preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
     }));
     onAdd(selected);
     e.target.value = "";
+  };
+
+  const handleRemove = (i) => {
+    const f = files[i];
+    if (f?.preview) URL.revokeObjectURL(f.preview);
+    onRemove(i);
   };
 
   return (
@@ -213,7 +226,7 @@ const FileUploadZone = ({ label, accept, multiple = true, files, onAdd, onRemove
                 </div>
               )}
               {/* Remove button */}
-              <button onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+              <button onClick={(e) => { e.stopPropagation(); handleRemove(i); }}
                 style={{ position: "absolute", top: 3, right: 3, background: "rgba(239,68,68,.85)", border: "none", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontSize: 12, color: "#fff", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
                 ×
               </button>
@@ -3172,7 +3185,7 @@ const MySponshorshipsTab = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    programsApi.mySponshorships().then(data => {
+    programsApi.mySponsorships().then(data => {
       if (Array.isArray(data)) setSponsorships(data);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);

@@ -36,6 +36,21 @@ import Programs       from './pages/Programs.jsx';
 import Login          from './pages/Login.jsx';
 import Dashboard    from './KafaaleQaadApp.jsx';
 
+function NotFound() {
+  return (
+    <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, fontFamily: "system-ui", color: "#0D1F3C", textAlign: "center", padding: 24 }}>
+      <div style={{ fontSize: 72 }}>🔍</div>
+      <h1 style={{ fontSize: 36, fontWeight: 900, margin: 0 }}>404 — Page Not Found</h1>
+      <p style={{ fontSize: 16, color: "#5A6E8A", maxWidth: 420, lineHeight: 1.7 }}>
+        The page you're looking for doesn't exist or has been moved.
+      </p>
+      <a href="/" style={{ padding: "12px 28px", background: "#004B96", color: "#fff", borderRadius: 12, textDecoration: "none", fontWeight: 700, fontSize: 15 }}>
+        ← Back to Home
+      </a>
+    </div>
+  );
+}
+
 function Layout({ children }) {
   return (
     <>
@@ -65,6 +80,7 @@ function App() {
           <Route path="/login"         element={<Login />} />
           <Route path="/dashboard"     element={<Dashboard />} />
           <Route path="/dashboard/*"   element={<Dashboard />} />
+          <Route path="*"             element={<Layout><NotFound /></Layout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

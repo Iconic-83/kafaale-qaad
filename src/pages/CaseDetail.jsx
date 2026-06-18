@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { cases as casesApi } from "../api/client";
-import AiAssistant from "../components/AiAssistant.jsx";
 import { useResponsive } from "../hooks/useResponsive.js";
 
 const C = {
@@ -364,8 +363,6 @@ export default function CaseDetail() {
         </div>
       )}
 
-      {/* Context-aware AI Assistant */}
-      <AiAssistant caseId={kase.id} context="case_detail" />
     </div>
   );
 }

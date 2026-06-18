@@ -110,7 +110,7 @@ export const programs = {
   getUpdates:         (beneficiaryId)         => req(`/programs/beneficiaries/${beneficiaryId}/updates`),
   submitUpdate:       (beneficiaryId, data)   => req(`/programs/beneficiaries/${beneficiaryId}/updates`, { method: 'POST', body: JSON.stringify(data) }),
   publishUpdate:      (updateId)              => req(`/programs/updates/${updateId}/publish`, { method: 'PATCH' }),
-  mySponshorships:    ()                      => req('/programs/sponsorships/my'),
+  mySponsorships:     ()                      => req('/programs/sponsorships/my'),
   createSponsorship:  (data)                  => req('/programs/sponsorships', { method: 'POST', body: JSON.stringify(data) }),
 };
 

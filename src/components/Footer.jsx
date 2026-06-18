@@ -43,18 +43,23 @@ export default function Footer() {
             <p style={{ fontSize: 14, lineHeight: 1.8, opacity: 0.65, maxWidth: 280, marginTop: 4 }}>{P.tagline}</p>
             <div style={{ display: "flex", gap: 8, marginTop: 20, flexWrap: "wrap" }}>
               {[
-                { icon: "📘", label: "Facebook" },
-                { icon: "🐦", label: "Twitter" },
-                { icon: "💼", label: "LinkedIn" },
+                { icon: "📘", label: "Facebook",  href: "https://facebook.com/kafaaleqaad" },
+                { icon: "🐦", label: "Twitter",   href: "https://twitter.com/kafaaleqaad"  },
+                { icon: "💼", label: "LinkedIn",  href: "https://linkedin.com/company/kafaaleqaad" },
               ].map(s => (
-                <span key={s.label} style={{
+                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" style={{
                   background: "rgba(255,255,255,0.07)",
                   border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: 8, padding: "6px 12px", fontSize: 12,
                   cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
-                }}>
+                  color: "#fff", textDecoration: "none",
+                  transition: "background 0.15s",
+                }}
+                  onMouseOver={e => e.currentTarget.style.background = "rgba(255,255,255,0.14)"}
+                  onMouseOut={e  => e.currentTarget.style.background = "rgba(255,255,255,0.07)"}
+                >
                   {s.icon} {s.label}
-                </span>
+                </a>
               ))}
             </div>
           </div>

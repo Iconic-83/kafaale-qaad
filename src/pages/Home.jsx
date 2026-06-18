@@ -224,7 +224,7 @@ export default function Home() {
                     <div>
                       <div style={{ fontSize:10, color:C.muted, fontWeight:700, letterSpacing:1, textTransform:"uppercase" }}>CASE {c.id}</div>
                       <div style={{ fontSize:19, fontWeight:900, color:C.text, marginTop:3 }}>{c.name}</div>
-                      <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>Age {c.age} · 📍 {c.location}</div>
+                      <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>{c.age != null ? `Age ${c.age} · ` : ""}📍 {c.location}</div>
                     </div>
                     <span style={{
                       background:URGENCY_BG[c.urgency], color:URGENCY_COLOR[c.urgency],
