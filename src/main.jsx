@@ -34,6 +34,7 @@ import Contact        from './pages/Contact.jsx';
 import ImpactPartners from './pages/ImpactPartners.jsx';
 import Programs       from './pages/Programs.jsx';
 import Stories        from './pages/Stories.jsx';
+import StoryDetail    from './pages/StoryDetail.jsx';
 import Volunteer      from './pages/Volunteer.jsx';
 import FAQ            from './pages/FAQ.jsx';
 import Transparency   from './pages/Transparency.jsx';
@@ -104,6 +105,7 @@ function App() {
           <Route path="/programs"      element={<Layout><PageGate pageKey="programs"><Programs /></PageGate></Layout>} />
           <Route path="/projects"      element={<Layout><PageGate pageKey="projects"><Projects /></PageGate></Layout>} />
           <Route path="/stories"       element={<Layout><PageGate pageKey="stories"><Stories /></PageGate></Layout>} />
+          <Route path="/stories/:id"   element={<Layout><PageGate pageKey="stories"><StoryDetail /></PageGate></Layout>} />
           <Route path="/volunteer"     element={<Layout><PageGate pageKey="volunteer"><Volunteer /></PageGate></Layout>} />
           <Route path="/faq"           element={<Layout><PageGate pageKey="faq"><FAQ /></PageGate></Layout>} />
           <Route path="/transparency"  element={<Layout><PageGate pageKey="transparency"><Transparency /></PageGate></Layout>} />

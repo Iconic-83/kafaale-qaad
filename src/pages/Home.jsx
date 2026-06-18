@@ -408,7 +408,7 @@ export default function Home() {
           const col = catColor(st.category);
           const imgH = featured ? (isMobile ? 200 : 260) : (isMobile ? 160 : 200);
           return (
-            <Link to="/stories" style={{
+            <Link to={`/stories/${st.id}`} style={{
               display:"flex", flexDirection:"column", textDecoration:"none",
               background:"#fff", borderRadius:16, overflow:"hidden",
               border:`1px solid ${C.border}`,

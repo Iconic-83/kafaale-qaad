@@ -468,17 +468,15 @@ export default function Stories() {
             <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": featured.length===1?"1fr":"1fr 1fr", gap:24 }}>
               {featured.slice(0,2).map(story => {
                 const cs = catStyle(story.category);
+                const ICON = story.category==="Education"?"🎓":story.category==="Medical"?"🩺":story.category==="Press Release"?"📣":story.category==="Partnership"?"🤝":"❤️";
                 return (
-                  <div key={story.id} onClick={() => setSelected(story)}
-                    style={{ background:"#fff", borderRadius:18, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,38,81,0.10)", border:`1px solid ${C.border}`, cursor:"pointer", transition:"transform .15s, box-shadow .15s" }}
+                  <Link key={story.id} to={`/stories/${story.id}`}
+                    style={{ background:"#fff", borderRadius:18, overflow:"hidden", boxShadow:"0 4px 24px rgba(0,38,81,0.10)", border:`1px solid ${C.border}`, textDecoration:"none", display:"block", transition:"transform .15s, box-shadow .15s" }}
                     onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 32px rgba(0,38,81,0.14)";}}
                     onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="0 4px 24px rgba(0,38,81,0.10)";}}>
-                    {/* Image area */}
                     {story.beforeImg
                       ? <img src={story.beforeImg} alt={story.title} style={{ width:"100%", height:220, objectFit:"cover", display:"block" }} />
-                      : <div style={{ height:220, background:`linear-gradient(135deg,${C.primary},${C.secondary})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:64 }}>
-                          {story.category==="Education"?"🎓":story.category==="Medical"?"🩺":story.category==="Press Release"?"📣":story.category==="Partnership"?"🤝":"❤️"}
-                        </div>
+                      : <div style={{ height:220, background:`linear-gradient(135deg,${C.primary},${C.secondary})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:64 }}>{ICON}</div>
                     }
                     <div style={{ padding:"20px 24px" }}>
                       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
@@ -488,15 +486,9 @@ export default function Stories() {
                       </div>
                       <h3 style={{ fontSize:20, fontWeight:800, color:C.text, margin:"0 0 10px", lineHeight:1.3 }}>{story.title}</h3>
                       <p style={{ fontSize:14, color:C.muted, lineHeight:1.7, margin:"0 0 16px" }}>{story.excerpt}</p>
-                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                        <span style={{ fontSize:13, fontWeight:700, color:C.primary }}>Read More →</span>
-                        <button onClick={e=>{e.stopPropagation();const url=window.location.href;navigator.clipboard?.writeText(url).then(()=>alert("Link copied!")).catch(()=>{});}}
-                          style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, cursor:"pointer", color:C.muted }}>
-                          🔗 Share
-                        </button>
-                      </div>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.primary }}>Read now →</span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -523,17 +515,15 @@ export default function Stories() {
           <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(3,1fr)", gap: isMobile?16:24 }}>
             {rest.map(story => {
               const cs = catStyle(story.category);
+              const ICON = story.category==="Education"?"🎓":story.category==="Medical"?"🩺":story.category==="Press Release"?"📣":story.category==="Partnership"?"🤝":story.category==="Emergency"?"🚨":"❤️";
               return (
-                <div key={story.id} onClick={() => setSelected(story)}
-                  style={{ background:"#fff", borderRadius:16, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,38,81,0.07)", border:`1px solid ${C.border}`, cursor:"pointer", transition:"transform .15s, box-shadow .15s" }}
+                <Link key={story.id} to={`/stories/${story.id}`}
+                  style={{ background:"#fff", borderRadius:16, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,38,81,0.07)", border:`1px solid ${C.border}`, textDecoration:"none", display:"block", transition:"transform .15s, box-shadow .15s" }}
                   onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 24px rgba(0,38,81,0.12)";}}
                   onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="0 2px 12px rgba(0,38,81,0.07)";}}>
-                  {/* Image */}
                   {story.beforeImg
                     ? <img src={story.beforeImg} alt={story.title} style={{ width:"100%", height:160, objectFit:"cover", display:"block" }} />
-                    : <div style={{ height:160, background:`linear-gradient(135deg,${C.primary}22,${C.secondary}22)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:40 }}>
-                        {story.category==="Education"?"🎓":story.category==="Medical"?"🩺":story.category==="Press Release"?"📣":story.category==="Partnership"?"🤝":story.category==="Emergency"?"🚨":"❤️"}
-                      </div>
+                    : <div style={{ height:160, background:`linear-gradient(135deg,${C.primary}22,${C.secondary}22)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:40 }}>{ICON}</div>
                   }
                   <div style={{ padding:"16px 18px" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
@@ -546,7 +536,7 @@ export default function Stories() {
                       {story.excerpt}
                     </p>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                      <span style={{ fontSize:12, fontWeight:700, color:C.primary }}>Read more →</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:C.primary }}>Read now →</span>
                       {(story.daysToDeliver || story.amountDistributed) && (
                         <span style={{ fontSize:11, color:C.muted }}>
                           {story.daysToDeliver ? `${story.daysToDeliver}d · ` : ""}{story.amountDistributed || ""}
@@ -554,7 +544,7 @@ export default function Stories() {
                       )}
                     </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
