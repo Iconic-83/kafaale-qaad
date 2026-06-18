@@ -1,0 +1,662 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // ── Supabase PostgreSQL ──────────────────────────────────────────────────
+  // DATABASE_URL  → Transaction pooler URL  (use for the running app)
+  // DIRECT_URL    → Direct connection URL   (use for prisma migrate)
+  // Both come from Supabase dashboard → Project Settings → Database
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  phone             String?
+  password          String
+  role              String    @default("reporter")
+  preferredLanguage String    @default("en")
+  country           String?
+  city              String?
+  organization      String?
+  isActive          Boolean   @default(true)
+  isApproved        Boolean   @default(true)
+  expoPushToken     String?
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  reportedCases       Case[]              @relation("CaseReporter")
+  assignedCases       Case[]              @relation("CaseAssignedAgent")
+  fieldInvestigations FieldInvestigation[]
+  donations           Donation[]
+  auditLogs           AdminAuditLog[]
+  notifications       Notification[]
+  sponsorships        Sponsorship[]       @relation("UserSponsorships")
+  monthlyUpdates      MonthlyUpdate[]     @relation("UserMonthlyUpdates")
+  projectContributions ProjectContribution[] @relation("UserProjectContributions")
+  sentMessages        Message[]           @relation("MessageSender")
+  messageThreadsAsA   MessageThread[]     @relation("ThreadParticipantA")
+  messageThreadsAsB   MessageThread[]     @relation("ThreadParticipantB")
+  vaultDocuments      VaultDocument[]
+
+  @@index([role])
+  @@index([email])
+  @@index([isActive])
+  @@index([isApproved])
+}
+
+model Case {
+  id              String    @id @default(cuid())
+  reporterId      String?
+  reporter        User?     @relation("CaseReporter",      fields: [reporterId],      references: [id])
+  assignedAgentId String?
+  assignedAgent   User?     @relation("CaseAssignedAgent", fields: [assignedAgentId], references: [id])
+
+  // Private victim data — never expose publicly
+  privateVictimName   String?
+  privateVictimPhone  String?
+  privateAddress      String?
+  privateDistrict     String?
+  privateGpsLat       Float?
+  privateGpsLng       Float?
+  privateFamilySize   Int?
+  privateVictimAge    Int?
+  privateVictimGender String?
+  privateDescription  String?
+  privateNotes        String?
+  privateGuardianName String?
+
+  caseRef         String?  @unique  // e.g. KQ-2026-0001
+
+  // Case type & needs
+  caseType        String   @default("emergency") // emergency | child_support | community_report
+  needsChecklist  String[]                        // education, food, medical, shelter, clothing, disability
+  programRecommendation String?                   // child_sponsorship | education | medical | family_care
+
+  // Community report fields
+  communityVillageName String?
+  communityChildCount  Int?
+
+  category        String   @default("other")
+  emergencyLevel  String   @default("medium")
+  supportType     String?
+  status          String   @default("pending_review")
+  rejectedAt      DateTime?
+  rejectionReason String?
+
+  targetGoal      Float    @default(0)
+  totalRaised     Float    @default(0)
+  escrowReleased  Float    @default(0)
+
+  // Public (sanitized) data — safe to show donors
+  publicTitle      String?
+  publicStory      String?
+  publicCity       String?
+  publicCountry    String?
+  publicMediaUrls  String[]  // array of media URLs
+  aiSanitizedAt    DateTime?
+  adminPublishedAt DateTime?
+
+  teamAssignedAt           DateTime?
+  investigationCompletedAt DateTime?
+  sponsoredAt              DateTime?
+  completedAt              DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  mediaFiles         CaseMedia[]
+  fieldInvestigation FieldInvestigation?
+  aiPublicData       AiPublicData?
+  deliveryProof      DeliveryProof?
+  donations          Donation[]
+  auditLogs          AdminAuditLog[]
+  notifications      Notification[]
+
+  // ── Indexes for common query patterns ──
+  @@index([status])                      // filter by status (most common)
+  @@index([reporterId])                  // reporter's own cases
+  @@index([assignedAgentId])             // field agent assignments
+  @@index([emergencyLevel])              // sort/filter by urgency
+  @@index([createdAt])                   // pagination (newest first)
+  @@index([status, createdAt])           // status filter + date sort combined
+}
+
+model CaseMedia {
+  id         String   @id @default(cuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id])
+  type       String   @default("image")
+  url        String
+  filename   String
+  mimeType   String
+  sizeBytes  Int?
+  isPublic   Boolean  @default(false)
+  isFlagged  Boolean  @default(false)
+  flagReason String?
+  uploadedBy String?
+  uploadedAt DateTime @default(now())
+
+  @@index([caseId])
+  @@index([isPublic])
+}
+
+model FieldInvestigation {
+  id      String @id @default(cuid())
+  caseId  String @unique
+  case    Case   @relation(fields: [caseId], references: [id])
+  agentId String
+  agent   User   @relation(fields: [agentId], references: [id])
+
+  victimVerified        Boolean @default(false)
+  situationAccurate     Boolean @default(false)
+  situationNotes        String?
+  gpsVerificationLat    Float?
+  gpsVerificationLng    Float?
+  estimatedAmountNeeded Float   @default(0)
+  urgencyConfirmed      String?
+  deliveryFeasible      Boolean @default(true)
+  deliveryMethod        String?
+  deliveryNotes         String?
+  fraudRiskScore        Int     @default(0)
+  fraudRiskLevel        String  @default("low")
+  fraudRiskNotes        String?
+  verificationStatus    String  @default("needs_review")
+  officialNotes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([verificationStatus])
+  @@index([fraudRiskLevel])
+}
+
+model AiPublicData {
+  id     String @id @default(cuid())
+  caseId String @unique
+  case   Case   @relation(fields: [caseId], references: [id])
+
+  generatedTitle    String
+  generatedStory    String
+  generatedCategory String
+  generatedCity     String?
+  generatedUrgency  String
+  safeMediaUrls     String[]
+  piiDetected       Boolean @default(false)
+  piiRemoved        String[]
+  mediaFlagged      String[]
+  confidenceScore   Int     @default(0)
+  adminEdited       Boolean @default(false)
+  adminEditedTitle  String?
+  adminEditedStory  String?
+  model             String  @default("claude-sonnet-4-6")
+  tokensUsed        Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Donation {
+  id             String    @id @default(cuid())
+  donorId        String
+  donor          User      @relation(fields: [donorId], references: [id])
+  caseId         String
+  case           Case      @relation(fields: [caseId], references: [id])
+  amount         Float
+  currency       String    @default("USD")
+  method         String    @default("bank_transfer")
+  status         String    @default("pending")
+  transactionRef String?
+  confirmedAt    DateTime?
+  isAnonymous    Boolean   @default(false)
+  donorMessage   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([donorId])
+  @@index([caseId])
+  @@index([status])
+  @@index([donorId, status])   // donor's confirmed donations
+}
+
+model DeliveryProof {
+  id              String    @id @default(cuid())
+  caseId          String    @unique
+  case            Case      @relation(fields: [caseId], references: [id])
+  deliveredBy     String    // field agent user ID
+  deliveryDate    DateTime
+  deliveryMethod  String
+  amountDelivered Float
+  recipientName   String?
+  deliveryNotes   String?
+  photoUrls       String[]  // array of storage URLs
+  adminConfirmed  Boolean   @default(false)
+  adminConfirmedAt DateTime?
+  adminNotes      String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([adminConfirmed])
+}
+
+enum AdminAction {
+  approved
+  rejected
+  assigned_team
+  triggered_ai
+  edited_public_version
+  published
+  confirmed_payment
+  confirmed_delivery
+  completed_case
+  suspended_user
+  reinstated_user
+  delivery_assigned
+  donation_confirmed
+  donation_refunded
+  completed
+  role_changed
+  user_deleted
+  requested_more_info
+  enrolled_as_beneficiary
+}
+
+enum NotificationType {
+  case_submitted
+  case_assigned
+  investigation_completed
+  ai_ready_for_review
+  case_published
+  case_sponsored
+  delivery_started
+  delivery_completed
+  case_rejected
+  fraud_alert
+  payment_confirmed
+  delivery_assigned
+  donation_confirmed
+  case_completed
+  delivery_proof_submitted
+  aid_delivered
+  beneficiary_enrolled
+  beneficiary_verified
+  sponsorship_created
+  monthly_update_published
+  project_funded
+  project_completed
+  account_approved
+  donation_refunded
+  new_message
+}
+
+model AdminAuditLog {
+  id        String      @id @default(cuid())
+  adminId   String
+  admin     User        @relation(fields: [adminId], references: [id])
+  caseId    String?
+  case      Case?       @relation(fields: [caseId], references: [id])
+  action    AdminAction
+  notes     String?
+  metadata  Json?
+  ipAddress String?
+  timestamp DateTime    @default(now())
+
+  @@index([adminId])
+  @@index([caseId])
+  @@index([timestamp])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  caseId    String?
+  case      Case?            @relation(fields: [caseId], references: [id])
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model IdempotencyKey {
+  key       String   @id
+  createdAt DateTime @default(now())
+}
+
+// ─── Humanitarian Programs Engine ────────────────────────────────────────────
+
+model Program {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // child_sponsorship | education | medical | family_care | nutrition | emergency_relief
+  description String
+  icon        String   @default("🌱")
+  color       String   @default("#004B96")
+  isActive    Boolean  @default(true)
+
+  totalBeneficiaries Int   @default(0)
+  activeSponsorships Int   @default(0)
+  monthlyBudget      Float @default(0)
+  totalRaised        Float @default(0)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  beneficiaries Beneficiary[]
+
+  @@index([type])
+  @@index([isActive])
+}
+
+model Beneficiary {
+  id        String  @id @default(cuid())
+  publicId  String  @unique  // e.g., CSP-2026-001
+
+  programId String
+  program   Program @relation(fields: [programId], references: [id])
+
+  // Private data — admin/program_manager only
+  privateFullName      String?
+  privateGuardianName  String?
+  privateGuardianPhone String?
+  privateSchoolName    String?
+  privateAddress       String?
+  privateMedicalNotes  String?
+  privateNotes         String?
+
+  // Public data
+  publicAge       Int?
+  publicGender    String?
+  publicRegion    String?
+  publicCity      String?
+  publicCountry   String   @default("Somalia")
+  publicNeedsDesc String?
+  publicStory     String?
+  publicPhotoUrl  String?
+
+  programType    String   // child_sponsorship | education | medical | family_care
+  monthlyNeed    Float    @default(0)
+
+  // Status workflow
+  status        String   @default("pending_verification")
+  // pending_verification | verified | seeking_sponsor | sponsored | completed | on_hold
+
+  verifiedAt    DateTime?
+  verifiedById  String?
+  enrolledBy    String?
+  enrolledAt    DateTime @default(now())
+  completedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sponsorships   Sponsorship[]
+  monthlyUpdates MonthlyUpdate[]
+
+  @@index([status])
+  @@index([programId])
+  @@index([programType])
+}
+
+model Sponsorship {
+  id            String      @id @default(cuid())
+  beneficiaryId String
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id])
+  sponsorId     String
+  sponsor       User        @relation("UserSponsorships", fields: [sponsorId], references: [id])
+
+  type          String   @default("full")  // full | education | medical | food | clothing | custom
+  monthlyAmount Float
+  currency      String   @default("USD")
+  status        String   @default("active") // active | paused | cancelled | completed
+  paymentMethod String   @default("bank_transfer")
+
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  nextPaymentDate DateTime?
+
+  totalPaid       Float @default(0)
+  monthsCompleted Int   @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments SponsorshipPayment[]
+
+  @@index([beneficiaryId])
+  @@index([sponsorId])
+  @@index([status])
+}
+
+model SponsorshipPayment {
+  id            String      @id @default(cuid())
+  sponsorshipId String
+  sponsorship   Sponsorship @relation(fields: [sponsorshipId], references: [id])
+
+  amount    Float
+  currency  String @default("USD")
+  month     Int
+  year      Int
+  status    String @default("pending") // pending | confirmed | failed
+
+  paidAt      DateTime?
+  confirmedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([sponsorshipId])
+}
+
+model MonthlyUpdate {
+  id            String      @id @default(cuid())
+  beneficiaryId String
+  beneficiary   Beneficiary @relation(fields: [beneficiaryId], references: [id])
+  submittedById String
+  submittedBy   User        @relation("UserMonthlyUpdates", fields: [submittedById], references: [id])
+
+  month Int
+  year  Int
+
+  schoolAttendance Int?     // 0-100 percentage
+  healthStatus     String?  // good | fair | poor
+  progressNotes    String
+  needsAssessment  String?
+
+  deliveriesMade String[]
+  photoUrls      String[]
+
+  isPublished Boolean   @default(false)
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([beneficiaryId, month, year])
+  @@index([beneficiaryId])
+  @@index([isPublished])
+}
+
+// ─── Community Projects ───────────────────────────────────────────────────────
+
+model CommunityProject {
+  id       String @id @default(cuid())
+  publicId String @unique  // e.g., CP-2026-001
+
+  title       String
+  description String
+  category    String  // water | school | health | agriculture | shelter | energy
+  location    String
+  region      String
+  country     String @default("Somalia")
+
+  populationSize Int?
+  problemDesc    String
+  solutionDesc   String
+
+  fundingGoal Float
+  totalRaised Float @default(0)
+
+  status String @default("seeking_funding")
+  // seeking_funding | funded | in_progress | completed | on_hold
+
+  phases            Json?    // [{name, status, completedAt}]
+  photoUrls         String[]
+  completionReport  String?
+
+  createdById String?
+  verifiedAt  DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contributions ProjectContribution[]
+
+  @@index([status])
+  @@index([category])
+}
+
+model ProjectContribution {
+  id        String           @id @default(cuid())
+  projectId String
+  project   CommunityProject @relation(fields: [projectId], references: [id])
+  donorId   String
+  donor     User             @relation("UserProjectContributions", fields: [donorId], references: [id])
+
+  amount    Float
+  currency  String @default("USD")
+  type      String @default("partial") // full | partial | custom
+  status    String @default("pending")
+
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([donorId])
+}
+
+// ─── Impact Partners ─────────────────────────────────────────────────────────
+model Partner {
+  id          String   @id @default(cuid())
+
+  // Identity
+  name        String
+  slug        String   @unique          // URL-friendly key
+  avatar      String   @default("🤝")  // emoji or image URL
+  logoUrl     String?                   // optional hosted logo
+
+  // Classification
+  type        String   @default("individual") // ngo | organization | individual | government
+  tier        String   @default("community")  // featured | community | verified_org
+  isVerified  Boolean  @default(false)
+  isAnonymous Boolean  @default(false)
+  isActive    Boolean  @default(true)
+
+  // Location
+  country     String?
+  countryFlag String?
+  city        String?
+  region      String?
+
+  // Details
+  description String?
+  website     String?
+  focus       String[] // e.g. ["Food Aid", "Medical"]
+  color       String   @default("#004B96")
+
+  // Impact metrics (updated by admin or automated)
+  casesSupported  Int     @default(0)
+  totalDonated    Float   @default(0)
+  familiesImpacted Int    @default(0)
+
+  // Impact story (optional — shown on partners page)
+  impactStory     String?
+  impactBefore    String?
+  impactAfter     String?
+  caseRef         String?   // e.g. "Case #KQ-2024-0441"
+
+  // Admin
+  featuredOrder   Int?      // lower = shown first in featured section
+  addedByAdmin    String?
+  notes           String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tier])
+  @@index([isVerified, isActive])
+  @@index([type])
+  @@index([featuredOrder])
+}
+
+// ─── OTP / Password Reset ────────────────────────────────────────────────────
+model OtpRecord {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// ─── Messaging ────────────────────────────────────────────────────────────────
+model MessageThread {
+  id           String   @id @default(cuid())
+  participantA String
+  participantB String
+  userA        User     @relation("ThreadParticipantA", fields: [participantA], references: [id])
+  userB        User     @relation("ThreadParticipantB", fields: [participantB], references: [id])
+  caseId       String?
+  lastMessage  String   @default("")
+  lastAt       DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  messages     Message[]
+
+  @@unique([participantA, participantB])
+  @@index([participantA])
+  @@index([participantB])
+}
+
+model Message {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    MessageThread @relation(fields: [threadId], references: [id])
+  senderId  String
+  sender    User          @relation("MessageSender", fields: [senderId], references: [id])
+  text      String
+  isRead    Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  @@index([threadId])
+  @@index([senderId])
+}
+
+// ─── Document Vault ───────────────────────────────────────────────────────────
+model VaultDocument {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title     String
+  filename  String
+  url       String
+  type      String   @default("other") // report | receipt | contract | medical | verification | other
+  mimeType  String?
+  sizeBytes Int?
+  caseRef   String?
+  createdAt DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([ownerId, type])
+}

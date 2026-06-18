@@ -21,7 +21,6 @@ const FEATURED_CASES = [
   { id: "sample-3", name: "Anonymous",  age: null, location: "Mogadishu Region", urgency: "Medium",   funded: 82, goal: "$600",  desc: "Young person with no family support seeking education assistance and safe shelter.", color: "#F59E0B" },
 ];
 
-const STORIES_KEY = "kf_impact_stories";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -29,16 +28,6 @@ export default function Home() {
   const P = PT.home[lang] || PT.home.en;
   const { isMobile, isTablet } = useResponsive();
 
-  const [adminStories, setAdminStories] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(STORIES_KEY) || "[]"); } catch { return []; }
-  });
-  useEffect(() => {
-    const sync = () => {
-      try { setAdminStories(JSON.parse(localStorage.getItem(STORIES_KEY) || "[]")); } catch {}
-    };
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
 
   /* ─── data arrays (translations inline) ─────────────────────────────── */
   const WORKFLOW = [
@@ -176,46 +165,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════════════════ HOW IT WORKS ═══════════════════════════ */}
-      <section style={sec(C.bg)}>
-        <div style={wrap}>
-          {/* Section header */}
-          <div style={{ textAlign:"center", marginBottom: isMobile?40:60 }}>
-            <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary }}>{P.workflow_badge}</span>
-            <hr className="kf-rule-center" />
-            <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 12px", letterSpacing:-0.5 }}>{P.workflow_title}</h2>
-            <p style={{ fontSize:17, color:C.muted, maxWidth:520, margin:"0 auto", lineHeight:1.7 }}>{P.workflow_sub}</p>
-          </div>
-
-          {/* Steps grid */}
-          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr":"repeat(4,1fr)", gap: isMobile?12:20 }}>
-            {WORKFLOW.map((s, i) => (
-              <div key={s.n} className="kf-card kf-shine" style={{
-                background:"#fff", borderRadius:18, padding: isMobile?18:24,
-                boxShadow:"0 2px 12px rgba(0,38,81,0.06)",
-                border:`1px solid ${C.border}`, position:"relative", overflow:"hidden",
-              }}>
-                {/* Color top stripe */}
-                <div style={{ position:"absolute", top:0, left:0, right:0, height:3, background:s.color, borderRadius:"18px 18px 0 0" }} />
-                {/* Step number badge + icon */}
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, marginTop:8 }}>
-                  <div style={{ width:32, height:32, borderRadius:10, background:s.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>{s.icon}</div>
-                  <div style={{ width:24, height:24, borderRadius:"50%", background:s.color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900 }}>{s.n}</div>
-                </div>
-                <div style={{ fontSize:13, fontWeight:800, color:s.color, marginBottom:7 }}>{s.label}</div>
-                <div style={{ fontSize:12, color:C.muted, lineHeight:1.65 }}>{s.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ textAlign:"center", marginTop:36 }}>
-            <Link to="/how-it-works" className="kf-btn kf-btn-navy"
-              style={{ padding:"13px 32px", borderRadius:12, fontWeight:700, fontSize:14 }}>
-              {P.workflow_link} →
-            </Link>
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════════════════ FEATURED CASES ══════════════════════════ */}
       <section style={sec("#fff")}>
@@ -290,109 +239,300 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════════════════ BEFORE & AFTER ══════════════════════════ */}
-      {(() => {
-        const BA_FALLBACK = [
-          { id:"s1", title: lang==="so"?"Qoyska Qaxootiga ah":"Displaced Family", category:"Emergency & Shelter", location:"", beforeImg:null, afterImg:null, beforeDesc: lang==="so"?"Qoys 7 qof ah oo ku nool dhismo dhacay":"Family of 7 living in collapsed structure, critical condition", afterDesc: lang==="so"?"Guri ku meel gaadh ah + raashiin 3 bilood + dhar":"Temporary shelter + 3 months food supplies + clothing", daysToDeliver:"14", amountDistributed:"$820" },
-          { id:"s2", title: lang==="so"?"Gabar Yar Bukaan":"Child Medical Case",   category:"Medical",            location:"", beforeImg:null, afterImg:null, beforeDesc: lang==="so"?"Gabar 8 sano jir ah oo la waayay dawooyinka muhiimka ah":"8-year-old girl without critical medication", afterDesc: lang==="so"?"Dawooyinka la gaadhsiiyay + booqashada dhakhtarka 4 bilood":"Medication delivered + 4 months doctor visits covered", daysToDeliver:"9",  amountDistributed:"$540" },
-          { id:"s3", title: lang==="so"?"Odey Naaf ah":"Elderly & Disabled",        category:"Food & Care",        location:"", beforeImg:null, afterImg:null, beforeDesc: lang==="so"?"Odey 78 sano jir ah oo keligiis ah":"78-year-old elder living alone, no food security or care", afterDesc: lang==="so"?"Raashiin toddobaadleh + daryeelka guriga + xiriirka qoyska":"Weekly food delivery + home care + family reconnected", daysToDeliver:"11", amountDistributed:"$460" },
-        ];
-        const baStories = adminStories.length > 0 ? adminStories.slice(0, 6) : BA_FALLBACK;
-        const BG_B = ["linear-gradient(135deg,#6B7280,#9CA3AF)","linear-gradient(135deg,#c0392b,#e74c3c)","linear-gradient(135deg,#8e44ad,#9b59b6)","linear-gradient(135deg,#0369a1,#0284c7)"];
-        const BG_A = ["linear-gradient(135deg,#27ae60,#2ecc71)","linear-gradient(135deg,#16a085,#1abc9c)","linear-gradient(135deg,#e67e22,#f39c12)","linear-gradient(135deg,#059669,#10b981)"];
-        return (
-          <section style={sec(C.bg)}>
-            <div style={wrap}>
-              <div style={{ textAlign:"center", marginBottom: isMobile?40:56 }}>
-                <span className="kf-badge" style={{ background:C.secondary+"18", color:C.secondary }}>
-                  {lang==="so"?"Saameynta Dhabta ah":lang==="ar"?"الأثر الحقيقي":lang==="tr"?"Gerçek Etki":lang==="es"?"Impacto Real":lang==="fr"?"Impact Réel":"Real Impact"}
-                </span>
-                <hr className="kf-rule-center" />
-                <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.4 }}>
-                  {lang==="so"?"Ka Hor & Ka Dib":lang==="ar"?"قبل وبعد":lang==="tr"?"Önce & Sonra":lang==="es"?"Antes & Después":lang==="fr"?"Avant & Après":"Before & After"}
-                </h2>
-                <p style={{ fontSize:15, color:C.muted, maxWidth:520, margin:"0 auto" }}>
-                  {lang==="so"?"Xaaladda xaqiijisan kasta waxay beddeshaaa nolosha.":lang==="ar"?"كل حالة موثقة تُغير حياة.":lang==="tr"?"Her doğrulanmış vaka hayatları değiştirir.":lang==="es"?"Cada caso verificado transforma vidas.":lang==="fr"?"Chaque cas vérifié transforme des vies.":"Every verified case transforms lives. Real results from aid delivered on the ground."}
-                </p>
-              </div>
+      {/* ══════════════════════════ HOW IT WORKS + STORIES ═══════════════════ */}
+      <section style={sec(C.bg)}>
+        <div style={wrap}>
 
-              <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(3,1fr)", gap: isMobile?20:28 }}>
-                {baStories.map((item, idx) => (
-                  <div key={item.id} style={{ background:"#fff", borderRadius:20, overflow:"hidden", boxShadow:"0 4px 20px rgba(0,38,81,0.09)", border:`1px solid ${C.border}` }}>
-                    <div style={{ background:`linear-gradient(135deg,${C.primary}12,${C.secondary}12)`, padding:"16px 20px", borderBottom:`1px solid ${C.border}` }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:1 }}>{item.category}{item.location ? ` · ${item.location}` : ""}</div>
-                      <div style={{ fontSize:16, fontWeight:800, color:C.text, marginTop:3 }}>{item.title}</div>
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", position:"relative" }}>
-                      {[
-                        { img:item.beforeImg, grad:BG_B[idx%4], lbl:"Before", badge:"rgba(0,0,0,0.6)",       emoji:"😔" },
-                        { img:item.afterImg,  grad:BG_A[idx%4], lbl:"After",  badge:"rgba(5,150,105,0.9)",   emoji:"😊" },
-                      ].map((panel, pi) => (
-                        <div key={pi} style={{ position:"relative" }}>
-                          {panel.img
-                            ? <img src={panel.img} alt={panel.lbl} style={{ width:"100%", height:isMobile?120:150, objectFit:"cover", display:"block" }} />
-                            : <div style={{ height:isMobile?120:150, background:panel.grad, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:isMobile?32:40, opacity:0.6 }}>{panel.emoji}</span></div>
-                          }
-                          <div style={{ position:"absolute", top:8, left:8, background:panel.badge, color:"#fff", borderRadius:6, padding:"3px 9px", fontSize:11, fontWeight:800 }}>{panel.lbl}</div>
+          {/* Section header */}
+          <div style={{ textAlign:"center", marginBottom: isMobile ? 40 : 64 }}>
+            <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary }}>{P.workflow_badge}</span>
+            <hr className="kf-rule-center" />
+            <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 14px", letterSpacing:-0.5 }}>{P.workflow_title}</h2>
+            <p style={{ fontSize:17, color:C.muted, maxWidth:540, margin:"0 auto", lineHeight:1.7 }}>{P.workflow_sub}</p>
+          </div>
+
+          {/* ── Row 1: First 4 workflow steps ── */}
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr": isTablet?"repeat(2,1fr)":"repeat(4,1fr)", gap: isMobile?14:22, marginBottom: isMobile?14:22 }}>
+            {WORKFLOW.slice(0,4).map((s) => (
+              <div key={s.n} style={{
+                background:"#fff", borderRadius:18,
+                padding: isMobile ? "18px 16px" : "26px 22px",
+                boxShadow:"0 2px 16px rgba(0,38,81,0.07)",
+                border:`1.5px solid ${C.border}`,
+                position:"relative", overflow:"hidden",
+                transition:"box-shadow .2s, transform .2s",
+              }}
+                onMouseOver={e => { e.currentTarget.style.boxShadow="0 8px 32px rgba(0,38,81,0.13)"; e.currentTarget.style.transform="translateY(-3px)"; }}
+                onMouseOut={e  => { e.currentTarget.style.boxShadow="0 2px 16px rgba(0,38,81,0.07)"; e.currentTarget.style.transform="none"; }}
+              >
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:4, background:s.color, borderRadius:"18px 18px 0 0" }} />
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, marginTop:6 }}>
+                  <div style={{ width:isMobile?38:46, height:isMobile?38:46, borderRadius:"50%", background:s.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?18:22, flexShrink:0 }}>{s.icon}</div>
+                  <div style={{ width:isMobile?28:34, height:isMobile?28:34, borderRadius:"50%", background:s.color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?13:16, fontWeight:900, flexShrink:0, boxShadow:`0 3px 10px ${s.color}60` }}>{s.n}</div>
+                </div>
+                <div style={{ fontSize:isMobile?13:15, fontWeight:800, color:s.color, marginBottom:8, lineHeight:1.3 }}>{s.label}</div>
+                <div style={{ fontSize:isMobile?11:13, color:C.muted, lineHeight:1.7 }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Row 2: Impact story cards (from admin or fallback) ── */}
+          {(() => {
+            let stories = [];
+            try { stories = JSON.parse(localStorage.getItem("kf_impact_stories") || "[]"); } catch {}
+            const FALLBACK = [
+              { id:"f1", icon:"🏠", color:"#10B981", category:"Shelter", title:"Family Rehoused After Flood", location:"Baidoa", beforeDesc:"Family of 6 living in damaged structure with no protection from rain.", afterDesc:"New shelter built, family safe and healthy after 12 days.", daysToDeliver:"12", amountDistributed:"$780" },
+              { id:"f2", icon:"🩺", color:"#3B82F6", category:"Medical", title:"Child Receives Surgery",       location:"Mogadishu", beforeDesc:"8-year-old with untreated heart condition, family unable to afford care.", afterDesc:"Surgery completed successfully, child recovering at home.", daysToDeliver:"9",  amountDistributed:"$2,100" },
+              { id:"f3", icon:"📚", color:"#F59E0B", category:"Education","title":"Orphan Back in School",     location:"Garowe", beforeDesc:"Three siblings dropped out after losing parents — no one to pay fees.", afterDesc:"School fees paid for full year, all 3 children re-enrolled.", daysToDeliver:"7",  amountDistributed:"$540" },
+              { id:"f4", icon:"💧", color:"#06B6D4", category:"Water",    title:"Village Gets Clean Water",    location:"Kismayo", beforeDesc:"Community walking 4 km daily for unsafe water; waterborne disease high.", afterDesc:"Borehole drilled, water tested clean — 280 families now served.", daysToDeliver:"21", amountDistributed:"$3,200" },
+            ];
+            const shown = stories.length > 0 ? stories.slice(0,4) : FALLBACK;
+            return (
+              <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(4,1fr)", gap: isMobile?14:22 }}>
+                {shown.map((st) => {
+                  const accent = st.color || C.secondary;
+                  return (
+                    <div key={st.id} style={{
+                      background:"#fff", borderRadius:18, overflow:"hidden",
+                      boxShadow:"0 2px 16px rgba(0,38,81,0.07)",
+                      border:`1.5px solid ${C.border}`,
+                      display:"flex", flexDirection:"column",
+                      transition:"box-shadow .2s, transform .2s",
+                    }}
+                      onMouseOver={e => { e.currentTarget.style.boxShadow="0 8px 32px rgba(0,38,81,0.13)"; e.currentTarget.style.transform="translateY(-3px)"; }}
+                      onMouseOut={e  => { e.currentTarget.style.boxShadow="0 2px 16px rgba(0,38,81,0.07)"; e.currentTarget.style.transform="none"; }}
+                    >
+                      {/* Image or gradient header */}
+                      {st.afterImg
+                        ? <img src={st.afterImg} alt={st.title} style={{ width:"100%", height:130, objectFit:"cover" }} />
+                        : <div style={{ height:130, background:`linear-gradient(135deg,${accent}22,${accent}44)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:44 }}>
+                            {st.icon || "✨"}
+                          </div>
+                      }
+                      <div style={{ padding:"14px 16px", flex:1, display:"flex", flexDirection:"column", gap:6 }}>
+                        {/* Category + location */}
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                          <span style={{ fontSize:10, fontWeight:800, background:accent+"18", color:accent, borderRadius:6, padding:"2px 8px" }}>{st.category}</span>
+                          {st.location && <span style={{ fontSize:10, color:C.muted }}>📍 {st.location}</span>}
                         </div>
-                      ))}
-                      <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:32, height:32, borderRadius:"50%", background:C.gold, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:900, zIndex:2, boxShadow:`0 2px 10px ${C.gold}80` }}>→</div>
-                    </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom:`1px solid ${C.border}` }}>
-                      <div style={{ padding:"12px 14px", borderRight:`1px solid ${C.border}`, fontSize:11, color:C.muted, lineHeight:1.5 }}>{item.beforeDesc}</div>
-                      <div style={{ padding:"12px 14px", fontSize:11, color:C.secondary, fontWeight:600, lineHeight:1.5 }}>{item.afterDesc}</div>
-                    </div>
-                    <div style={{ display:"flex", padding:"12px 20px", gap:16 }}>
-                      {item.daysToDeliver && <div style={{ fontSize:11, color:C.muted }}><span style={{ fontWeight:800, color:C.primary, fontSize:14 }}>{item.daysToDeliver}</span> {lang==="so"?"maalmood":lang==="ar"?"يوماً":lang==="tr"?"gün":lang==="es"?"días":"days"}</div>}
-                      {item.amountDistributed && <div style={{ fontSize:11, color:C.muted }}><span style={{ fontWeight:800, color:C.secondary, fontSize:14 }}>{item.amountDistributed}</span> {lang==="so"?"la kala qaybiyay":lang==="ar"?"موزعة":"distributed"}</div>}
-                      <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:4, fontSize:11, color:"#10B981", fontWeight:700 }}>
-                        <span style={{ width:7, height:7, borderRadius:"50%", background:"#10B981", display:"inline-block" }} />
-                        {lang==="so"?"Xaqiijisan":lang==="ar"?"موثق":lang==="tr"?"Doğrulandı":lang==="es"?"Verificado":lang==="fr"?"Vérifié":"Verified"}
+                        {/* Title */}
+                        <div style={{ fontSize:13, fontWeight:800, color:C.text, lineHeight:1.4 }}>{st.title}</div>
+                        {/* After description */}
+                        <div style={{ fontSize:11, color:C.muted, lineHeight:1.6, flex:1 }}>{st.afterDesc || st.beforeDesc}</div>
+                        {/* Stats row */}
+                        <div style={{ display:"flex", gap:12, marginTop:6, paddingTop:8, borderTop:`1px solid ${C.border}` }}>
+                          {st.daysToDeliver && <div style={{ fontSize:10, color:C.muted }}><span style={{ fontWeight:800, color:accent, fontSize:13 }}>{st.daysToDeliver}</span> days</div>}
+                          {st.amountDistributed && <div style={{ fontSize:10, color:C.muted }}><span style={{ fontWeight:800, color:C.secondary, fontSize:13 }}>{st.amountDistributed}</span> aid</div>}
+                          <div style={{ marginLeft:"auto", fontSize:10, color:"#10B981", fontWeight:700, display:"flex", alignItems:"center", gap:3 }}>
+                            <span style={{ width:6, height:6, borderRadius:"50%", background:"#10B981", display:"inline-block" }}/>Verified
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* ── CTAs ── */}
+          <div style={{ display:"flex", justifyContent:"center", gap:14, marginTop: isMobile?36:48, flexWrap:"wrap" }}>
+            <Link to="/stories" style={{
+              padding:"13px 32px", borderRadius:12, fontWeight:800, fontSize:14,
+              background:`linear-gradient(135deg,${C.secondary},#3A6214)`,
+              color:"#fff", textDecoration:"none",
+              boxShadow:`0 4px 16px ${C.secondary}40`,
+            }}>
+              Explore More Stories →
+            </Link>
+            <Link to="/how-it-works" className="kf-btn kf-btn-navy"
+              style={{ padding:"13px 32px", borderRadius:12, fontWeight:700, fontSize:14 }}>
+              {P.workflow_link} →
+            </Link>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ══════════════════════════ STORIES FROM THE FIELD ════════════════════ */}
+      {(() => {
+        let raw = [];
+        try {
+          const published = JSON.parse(localStorage.getItem("kf_published_stories") || "[]");
+          const impact    = JSON.parse(localStorage.getItem("kf_impact_stories") || "[]");
+          raw = [...published, ...impact];
+        } catch {}
+        const STORY_FALLBACK = [
+          { id:"sf1", category:"Medical",   location:"Mogadishu", date:"June 2026",  color:"#3B82F6", icon:"🩺",
+            title:"Eight-Year-Old Receives Life-Saving Heart Surgery",
+            afterDesc:"After a field agent documented the case and donors stepped in within 72 hours, young Fatima underwent successful cardiac surgery. She is now recovering at home with her family.",
+            beforeDesc:"Fatima's family had no means to afford the $2,100 procedure. She was deteriorating fast.",
+            amountDistributed:"$2,100", daysToDeliver:"9", afterImg:null },
+          { id:"sf2", category:"Shelter",   location:"Baidoa",    date:"May 2026",   color:"#10B981", icon:"🏠",
+            title:"Family of Six Rehoused After Flash Flooding",
+            afterDesc:"Within two weeks of the case being verified, a new shelter was constructed and the family moved in with three months of food supplies.",
+            beforeDesc:"Six family members were sleeping in a collapsed structure after floods swept through their neighbourhood.",
+            amountDistributed:"$780",   daysToDeliver:"12", afterImg:null },
+          { id:"sf3", category:"Education", location:"Garowe",    date:"June 2026",  color:"#F59E0B", icon:"📚",
+            title:"Three Orphaned Siblings Return to School",
+            afterDesc:"School fees, uniforms and books were fully covered. All three children are now enrolled and attending daily.",
+            beforeDesc:"After losing both parents the siblings had been out of school for two years.",
+            amountDistributed:"$540",   daysToDeliver:"7",  afterImg:null },
+          { id:"sf4", category:"Water",     location:"Kismayo",   date:"April 2026", color:"#06B6D4", icon:"💧",
+            title:"Clean Water Reaches 280 Families in Kismayo",
+            afterDesc:"A deep borehole was drilled and tested clean. Waterborne disease rates in the area have dropped by an estimated 60%.",
+            beforeDesc:"Community members walked 4 km daily for unsafe water. Children were missing school to help collect water.",
+            amountDistributed:"$3,200", daysToDeliver:"21", afterImg:null },
+          { id:"sf5", category:"Food",      location:"Beledweyne", date:"May 2026",  color:"#EC4899", icon:"🌾",
+            title:"Elderly Widow Receives Monthly Food Support",
+            afterDesc:"78-year-old Halima now receives a monthly food basket. Her health has improved significantly over three months.",
+            beforeDesc:"Living alone with no income, Halima had gone days without food before a community member filed a case.",
+            amountDistributed:"$460",   daysToDeliver:"11", afterImg:null },
+          { id:"sf6", category:"Orphan",    location:"Afgooye",   date:"June 2026",  color:"#8B5CF6", icon:"👶",
+            title:"Infant Orphan Given Safe Home and Monthly Care",
+            afterDesc:"14-month-old Ibrahim is now cared for by a verified foster family with monthly sponsorship covering nutrition and health checks.",
+            beforeDesc:"Ibrahim's elderly grandmother had no income and could not afford formula or medical visits.",
+            amountDistributed:"$360",   daysToDeliver:"5",  afterImg:null },
+          { id:"sf7", category:"Medical",   location:"Mogadishu", date:"March 2026", color:"#C0392B", icon:"🦽",
+            title:"Dialysis Lifeline for 68-Year-Old Patient",
+            afterDesc:"Sponsorship covers bi-weekly dialysis sessions for six months, giving Rooda a new lease on life.",
+            beforeDesc:"Without dialysis twice weekly, Rooda's life was at serious risk. Her family had exhausted every option.",
+            amountDistributed:"$1,800", daysToDeliver:"4",  afterImg:null },
+        ];
+        const stories = raw.length >= 3 ? raw : STORY_FALLBACK;
+        const CAT_COLORS = { Medical:"#3B82F6", Shelter:"#10B981", Education:"#F59E0B", Water:"#06B6D4", Food:"#EC4899", Orphan:"#8B5CF6", Emergency:"#C0392B", Other:"#5A6E8A" };
+        const catColor = (cat) => CAT_COLORS[cat] || "#5A6E8A";
+
+        // UNICEF-style card: image top → category+date → bold title → excerpt → "Read now"
+        const StoryCard = ({ st, featured = false }) => {
+          const col = catColor(st.category);
+          const imgH = featured ? (isMobile ? 200 : 260) : (isMobile ? 160 : 200);
+          return (
+            <Link to="/stories" style={{
+              display:"flex", flexDirection:"column", textDecoration:"none",
+              background:"#fff", borderRadius:16, overflow:"hidden",
+              border:`1px solid ${C.border}`,
+              boxShadow:"0 2px 14px rgba(0,38,81,0.07)",
+              transition:"box-shadow .2s, transform .18s",
+            }}
+              onMouseOver={e => { e.currentTarget.style.boxShadow="0 10px 36px rgba(0,38,81,0.14)"; e.currentTarget.style.transform="translateY(-3px)"; }}
+              onMouseOut={e  => { e.currentTarget.style.boxShadow="0 2px 14px rgba(0,38,81,0.07)"; e.currentTarget.style.transform="none"; }}
+            >
+              {/* Image / Gradient top */}
+              <div style={{ position:"relative", flexShrink:0 }}>
+                {st.afterImg
+                  ? <img src={st.afterImg} alt={st.title} style={{ width:"100%", height:imgH, objectFit:"cover", display:"block" }} />
+                  : <div style={{ height:imgH, background:`linear-gradient(145deg,${col}25 0%,${col}60 60%,${col}30 100%)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize: featured ? 72 : 52 }}>
+                      {st.icon || "✨"}
+                    </div>
+                }
+                {/* Category tag — top-left over image */}
+                <span style={{
+                  position:"absolute", top:14, left:14,
+                  background:col, color:"#fff",
+                  borderRadius:6, padding:"4px 12px", fontSize:11, fontWeight:800,
+                  boxShadow:"0 2px 8px rgba(0,0,0,0.18)",
+                }}>{st.category}</span>
               </div>
 
-              <div style={{ textAlign:"center", marginTop:40 }}>
-                <Link to="/cases" className="kf-btn kf-btn-navy"
-                  style={{ padding:"13px 32px", borderRadius:12, fontWeight:700, fontSize:14 }}>
-                  {P.cases_viewall}
+              {/* Text body — clean white area like UNICEF */}
+              <div style={{ padding: featured ? "20px 22px 18px" : "16px 18px 16px", flex:1, display:"flex", flexDirection:"column" }}>
+                {/* Date + location row */}
+                <div style={{ display:"flex", gap:10, marginBottom:10, fontSize:11, color:C.muted, flexWrap:"wrap" }}>
+                  {st.date && <span>🗓 {st.date}</span>}
+                  {st.location && <span>📍 {st.location}</span>}
+                </div>
+                {/* Title */}
+                <div style={{
+                  fontSize: featured ? (isMobile?16:20) : (isMobile?14:15),
+                  fontWeight:900, color:C.navy, lineHeight:1.35,
+                  marginBottom:10, letterSpacing:-0.2,
+                }}>{st.title}</div>
+                {/* Excerpt */}
+                <div style={{
+                  fontSize:13, color:C.muted, lineHeight:1.7, flex:1,
+                  display:"-webkit-box", WebkitLineClamp: featured?3:2, WebkitBoxOrient:"vertical", overflow:"hidden",
+                }}>{st.afterDesc || st.beforeDesc}</div>
+                {/* Stats row */}
+                {(st.amountDistributed || st.daysToDeliver) && (
+                  <div style={{ display:"flex", gap:14, marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}`, fontSize:11 }}>
+                    {st.amountDistributed && <span style={{ color:C.secondary, fontWeight:700 }}>💰 {st.amountDistributed}</span>}
+                    {st.daysToDeliver && <span style={{ color:C.muted }}>⚡ {st.daysToDeliver} days</span>}
+                  </div>
+                )}
+                {/* "Read now" link — UNICEF style */}
+                <div style={{ marginTop:14, fontSize:13, fontWeight:700, color:C.primary, display:"flex", alignItems:"center", gap:5 }}>
+                  Read now <span style={{ fontSize:15 }}>→</span>
+                </div>
+              </div>
+            </Link>
+          );
+        };
+
+        return (
+          <section style={sec("#fff")}>
+            <div style={wrap}>
+
+              {/* ── Header row ── */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom: isMobile?28:44, flexWrap:"wrap", gap:12 }}>
+                <div>
+                  <span className="kf-badge" style={{ background:"#FEF3C7", color:"#92400E", marginBottom:10 }}>
+                    📰 Stories from the Field
+                  </span>
+                  <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"8px 0 8px", letterSpacing:-0.4, color:C.navy }}>
+                    Real Lives. Real Impact.
+                  </h2>
+                  <p style={{ fontSize:15, color:C.muted, margin:0, maxWidth:460 }}>
+                    Field-verified stories of lives changed by your support.
+                  </p>
+                </div>
+                <Link to="/stories" style={{ padding:"10px 22px", borderRadius:10, border:`1.5px solid ${C.border}`, color:C.primary, fontWeight:700, fontSize:13, textDecoration:"none", whiteSpace:"nowrap" }}>
+                  View All Stories →
                 </Link>
               </div>
+
+              {/* ── UNICEF-style grid ── */}
+              {/* Row 1: 1 featured (wide) + 2 regular */}
+              <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":`2fr 1fr 1fr`, gap:20, marginBottom:20 }}>
+                <StoryCard st={stories[0]} featured={true} />
+                {stories[1] && <StoryCard st={stories[1]} />}
+                {stories[2] && <StoryCard st={stories[2]} />}
+              </div>
+
+              {/* Row 2: 4 equal cards */}
+              {stories.length > 3 && (
+                <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(4,1fr)", gap:20, marginBottom:8 }}>
+                  {stories.slice(3, 7).map(st => <StoryCard key={st.id} st={st} />)}
+                </div>
+              )}
+
+              {/* ── "Share Your Story" banner ── */}
+              <div style={{
+                marginTop: isMobile?36:52,
+                background:`linear-gradient(135deg,${C.navy} 0%,${C.primary} 55%,${C.secondary} 100%)`,
+                borderRadius:20, padding: isMobile?"28px 22px":"36px 40px",
+                display:"flex", flexDirection: isMobile?"column":"row",
+                alignItems:"center", justifyContent:"space-between", gap:20,
+              }}>
+                <div style={{ color:"#fff" }}>
+                  <div style={{ fontSize: isMobile?20:26, fontWeight:900, marginBottom:8 }}>
+                    ✍️ Have a Story to Share?
+                  </div>
+                  <p style={{ fontSize:14, opacity:0.85, margin:0, maxWidth:480, lineHeight:1.7 }}>
+                    Are you a beneficiary, community member, or field volunteer with a story of change? Submit it — our team will review and publish verified stories to inspire more donors.
+                  </p>
+                </div>
+                <Link to="/stories#share" style={{
+                  padding:"13px 30px", borderRadius:12, fontWeight:800, fontSize:14,
+                  background:C.gold, color:"#fff", textDecoration:"none", whiteSpace:"nowrap",
+                  boxShadow:`0 4px 16px rgba(0,0,0,0.2)`, flexShrink:0,
+                }}>Share My Story →</Link>
+              </div>
+
             </div>
           </section>
         );
       })()}
-
-      {/* ══════════════════════════ PLATFORM FEATURES ═══════════════════════ */}
-      <section style={sec("#fff")}>
-        <div style={wrap}>
-          <div style={{ textAlign:"center", marginBottom: isMobile?40:56 }}>
-            <span className="kf-badge" style={{ background:"#EDE9FE", color:"#6D28D9" }}>{P.feat_badge}</span>
-            <hr className="kf-rule-center" />
-            <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.4 }}>{P.feat_title}</h2>
-            <p style={{ fontSize:15, color:C.muted }}>{P.feat_sub}</p>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr": isTablet?"repeat(2,1fr)":"repeat(4,1fr)", gap: isMobile?12:20 }}>
-            {FEATURES.map((f, i) => (
-              <div key={i} className="kf-card kf-feature-card" style={{
-                padding: isMobile?18:24, borderRadius:16,
-                border:`1px solid ${C.border}`, borderLeft:`3px solid ${f.color}`,
-                background:"#FAFBFF",
-              }}>
-                <div style={{
-                  width:44, height:44, borderRadius:12, background:f.color+"14",
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:22, marginBottom:14,
-                }}>{f.icon}</div>
-                <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:8, letterSpacing:-0.1 }}>{f.title}</div>
-                <div style={{ fontSize:12, color:C.muted, lineHeight:1.65 }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════════════════ CTA BANNER ══════════════════════════════ */}
       <section className="kf-hero-dots" style={{

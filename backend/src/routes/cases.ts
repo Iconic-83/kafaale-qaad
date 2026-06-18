@@ -44,7 +44,7 @@ router.get('/', async (req: Request, res: Response) => {
         orderBy: [{ createdAt: 'desc' }],
         skip, take: parseInt(limit),
         select: {
-          id: true, caseRef: true, publicTitle: true, publicStory: true, publicCity: true, publicCountry: true,
+          id: true, publicTitle: true, publicStory: true, publicCity: true, publicCountry: true,
           category: true, emergencyLevel: true, status: true,
           targetGoal: true, totalRaised: true, adminPublishedAt: true,
           _count: { select: { donations: true } },
@@ -64,7 +64,7 @@ router.get('/my', authenticate, async (req: AuthRequest, res: Response) => {
     const cases = await prisma.case.findMany({
       where: { reporterId: req.user!.id },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, caseRef: true, category: true, caseType: true, emergencyLevel: true, status: true, publicTitle: true, privateDescription: true, privateDistrict: true, publicCity: true, targetGoal: true, totalRaised: true, createdAt: true, rejectionReason: true },
+      select: { id: true, caseRef: true, category: true, caseType: true, emergencyLevel: true, status: true, publicTitle: true, privateDescription: true, privateDistrict: true, publicCity: true, targetGoal: true, totalRaised: true, createdAt: true, rejectionReason: true } as any,
     });
     res.json({ cases });
   } catch { res.status(500).json({ error: 'Failed to retrieve your cases' }); }
@@ -78,7 +78,7 @@ router.get('/my/:id', authenticate, async (req: AuthRequest, res: Response) => {
       select: {
         id: true, caseRef: true, category: true, caseType: true, emergencyLevel: true, status: true,
         privateVictimName: true, privateDistrict: true, privateFamilySize: true, privateDescription: true,
-        needsChecklist: true, publicTitle: true, publicCity: true, publicCountry: true,
+        publicTitle: true, publicCity: true, publicCountry: true,
         targetGoal: true, totalRaised: true, rejectionReason: true,
         createdAt: true, updatedAt: true, teamAssignedAt: true, sponsoredAt: true, completedAt: true,
         mediaFiles: { select: { id: true, url: true, type: true, isPublic: true } },

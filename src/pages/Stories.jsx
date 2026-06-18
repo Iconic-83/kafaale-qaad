@@ -10,6 +10,167 @@ const C = {
 };
 
 const STORIES_KEY = "kf_impact_stories";
+const SUBMISSIONS_KEY = "kf_story_submissions";
+
+const CATS = ["Medical","Shelter","Education","Food","Water","Orphan","Emergency","Other"];
+
+function StorySubmitSection({ isMobile }) {
+  const EMPTY = { name:"", anonymous:false, title:"", category:"Medical", location:"", what:"", outcome:"", consent:false };
+  const [form,    setForm]    = useState(EMPTY);
+  const [phase,   setPhase]   = useState("form"); // form | success
+  const [errors,  setErrors]  = useState({});
+
+  const id = "share";
+
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const validate = () => {
+    const e = {};
+    if (!form.title.trim())   e.title   = "Please enter a story title";
+    if (!form.what.trim())    e.what    = "Please describe what happened";
+    if (!form.outcome.trim()) e.outcome = "Please describe the outcome";
+    if (!form.consent)        e.consent = "Please confirm your consent";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const submit = () => {
+    if (!validate()) return;
+    const sub = {
+      id: "sub_" + Date.now(),
+      submittedAt: new Date().toISOString(),
+      status: "pending",
+      authorName: form.anonymous ? "Anonymous" : (form.name || "Community Member"),
+      title: form.title,
+      category: form.category,
+      location: form.location,
+      beforeDesc: form.what,
+      afterDesc: form.outcome,
+      icon: "✍️",
+      date: new Date().toLocaleDateString("en-GB", { month:"long", year:"numeric" }),
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem(SUBMISSIONS_KEY) || "[]");
+      localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify([sub, ...existing]));
+      window.dispatchEvent(new Event("storage"));
+    } catch {}
+    setPhase("success");
+  };
+
+  const inp = (extra={}) => ({
+    fontFamily:"inherit", fontSize:14, color:C.text, padding:"10px 14px",
+    border:`1.5px solid ${C.border}`, borderRadius:10, width:"100%",
+    background:"#fff", boxSizing:"border-box", outline:"none",
+    ...extra,
+  });
+
+  return (
+    <section id={id} style={{ background:C.bg, padding: isMobile?"48px 20px":"72px 32px" }}>
+      <div style={{ maxWidth:760, margin:"0 auto" }}>
+
+        {/* Header */}
+        <div style={{ textAlign:"center", marginBottom:40 }}>
+          <span style={{ background:C.secondary+"20", color:C.secondary, borderRadius:99, padding:"5px 16px", fontSize:12, fontWeight:800, letterSpacing:1, textTransform:"uppercase" }}>
+            Community Stories
+          </span>
+          <h2 style={{ fontSize:"clamp(24px,3.5vw,36px)", fontWeight:900, color:C.navy, margin:"14px 0 10px", letterSpacing:-0.4 }}>
+            ✍️ Share Your Story
+          </h2>
+          <p style={{ fontSize:15, color:C.muted, maxWidth:520, margin:"0 auto", lineHeight:1.7 }}>
+            Are you a beneficiary, volunteer, or community member? Tell us what happened — our team reviews every submission and publishes verified stories to inspire more donors.
+          </p>
+        </div>
+
+        {phase === "success" ? (
+          <div style={{ background:"#fff", borderRadius:20, padding:"48px 32px", textAlign:"center", boxShadow:"0 4px 24px rgba(0,38,81,0.09)", border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:64, marginBottom:16 }}>🎉</div>
+            <h3 style={{ fontSize:24, fontWeight:900, color:C.navy, margin:"0 0 12px" }}>Story Submitted!</h3>
+            <p style={{ fontSize:15, color:C.muted, maxWidth:400, margin:"0 auto 28px", lineHeight:1.7 }}>
+              Thank you for sharing. Our team will review your submission and may reach out for more details before publishing.
+            </p>
+            <button onClick={() => { setForm(EMPTY); setPhase("form"); }} style={{
+              padding:"12px 28px", borderRadius:10, border:`1.5px solid ${C.primary}`,
+              color:C.primary, fontWeight:700, fontSize:14, cursor:"pointer", background:"#fff",
+            }}>Submit Another Story</button>
+          </div>
+        ) : (
+          <div style={{ background:"#fff", borderRadius:20, padding: isMobile?"24px 18px":"36px 40px", boxShadow:"0 4px 24px rgba(0,38,81,0.09)", border:`1px solid ${C.border}` }}>
+            <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", gap:18, marginBottom:18 }}>
+              {/* Name */}
+              <div>
+                <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Your Name (optional)</label>
+                <input value={form.name} onChange={e=>set("name",e.target.value)} disabled={form.anonymous}
+                  placeholder="e.g. Halima Mohamed" style={{ ...inp(), opacity: form.anonymous ? 0.4 : 1 }} />
+                <label style={{ display:"flex", alignItems:"center", gap:8, marginTop:8, fontSize:13, color:C.muted, cursor:"pointer" }}>
+                  <input type="checkbox" checked={form.anonymous} onChange={e=>set("anonymous",e.target.checked)} />
+                  Submit anonymously
+                </label>
+              </div>
+              {/* Category */}
+              <div>
+                <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Category *</label>
+                <select value={form.category} onChange={e=>set("category",e.target.value)} style={inp()}>
+                  {CATS.map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Title */}
+            <div style={{ marginBottom:18 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Story Title *</label>
+              <input value={form.title} onChange={e=>set("title",e.target.value)}
+                placeholder="e.g. My child received the surgery she needed" style={inp()} />
+              {errors.title && <div style={{ fontSize:12, color:"#C0392B", marginTop:4 }}>⚠ {errors.title}</div>}
+            </div>
+
+            {/* Location */}
+            <div style={{ marginBottom:18 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Location</label>
+              <input value={form.location} onChange={e=>set("location",e.target.value)}
+                placeholder="e.g. Mogadishu, Baidoa, Kismayo…" style={inp()} />
+            </div>
+
+            {/* What happened */}
+            <div style={{ marginBottom:18 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>What Happened? *</label>
+              <textarea rows={4} value={form.what} onChange={e=>set("what",e.target.value)}
+                placeholder="Describe the situation before help arrived — what was the challenge or hardship?"
+                style={{ ...inp(), resize:"vertical", lineHeight:1.7 }} />
+              {errors.what && <div style={{ fontSize:12, color:"#C0392B", marginTop:4 }}>⚠ {errors.what}</div>}
+            </div>
+
+            {/* Outcome */}
+            <div style={{ marginBottom:24 }}>
+              <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>What Changed? *</label>
+              <textarea rows={4} value={form.outcome} onChange={e=>set("outcome",e.target.value)}
+                placeholder="Describe the outcome — how did the support change the situation?"
+                style={{ ...inp(), resize:"vertical", lineHeight:1.7 }} />
+              {errors.outcome && <div style={{ fontSize:12, color:"#C0392B", marginTop:4 }}>⚠ {errors.outcome}</div>}
+            </div>
+
+            {/* Consent */}
+            <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:24 }}>
+              <label style={{ display:"flex", gap:10, cursor:"pointer", fontSize:13, color:C.text, lineHeight:1.6 }}>
+                <input type="checkbox" checked={form.consent} onChange={e=>set("consent",e.target.checked)} style={{ marginTop:2, flexShrink:0 }} />
+                <span>I confirm that this story is true and I consent to Kafaala Qaad reviewing and potentially publishing it on their platform and social media. My identity will remain protected unless I chose otherwise.</span>
+              </label>
+              {errors.consent && <div style={{ fontSize:12, color:"#C0392B", marginTop:6 }}>⚠ {errors.consent}</div>}
+            </div>
+
+            <button onClick={submit} style={{
+              width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
+              background:`linear-gradient(135deg,${C.primary},${C.navy})`,
+              color:"#fff", fontWeight:800, fontSize:16,
+              boxShadow:`0 4px 20px ${C.primary}40`,
+            }}>
+              Submit My Story →
+            </button>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 const STATIC_STORIES = [
   {
@@ -400,6 +561,9 @@ export default function Stories() {
         </div>
       </section>
 
+      {/* ══ SHARE YOUR STORY FORM ══ */}
+      <StorySubmitSection isMobile={isMobile} />
+
       {/* CTA section */}
       <section style={{ background:`linear-gradient(135deg,${C.navy},${C.primary})`, color:"#fff", padding: isMobile?"48px 16px":"64px 32px", textAlign:"center" }}>
         <div style={{ maxWidth:640, margin:"0 auto" }}>
@@ -412,9 +576,6 @@ export default function Stories() {
           <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
             <Link to="/cases" style={{ padding:"14px 32px", background:C.gold, color:"#fff", borderRadius:12, fontWeight:800, fontSize:15, textDecoration:"none" }}>
               ❤️ Sponsor a Case
-            </Link>
-            <Link to="/contact" style={{ padding:"14px 32px", background:"rgba(255,255,255,0.15)", color:"#fff", borderRadius:12, fontWeight:700, fontSize:15, textDecoration:"none", border:"1px solid rgba(255,255,255,0.3)" }}>
-              📬 Submit a Story
             </Link>
           </div>
         </div>

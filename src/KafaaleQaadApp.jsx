@@ -3390,6 +3390,416 @@ const UsersTab = ({ users, isSuperAdmin, onDeleteUser, onChangeRole }) => {
   );
 };
 
+// ─── SITE SETTINGS PANEL (super admin) ───────────────────────────────────────
+const PAGE_DEFAULTS = {
+  about:        { label: "About Us",       path: "/about",        icon: "🏛️", group: "About" },
+  howItWorks:   { label: "How We Work",    path: "/how-it-works", icon: "⚙️", group: "About" },
+  cases:        { label: "Cases",          path: "/cases",        icon: "📋", group: "Operations" },
+  programs:     { label: "Programs",       path: "/programs",     icon: "🌱", group: "Operations" },
+  projects:     { label: "Projects",       path: "/projects",     icon: "🏗️", group: "Operations" },
+  donate:       { label: "Donate",         path: "/donate",       icon: "❤️", group: "Give" },
+  partners:     { label: "Partners",       path: "/partners",     icon: "🌐", group: "Give" },
+  stories:      { label: "Stories",        path: "/stories",      icon: "📰", group: "More" },
+  volunteer:    { label: "Volunteer",      path: "/volunteer",    icon: "🤝", group: "More" },
+  faq:          { label: "FAQ",            path: "/faq",          icon: "❓", group: "More" },
+  transparency: { label: "Transparency",   path: "/transparency", icon: "📊", group: "More" },
+  contact:      { label: "Contact",        path: "/contact",      icon: "📬", group: "Contact" },
+};
+
+const SITE_INFO_DEFAULTS = {
+  orgName:    "Kafaala Qaad HOPE",
+  tagline:    "Connecting Verified Need with Compassionate Support",
+  email:      "support@kafaale.so",
+  phone:      "+252 611 000 000",
+  address:    "Mogadishu, Somalia",
+  website:    "kafaale.so",
+  facebook:   "https://facebook.com/kafaaleqaad",
+  twitter:    "https://twitter.com/kafaaleqaad",
+  linkedin:   "https://linkedin.com/company/kafaaleqaad",
+  heroTitle:  "Transforming Compassion Into Verified Impact",
+  heroSub:    "Every donation reaches a verified beneficiary — tracked from field to delivery.",
+};
+
+const loadPageVis   = () => { try { return { ...Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true])), ...JSON.parse(localStorage.getItem("kf_page_settings")||"{}") }; } catch { return Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true])); } };
+const loadSiteInfo  = () => { try { return { ...SITE_INFO_DEFAULTS, ...JSON.parse(localStorage.getItem("kf_site_settings")||"{}") }; } catch { return { ...SITE_INFO_DEFAULTS }; } };
+
+const SiteSettingsPanel = ({ showToast, currentUser }) => {
+  const C = COLORS;
+  const [settingsTab, setSettingsTab] = useState("pages");
+  const [pageVis,  setPageVis]  = useState(loadPageVis);
+  const [siteInfo, setSiteInfo] = useState(loadSiteInfo);
+  const [saved,    setSaved]    = useState(false);
+
+  const isSuperAdmin = currentUser?.role === "super_admin";
+
+  const savePages = () => {
+    localStorage.setItem("kf_page_settings", JSON.stringify(pageVis));
+    window.dispatchEvent(new Event("storage"));
+    showToast("Page visibility saved");
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const saveSiteInfo = () => {
+    localStorage.setItem("kf_site_settings", JSON.stringify(siteInfo));
+    window.dispatchEvent(new Event("storage"));
+    showToast("Site settings saved");
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const togglePage = (key) => {
+    if (!isSuperAdmin) return;
+    setPageVis(v => ({ ...v, [key]: !v[key] }));
+  };
+
+  const groups = [...new Set(Object.values(PAGE_DEFAULTS).map(p => p.group))];
+
+  const STABS = [
+    { id: "pages",   label: "📄 Page Visibility" },
+    { id: "siteinfo",label: "🏢 Site Information" },
+    { id: "homepage",label: "🏠 Homepage Content" },
+    { id: "social",  label: "📱 Social & Contact" },
+  ];
+
+  const fieldStyle = {
+    width: "100%", padding: "10px 14px", borderRadius: 10,
+    border: `1.5px solid ${C.border}`, fontSize: 14, color: C.text,
+    background: isSuperAdmin ? "#fff" : C.bg, boxSizing: "border-box",
+    fontFamily: "inherit",
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>⚙️ Site Settings</h2>
+        <p style={{ margin: "4px 0 0", color: C.muted, fontSize: 13 }}>
+          {isSuperAdmin ? "Full control over the platform — pages, content, and site information." : "View-only. Only Super Admins can make changes."}
+        </p>
+      </div>
+
+      {/* Sub-tabs */}
+      <div style={{ display: "flex", gap: 4, borderBottom: `2px solid ${C.border}`, marginBottom: 28, overflowX: "auto" }}>
+        {STABS.map(st => (
+          <button key={st.id} onClick={() => setSettingsTab(st.id)} style={{
+            padding: "10px 18px", fontSize: 13, fontWeight: 700, border: "none", background: "none",
+            cursor: "pointer", whiteSpace: "nowrap",
+            color:        settingsTab === st.id ? C.primary : C.muted,
+            borderBottom: settingsTab === st.id ? `2px solid ${C.primary}` : "2px solid transparent",
+            marginBottom: -2,
+          }}>{st.label}</button>
+        ))}
+      </div>
+
+      {/* ── PAGE VISIBILITY ── */}
+      {settingsTab === "pages" && (
+        <div>
+          <div style={{ background: "#FFF7ED", border: "1px solid #FED7AA", borderRadius: 12, padding: "14px 18px", marginBottom: 24, display: "flex", gap: 10 }}>
+            <span style={{ fontSize: 18 }}>💡</span>
+            <div style={{ fontSize: 13, color: "#92400E" }}>
+              <strong>Toggling a page OFF</strong> hides it from the public navigation and shows a "Coming Soon" message when visited directly. Core pages (Home, Login) are always visible.
+            </div>
+          </div>
+          {groups.map(group => (
+            <div key={group} style={{ marginBottom: 28 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>{group}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
+                {Object.entries(PAGE_DEFAULTS).filter(([, v]) => v.group === group).map(([key, meta]) => {
+                  const on = pageVis[key] !== false;
+                  return (
+                    <div key={key} onClick={() => togglePage(key)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 14,
+                        padding: "14px 16px", borderRadius: 12,
+                        border: `1.5px solid ${on ? C.primary + "40" : C.border}`,
+                        background: on ? C.primary + "06" : C.bg,
+                        cursor: isSuperAdmin ? "pointer" : "default",
+                        transition: "all .15s",
+                      }}>
+                      <span style={{ fontSize: 22, flexShrink: 0 }}>{meta.icon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{meta.label}</div>
+                        <div style={{ fontSize: 11, color: C.muted }}>{meta.path}</div>
+                      </div>
+                      {/* Toggle pill */}
+                      <div style={{
+                        width: 44, height: 24, borderRadius: 99, position: "relative", flexShrink: 0,
+                        background: on ? C.primary : "#D1D5DB",
+                        transition: "background .2s",
+                        opacity: isSuperAdmin ? 1 : 0.5,
+                      }}>
+                        <div style={{
+                          position: "absolute", top: 3, left: on ? 23 : 3,
+                          width: 18, height: 18, borderRadius: "50%", background: "#fff",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.25)", transition: "left .2s",
+                        }} />
+                      </div>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: on ? C.primary : C.muted, minWidth: 28 }}>{on ? "ON" : "OFF"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          {isSuperAdmin && (
+            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+              <button onClick={savePages} style={{
+                padding: "11px 28px", borderRadius: 10, border: "none", cursor: "pointer",
+                background: C.primary, color: "#fff", fontWeight: 800, fontSize: 14,
+              }}>{saved ? "✓ Saved" : "Save Page Settings"}</button>
+              <button onClick={() => { setPageVis(Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true]))); }}
+                style={{ padding: "11px 20px", borderRadius: 10, border: `1.5px solid ${C.border}`, cursor: "pointer", background: "#fff", fontWeight: 700, fontSize: 14, color: C.muted }}>
+                Reset All to ON
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SITE INFORMATION ── */}
+      {settingsTab === "siteinfo" && (
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20, marginBottom: 28 }}>
+            {[
+              { key: "orgName",  label: "Organisation Name",    type: "text"  },
+              { key: "tagline",  label: "Tagline / Slogan",     type: "text"  },
+              { key: "email",    label: "Contact Email",        type: "email" },
+              { key: "phone",    label: "Contact Phone",        type: "text"  },
+              { key: "address",  label: "Office Address",       type: "text"  },
+              { key: "website",  label: "Website Domain",       type: "text"  },
+            ].map(({ key, label, type }) => (
+              <div key={key}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>
+                <input type={type} value={siteInfo[key] || ""} readOnly={!isSuperAdmin}
+                  onChange={e => setSiteInfo(v => ({ ...v, [key]: e.target.value }))}
+                  style={fieldStyle} />
+              </div>
+            ))}
+          </div>
+          {isSuperAdmin && (
+            <button onClick={saveSiteInfo} style={{ padding: "11px 28px", borderRadius: 10, border: "none", cursor: "pointer", background: C.primary, color: "#fff", fontWeight: 800, fontSize: 14 }}>
+              {saved ? "✓ Saved" : "Save Site Information"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── HOMEPAGE CONTENT ── */}
+      {settingsTab === "homepage" && (
+        <div>
+          <div style={{ display: "grid", gap: 20, maxWidth: 640, marginBottom: 28 }}>
+            {[
+              { key: "heroTitle", label: "Hero Headline",    rows: 2 },
+              { key: "heroSub",   label: "Hero Subheading",  rows: 3 },
+            ].map(({ key, label, rows }) => (
+              <div key={key}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</label>
+                <textarea rows={rows} value={siteInfo[key] || ""} readOnly={!isSuperAdmin}
+                  onChange={e => setSiteInfo(v => ({ ...v, [key]: e.target.value }))}
+                  style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.6 }} />
+              </div>
+            ))}
+          </div>
+          <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 12, padding: "14px 18px", marginBottom: 24, fontSize: 13, color: "#065F46" }}>
+            💡 Impact story cards on the homepage are managed under the <strong>Impact Stories</strong> tab.
+          </div>
+          {isSuperAdmin && (
+            <button onClick={saveSiteInfo} style={{ padding: "11px 28px", borderRadius: 10, border: "none", cursor: "pointer", background: C.primary, color: "#fff", fontWeight: 800, fontSize: 14 }}>
+              {saved ? "✓ Saved" : "Save Homepage Content"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── SOCIAL & CONTACT ── */}
+      {settingsTab === "social" && (
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20, marginBottom: 28 }}>
+            {[
+              { key: "facebook",  label: "Facebook URL",  icon: "📘" },
+              { key: "twitter",   label: "Twitter/X URL", icon: "🐦" },
+              { key: "linkedin",  label: "LinkedIn URL",  icon: "💼" },
+            ].map(({ key, label, icon }) => (
+              <div key={key}>
+                <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>{icon} {label}</label>
+                <input type="url" value={siteInfo[key] || ""} readOnly={!isSuperAdmin}
+                  onChange={e => setSiteInfo(v => ({ ...v, [key]: e.target.value }))}
+                  style={fieldStyle} />
+              </div>
+            ))}
+          </div>
+          {isSuperAdmin && (
+            <button onClick={saveSiteInfo} style={{ padding: "11px 28px", borderRadius: 10, border: "none", cursor: "pointer", background: C.primary, color: "#fff", fontWeight: 800, fontSize: 14 }}>
+              {saved ? "✓ Saved" : "Save Social Links"}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── COMMUNITY STORIES PANEL (admin reviews + publishes submissions) ──────────
+const CommunityStoriesPanel = ({ showToast }) => {
+  const C = COLORS;
+  const SUBS_KEY = "kf_story_submissions";
+  const PUB_KEY  = "kf_published_stories";
+
+  const load = (key) => { try { return JSON.parse(localStorage.getItem(key)||"[]"); } catch { return []; } };
+  const [subs,      setSubs]      = useState(() => load(SUBS_KEY));
+  const [published, setPublished] = useState(() => load(PUB_KEY));
+  const [preview,   setPreview]   = useState(null);
+  const [tab,       setTab]       = useState("pending"); // pending | published
+
+  const pending = subs.filter(s => s.status === "pending");
+  const rejected = subs.filter(s => s.status === "rejected");
+
+  const publish = (sub) => {
+    const story = {
+      ...sub,
+      id: "pub_" + Date.now(),
+      status: "published",
+      publishedAt: new Date().toISOString(),
+    };
+    const newPub = [story, ...published];
+    localStorage.setItem(PUB_KEY, JSON.stringify(newPub));
+    const newSubs = subs.map(s => s.id === sub.id ? { ...s, status:"published" } : s);
+    localStorage.setItem(SUBS_KEY, JSON.stringify(newSubs));
+    setSubs(newSubs);
+    setPublished(newPub);
+    window.dispatchEvent(new Event("storage"));
+    setPreview(null);
+    showToast("Story published — now visible on homepage and Stories page");
+  };
+
+  const reject = (sub) => {
+    const newSubs = subs.map(s => s.id === sub.id ? { ...s, status:"rejected" } : s);
+    localStorage.setItem(SUBS_KEY, JSON.stringify(newSubs));
+    setSubs(newSubs);
+    setPreview(null);
+    showToast("Story rejected");
+  };
+
+  const unpublish = (pub) => {
+    const newPub = published.filter(p => p.id !== pub.id);
+    localStorage.setItem(PUB_KEY, JSON.stringify(newPub));
+    setPublished(newPub);
+    window.dispatchEvent(new Event("storage"));
+    showToast("Story unpublished");
+  };
+
+  const rowStyle = { background:"#fff", borderRadius:12, padding:"14px 18px", border:`1px solid ${C.border}`, marginBottom:10 };
+  const TABS = [
+    { id:"pending",   label:`⏳ Pending Review (${pending.length})`  },
+    { id:"published", label:`✅ Published (${published.length})`     },
+    { id:"rejected",  label:`❌ Rejected (${rejected.length})`       },
+  ];
+
+  const shown = tab === "pending" ? pending : tab === "published" ? published : rejected;
+
+  return (
+    <div>
+      <div style={{ marginBottom:24 }}>
+        <h2 style={{ margin:0, fontSize:22, fontWeight:800 }}>📝 Community Story Submissions</h2>
+        <p style={{ margin:"4px 0 0", color:C.muted, fontSize:13 }}>Review stories submitted by community members and publish to the platform.</p>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display:"flex", gap:4, borderBottom:`2px solid ${C.border}`, marginBottom:24, overflowX:"auto" }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            padding:"10px 18px", fontSize:13, fontWeight:700, border:"none", background:"none",
+            cursor:"pointer", whiteSpace:"nowrap",
+            color:        tab === t.id ? C.primary : C.muted,
+            borderBottom: tab === t.id ? `2px solid ${C.primary}` : "2px solid transparent",
+            marginBottom: -2,
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {shown.length === 0 && (
+        <div style={{ textAlign:"center", padding:"60px 20px", color:C.muted }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>📭</div>
+          <div style={{ fontSize:16, fontWeight:700 }}>No {tab} submissions yet</div>
+        </div>
+      )}
+
+      {shown.map(sub => (
+        <div key={sub.id} style={rowStyle}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, flexWrap:"wrap" }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:"flex", gap:8, marginBottom:6, flexWrap:"wrap" }}>
+                <span style={{ background:C.primary+"15", color:C.primary, borderRadius:6, padding:"2px 10px", fontSize:11, fontWeight:800 }}>{sub.category}</span>
+                {sub.location && <span style={{ fontSize:11, color:C.muted }}>📍 {sub.location}</span>}
+                <span style={{ fontSize:11, color:C.muted }}>👤 {sub.authorName}</span>
+                <span style={{ fontSize:11, color:C.muted }}>🗓 {new Date(sub.submittedAt).toLocaleDateString()}</span>
+              </div>
+              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:4 }}>{sub.title}</div>
+              <div style={{ fontSize:12, color:C.muted, lineHeight:1.6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                {sub.afterDesc || sub.beforeDesc}
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+              <button onClick={() => setPreview(sub)} style={{ padding:"7px 14px", borderRadius:8, border:`1.5px solid ${C.border}`, background:"#fff", cursor:"pointer", fontSize:12, fontWeight:700, color:C.text }}>
+                👁 Preview
+              </button>
+              {tab === "pending" && (
+                <>
+                  <button onClick={() => publish(sub)} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:C.secondary, cursor:"pointer", fontSize:12, fontWeight:800, color:"#fff" }}>
+                    ✅ Publish
+                  </button>
+                  <button onClick={() => reject(sub)} style={{ padding:"7px 14px", borderRadius:8, border:"none", background:"#FEE2E2", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C0392B" }}>
+                    ✕ Reject
+                  </button>
+                </>
+              )}
+              {tab === "published" && (
+                <button onClick={() => unpublish(sub)} style={{ padding:"7px 14px", borderRadius:8, border:"none", background:"#FEE2E2", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C0392B" }}>
+                  Unpublish
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Preview modal */}
+      {preview && (
+        <div onClick={e => { if (e.target === e.currentTarget) setPreview(null); }}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:900, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+          <div style={{ background:"#fff", borderRadius:20, maxWidth:560, width:"100%", padding:"28px 28px 24px", position:"relative", maxHeight:"90vh", overflowY:"auto" }}>
+            <button onClick={() => setPreview(null)} style={{ position:"absolute", top:14, right:14, background:"#F3F4F6", border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer", fontSize:16 }}>✕</button>
+            <div style={{ display:"flex", gap:8, marginBottom:14, flexWrap:"wrap" }}>
+              <span style={{ background:C.primary+"15", color:C.primary, borderRadius:6, padding:"3px 12px", fontSize:11, fontWeight:800 }}>{preview.category}</span>
+              {preview.location && <span style={{ fontSize:11, color:C.muted }}>📍 {preview.location}</span>}
+              <span style={{ fontSize:11, color:C.muted }}>👤 {preview.authorName}</span>
+            </div>
+            <h3 style={{ fontSize:20, fontWeight:900, margin:"0 0 16px", color:C.navy }}>{preview.title}</h3>
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>What Happened</div>
+              <div style={{ fontSize:14, color:C.text, lineHeight:1.7 }}>{preview.beforeDesc}</div>
+            </div>
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:C.secondary, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>Outcome</div>
+              <div style={{ fontSize:14, color:C.text, lineHeight:1.7 }}>{preview.afterDesc}</div>
+            </div>
+            {preview.status === "pending" && (
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => publish(preview)} style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:C.secondary, cursor:"pointer", fontWeight:800, fontSize:14, color:"#fff" }}>
+                  ✅ Publish This Story
+                </button>
+                <button onClick={() => reject(preview)} style={{ padding:"12px 20px", borderRadius:10, border:"none", background:"#FEE2E2", cursor:"pointer", fontWeight:700, fontSize:14, color:"#C0392B" }}>
+                  Reject
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── IMPACT STORIES PANEL ────────────────────────────────────────────────────
 const STORIES_KEY = "kf_impact_stories";
 const loadStories = () => { try { return JSON.parse(localStorage.getItem(STORIES_KEY) || "[]"); } catch { return []; } };
@@ -3836,7 +4246,8 @@ const BulkImportPanel = ({ showToast, currentUser }) => {
 };
 
 const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase, onAddUser, onDeleteUser, onChangeRole, onExport, onConfirmDonation, onComplete, onStartDelivery, onFullReport, isSuperAdmin, currentUser, showToast }) => {
-  const [tab, setTab] = useState("overview");
+  const initTab = (() => { try { const p = new URLSearchParams(window.location.search); return p.get("tab") || "overview"; } catch { return "overview"; } })();
+  const [tab, setTab] = useState(initTab);
   const [donFilter, setDonFilter] = useState("all");
   const { t } = useLang();
   const totalDonated = donations.reduce((a, d) => a + (d.amount || 0), 0);
@@ -3855,8 +4266,10 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
     { id: "cases",          label: t("allCases")        },
     { id: "donations",      label: t("donations")       },
     { id: "programs",       label: "🌱 Programs"        },
-    { id: "impact_stories", label: "📸 Impact Stories"  },
-    { id: "bulk_import",    label: "📥 Bulk Import"     },
+    { id: "impact_stories",    label: "📸 Impact Stories"    },
+    { id: "community_stories", label: "📝 Community Stories" },
+    { id: "bulk_import",       label: "📥 Bulk Import"       },
+    ...(isSuperAdmin ? [{ id: "settings", label: "⚙️ Settings" }] : []),
   ];
 
   return (
@@ -4079,8 +4492,14 @@ const AdminDashboard = ({ cases, users, donations, sponsors, agents, onViewCase,
       {tab === "impact_stories" && (
         <ImpactStoriesPanel showToast={showToast || (() => {})} />
       )}
+      {tab === "community_stories" && (
+        <CommunityStoriesPanel showToast={showToast || (() => {})} />
+      )}
       {tab === "bulk_import" && (
         <BulkImportPanel showToast={showToast || (() => {})} currentUser={currentUser} />
+      )}
+      {tab === "settings" && isSuperAdmin && (
+        <SiteSettingsPanel showToast={showToast || (() => {})} currentUser={currentUser} />
       )}
     </div>
   );
