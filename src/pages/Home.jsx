@@ -169,121 +169,6 @@ export default function Home() {
       )}
 
 
-      {/* ══════════════════════════ HOW IT WORKS + STORIES ═══════════════════ */}
-      <section style={sec(C.bg)}>
-        <div style={wrap}>
-
-          {/* Section header */}
-          <div style={{ textAlign:"center", marginBottom: isMobile ? 40 : 64 }}>
-            <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary }}>{P.workflow_badge}</span>
-            <hr className="kf-rule-center" />
-            <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 14px", letterSpacing:-0.5 }}>{P.workflow_title}</h2>
-            <p style={{ fontSize:17, color:C.muted, maxWidth:540, margin:"0 auto", lineHeight:1.7 }}>{P.workflow_sub}</p>
-          </div>
-
-          {/* ── Row 1: First 4 workflow steps ── */}
-          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr": isTablet?"repeat(2,1fr)":"repeat(4,1fr)", gap: isMobile?14:22, marginBottom: isMobile?14:22 }}>
-            {WORKFLOW.slice(0,4).map((s) => (
-              <div key={s.n} style={{
-                background:"#fff", borderRadius:18,
-                padding: isMobile ? "18px 16px" : "26px 22px",
-                boxShadow:"0 2px 16px rgba(0,38,81,0.07)",
-                border:`1.5px solid ${C.border}`,
-                position:"relative", overflow:"hidden",
-                transition:"box-shadow .2s, transform .2s",
-              }}
-                onMouseOver={e => { e.currentTarget.style.boxShadow="0 8px 32px rgba(0,38,81,0.13)"; e.currentTarget.style.transform="translateY(-3px)"; }}
-                onMouseOut={e  => { e.currentTarget.style.boxShadow="0 2px 16px rgba(0,38,81,0.07)"; e.currentTarget.style.transform="none"; }}
-              >
-                <div style={{ position:"absolute", top:0, left:0, right:0, height:4, background:s.color, borderRadius:"18px 18px 0 0" }} />
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, marginTop:6 }}>
-                  <div style={{ width:isMobile?38:46, height:isMobile?38:46, borderRadius:"50%", background:s.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?18:22, flexShrink:0 }}>{s.icon}</div>
-                  <div style={{ width:isMobile?28:34, height:isMobile?28:34, borderRadius:"50%", background:s.color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?13:16, fontWeight:900, flexShrink:0, boxShadow:`0 3px 10px ${s.color}60` }}>{s.n}</div>
-                </div>
-                <div style={{ fontSize:isMobile?13:15, fontWeight:800, color:s.color, marginBottom:8, lineHeight:1.3 }}>{s.label}</div>
-                <div style={{ fontSize:isMobile?11:13, color:C.muted, lineHeight:1.7 }}>{s.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Row 2: Impact story cards (from admin or fallback) ── */}
-          {(() => {
-            let stories = [];
-            try { stories = JSON.parse(localStorage.getItem("kf_impact_stories") || "[]"); } catch {}
-            const FALLBACK = [
-              { id:"f1", icon:"🏠", color:"#10B981", category:"Shelter", title:"Family Rehoused After Flood", location:"Baidoa", beforeDesc:"Family of 6 living in damaged structure with no protection from rain.", afterDesc:"New shelter built, family safe and healthy after 12 days.", daysToDeliver:"12", amountDistributed:"$780" },
-              { id:"f2", icon:"🩺", color:"#3B82F6", category:"Medical", title:"Child Receives Surgery",       location:"Mogadishu", beforeDesc:"8-year-old with untreated heart condition, family unable to afford care.", afterDesc:"Surgery completed successfully, child recovering at home.", daysToDeliver:"9",  amountDistributed:"$2,100" },
-              { id:"f3", icon:"📚", color:"#F59E0B", category:"Education","title":"Orphan Back in School",     location:"Garowe", beforeDesc:"Three siblings dropped out after losing parents — no one to pay fees.", afterDesc:"School fees paid for full year, all 3 children re-enrolled.", daysToDeliver:"7",  amountDistributed:"$540" },
-              { id:"f4", icon:"💧", color:"#06B6D4", category:"Water",    title:"Village Gets Clean Water",    location:"Kismayo", beforeDesc:"Community walking 4 km daily for unsafe water; waterborne disease high.", afterDesc:"Borehole drilled, water tested clean — 280 families now served.", daysToDeliver:"21", amountDistributed:"$3,200" },
-            ];
-            const shown = stories.length > 0 ? stories.slice(0,4) : FALLBACK;
-            return (
-              <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(4,1fr)", gap: isMobile?14:22 }}>
-                {shown.map((st) => {
-                  const accent = st.color || C.secondary;
-                  return (
-                    <div key={st.id} style={{
-                      background:"#fff", borderRadius:18, overflow:"hidden",
-                      boxShadow:"0 2px 16px rgba(0,38,81,0.07)",
-                      border:`1.5px solid ${C.border}`,
-                      display:"flex", flexDirection:"column",
-                      transition:"box-shadow .2s, transform .2s",
-                    }}
-                      onMouseOver={e => { e.currentTarget.style.boxShadow="0 8px 32px rgba(0,38,81,0.13)"; e.currentTarget.style.transform="translateY(-3px)"; }}
-                      onMouseOut={e  => { e.currentTarget.style.boxShadow="0 2px 16px rgba(0,38,81,0.07)"; e.currentTarget.style.transform="none"; }}
-                    >
-                      {/* Image or gradient header */}
-                      {st.afterImg
-                        ? <img src={st.afterImg} alt={st.title} style={{ width:"100%", height:130, objectFit:"cover" }} />
-                        : <div style={{ height:130, background:`linear-gradient(135deg,${accent}22,${accent}44)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:44 }}>
-                            {st.icon || "✨"}
-                          </div>
-                      }
-                      <div style={{ padding:"14px 16px", flex:1, display:"flex", flexDirection:"column", gap:6 }}>
-                        {/* Category + location */}
-                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                          <span style={{ fontSize:10, fontWeight:800, background:accent+"18", color:accent, borderRadius:6, padding:"2px 8px" }}>{st.category}</span>
-                          {st.location && <span style={{ fontSize:10, color:C.muted }}>📍 {st.location}</span>}
-                        </div>
-                        {/* Title */}
-                        <div style={{ fontSize:13, fontWeight:800, color:C.text, lineHeight:1.4 }}>{st.title}</div>
-                        {/* After description */}
-                        <div style={{ fontSize:11, color:C.muted, lineHeight:1.6, flex:1 }}>{st.afterDesc || st.beforeDesc}</div>
-                        {/* Stats row */}
-                        <div style={{ display:"flex", gap:12, marginTop:6, paddingTop:8, borderTop:`1px solid ${C.border}` }}>
-                          {st.daysToDeliver && <div style={{ fontSize:10, color:C.muted }}><span style={{ fontWeight:800, color:accent, fontSize:13 }}>{st.daysToDeliver}</span> days</div>}
-                          {st.amountDistributed && <div style={{ fontSize:10, color:C.muted }}><span style={{ fontWeight:800, color:C.secondary, fontSize:13 }}>{st.amountDistributed}</span> aid</div>}
-                          <div style={{ marginLeft:"auto", fontSize:10, color:"#10B981", fontWeight:700, display:"flex", alignItems:"center", gap:3 }}>
-                            <span style={{ width:6, height:6, borderRadius:"50%", background:"#10B981", display:"inline-block" }}/>Verified
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-
-          {/* ── CTAs ── */}
-          <div style={{ display:"flex", justifyContent:"center", gap:14, marginTop: isMobile?36:48, flexWrap:"wrap" }}>
-            <Link to="/stories" style={{
-              padding:"13px 32px", borderRadius:12, fontWeight:800, fontSize:14,
-              background:`linear-gradient(135deg,${C.secondary},#3A6214)`,
-              color:"#fff", textDecoration:"none",
-              boxShadow:`0 4px 16px ${C.secondary}40`,
-            }}>
-              Explore More Stories →
-            </Link>
-            <Link to="/how-it-works" className="kf-btn kf-btn-navy"
-              style={{ padding:"13px 32px", borderRadius:12, fontWeight:700, fontSize:14 }}>
-              {P.workflow_link} →
-            </Link>
-          </div>
-
-        </div>
-      </section>
-
       {/* ══════════════════════════ STORIES FROM THE FIELD ════════════════════ */}
       {(() => {
         let raw = [];
@@ -475,6 +360,116 @@ export default function Home() {
           </section>
         );
       })()}
+
+      {/* ══════════════════════════ HOW IT WORKS + MINI STORIES ══════════════ */}
+      <section style={sec(C.bg)}>
+        <div style={wrap}>
+
+          {/* Section header */}
+          <div style={{ textAlign:"center", marginBottom: isMobile ? 40 : 64 }}>
+            <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary }}>{P.workflow_badge}</span>
+            <hr className="kf-rule-center" />
+            <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 14px", letterSpacing:-0.5 }}>{P.workflow_title}</h2>
+            <p style={{ fontSize:17, color:C.muted, maxWidth:540, margin:"0 auto", lineHeight:1.7 }}>{P.workflow_sub}</p>
+          </div>
+
+          {/* ── Row 1: First 4 workflow steps ── */}
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr": isTablet?"repeat(2,1fr)":"repeat(4,1fr)", gap: isMobile?14:22, marginBottom: isMobile?14:22 }}>
+            {WORKFLOW.slice(0,4).map((s) => (
+              <div key={s.n} style={{
+                background:"#fff", borderRadius:18,
+                padding: isMobile ? "18px 16px" : "26px 22px",
+                boxShadow:"0 2px 16px rgba(0,38,81,0.07)",
+                border:`1.5px solid ${C.border}`,
+                position:"relative", overflow:"hidden",
+                transition:"box-shadow .2s, transform .2s",
+              }}
+                onMouseOver={e => { e.currentTarget.style.boxShadow="0 8px 32px rgba(0,38,81,0.13)"; e.currentTarget.style.transform="translateY(-3px)"; }}
+                onMouseOut={e  => { e.currentTarget.style.boxShadow="0 2px 16px rgba(0,38,81,0.07)"; e.currentTarget.style.transform="none"; }}
+              >
+                <div style={{ position:"absolute", top:0, left:0, right:0, height:4, background:s.color, borderRadius:"18px 18px 0 0" }} />
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, marginTop:6 }}>
+                  <div style={{ width:isMobile?38:46, height:isMobile?38:46, borderRadius:"50%", background:s.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?18:22, flexShrink:0 }}>{s.icon}</div>
+                  <div style={{ width:isMobile?28:34, height:isMobile?28:34, borderRadius:"50%", background:s.color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?13:16, fontWeight:900, flexShrink:0, boxShadow:`0 3px 10px ${s.color}60` }}>{s.n}</div>
+                </div>
+                <div style={{ fontSize:isMobile?13:15, fontWeight:800, color:s.color, marginBottom:8, lineHeight:1.3 }}>{s.label}</div>
+                <div style={{ fontSize:isMobile?11:13, color:C.muted, lineHeight:1.7 }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── Row 2: Impact story cards (from admin or fallback) ── */}
+          {(() => {
+            let stories = [];
+            try { stories = JSON.parse(localStorage.getItem("kf_impact_stories") || "[]"); } catch {}
+            const FALLBACK = [
+              { id:"f1", icon:"🏠", color:"#10B981", category:"Shelter", title:"Family Rehoused After Flood", location:"Baidoa", beforeDesc:"Family of 6 living in damaged structure with no protection from rain.", afterDesc:"New shelter built, family safe and healthy after 12 days.", daysToDeliver:"12", amountDistributed:"$780" },
+              { id:"f2", icon:"🩺", color:"#3B82F6", category:"Medical", title:"Child Receives Surgery",       location:"Mogadishu", beforeDesc:"8-year-old with untreated heart condition, family unable to afford care.", afterDesc:"Surgery completed successfully, child recovering at home.", daysToDeliver:"9",  amountDistributed:"$2,100" },
+              { id:"f3", icon:"📚", color:"#F59E0B", category:"Education","title":"Orphan Back in School",     location:"Garowe", beforeDesc:"Three siblings dropped out after losing parents — no one to pay fees.", afterDesc:"School fees paid for full year, all 3 children re-enrolled.", daysToDeliver:"7",  amountDistributed:"$540" },
+              { id:"f4", icon:"💧", color:"#06B6D4", category:"Water",    title:"Village Gets Clean Water",    location:"Kismayo", beforeDesc:"Community walking 4 km daily for unsafe water; waterborne disease high.", afterDesc:"Borehole drilled, water tested clean — 280 families now served.", daysToDeliver:"21", amountDistributed:"$3,200" },
+            ];
+            const shown = stories.length > 0 ? stories.slice(0,4) : FALLBACK;
+            return (
+              <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(4,1fr)", gap: isMobile?14:22 }}>
+                {shown.map((st) => {
+                  const accent = st.color || C.secondary;
+                  return (
+                    <div key={st.id} style={{
+                      background:"#fff", borderRadius:18, overflow:"hidden",
+                      boxShadow:"0 2px 16px rgba(0,38,81,0.07)",
+                      border:`1.5px solid ${C.border}`,
+                      display:"flex", flexDirection:"column",
+                      transition:"box-shadow .2s, transform .2s",
+                    }}
+                      onMouseOver={e => { e.currentTarget.style.boxShadow="0 8px 32px rgba(0,38,81,0.13)"; e.currentTarget.style.transform="translateY(-3px)"; }}
+                      onMouseOut={e  => { e.currentTarget.style.boxShadow="0 2px 16px rgba(0,38,81,0.07)"; e.currentTarget.style.transform="none"; }}
+                    >
+                      {st.afterImg
+                        ? <img src={st.afterImg} alt={st.title} style={{ width:"100%", height:130, objectFit:"cover" }} />
+                        : <div style={{ height:130, background:`linear-gradient(135deg,${accent}22,${accent}44)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:44 }}>
+                            {st.icon || "✨"}
+                          </div>
+                      }
+                      <div style={{ padding:"14px 16px", flex:1, display:"flex", flexDirection:"column", gap:6 }}>
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                          <span style={{ fontSize:10, fontWeight:800, background:accent+"18", color:accent, borderRadius:6, padding:"2px 8px" }}>{st.category}</span>
+                          {st.location && <span style={{ fontSize:10, color:C.muted }}>📍 {st.location}</span>}
+                        </div>
+                        <div style={{ fontSize:13, fontWeight:800, color:C.text, lineHeight:1.4 }}>{st.title}</div>
+                        <div style={{ fontSize:11, color:C.muted, lineHeight:1.6, flex:1 }}>{st.afterDesc || st.beforeDesc}</div>
+                        <div style={{ display:"flex", gap:12, marginTop:6, paddingTop:8, borderTop:`1px solid ${C.border}` }}>
+                          {st.daysToDeliver && <div style={{ fontSize:10, color:C.muted }}><span style={{ fontWeight:800, color:accent, fontSize:13 }}>{st.daysToDeliver}</span> days</div>}
+                          {st.amountDistributed && <div style={{ fontSize:10, color:C.muted }}><span style={{ fontWeight:800, color:C.secondary, fontSize:13 }}>{st.amountDistributed}</span> aid</div>}
+                          <div style={{ marginLeft:"auto", fontSize:10, color:"#10B981", fontWeight:700, display:"flex", alignItems:"center", gap:3 }}>
+                            <span style={{ width:6, height:6, borderRadius:"50%", background:"#10B981", display:"inline-block" }}/>Verified
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+
+          {/* ── CTAs ── */}
+          <div style={{ display:"flex", justifyContent:"center", gap:14, marginTop: isMobile?36:48, flexWrap:"wrap" }}>
+            <Link to="/stories" style={{
+              padding:"13px 32px", borderRadius:12, fontWeight:800, fontSize:14,
+              background:`linear-gradient(135deg,${C.secondary},#3A6214)`,
+              color:"#fff", textDecoration:"none",
+              boxShadow:`0 4px 16px ${C.secondary}40`,
+            }}>
+              Explore More Stories →
+            </Link>
+            <Link to="/how-it-works" className="kf-btn kf-btn-navy"
+              style={{ padding:"13px 32px", borderRadius:12, fontWeight:700, fontSize:14 }}>
+              {P.workflow_link} →
+            </Link>
+          </div>
+
+        </div>
+      </section>
 
       {/* ══════════════════════════ FEATURED CASES ══════════════════════════ */}
       <section style={sec(C.bg)}>
