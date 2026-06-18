@@ -321,41 +321,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* ── "Share Your Story" banner ── */}
-              <div style={{
-                marginTop: isMobile?36:52,
-                position:"relative", overflow:"hidden",
-                borderRadius:20,
-                minHeight: isMobile ? 200 : 220,
-                display:"flex", flexDirection: isMobile?"column":"row",
-                alignItems:"center", justifyContent:"space-between", gap:20,
-                padding: isMobile?"28px 22px":"40px 48px",
-              }}>
-                {/* Background image with overlay */}
-                <div style={{
-                  position:"absolute", inset:0,
-                  backgroundImage:`url("https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1200&q=80")`,
-                  backgroundSize:"cover", backgroundPosition:"center",
-                  filter:"brightness(0.35)",
-                }} />
-                <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg,rgba(0,38,81,0.7) 0%,rgba(75,125,25,0.5) 100%)" }} />
-
-                <div style={{ color:"#fff", position:"relative", zIndex:1 }}>
-                  <div style={{ fontSize: isMobile?20:28, fontWeight:900, marginBottom:10 }}>
-                    ✍️ Have a Story to Share?
-                  </div>
-                  <p style={{ fontSize:14, opacity:0.9, margin:0, maxWidth:480, lineHeight:1.7 }}>
-                    Are you a beneficiary, community member, or field volunteer with a story of change? Submit it — our team will review and publish verified stories to inspire more donors.
-                  </p>
-                </div>
-                <Link to="/stories#share" style={{
-                  position:"relative", zIndex:1,
-                  padding:"14px 32px", borderRadius:12, fontWeight:800, fontSize:15,
-                  background:C.gold, color:"#fff", textDecoration:"none", whiteSpace:"nowrap",
-                  boxShadow:`0 4px 20px rgba(0,0,0,0.3)`, flexShrink:0,
-                }}>Share My Story →</Link>
-              </div>
-
             </div>
           </section>
         );

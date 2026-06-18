@@ -64,11 +64,56 @@ function NotFound() {
   );
 }
 
+function ShareStoryBanner() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/dashboard') || pathname === '/login') return null;
+  return (
+    <div style={{
+      position: "relative", overflow: "hidden",
+      minHeight: 200,
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      flexWrap: "wrap", gap: 24,
+      padding: "52px clamp(20px, 6vw, 80px)",
+    }}>
+      {/* Photo bg */}
+      <div style={{
+        position: "absolute", inset: 0,
+        backgroundImage: `url("https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1400&q=80")`,
+        backgroundSize: "cover", backgroundPosition: "center 30%",
+        filter: "brightness(0.28)",
+      }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg,rgba(0,38,81,0.75) 0%,rgba(75,125,25,0.55) 100%)" }} />
+
+      {/* Text */}
+      <div style={{ position: "relative", zIndex: 1, color: "#fff", maxWidth: 580 }}>
+        <div style={{ fontSize: "clamp(22px,3.5vw,34px)", fontWeight: 900, marginBottom: 12, letterSpacing: -0.5, lineHeight: 1.2 }}>
+          ✍️ Have a Story to Share?
+        </div>
+        <p style={{ fontSize: 15, opacity: 0.88, margin: 0, lineHeight: 1.75 }}>
+          Are you a beneficiary, community member, or field volunteer? Submit your story — our team reviews every submission and publishes verified stories to inspire more donors.
+        </p>
+      </div>
+
+      {/* CTA */}
+      <a href="/stories#share" style={{
+        position: "relative", zIndex: 1,
+        padding: "15px 36px", borderRadius: 14, fontWeight: 800, fontSize: 15,
+        background: "#E0AB21", color: "#fff", textDecoration: "none", whiteSpace: "nowrap",
+        boxShadow: "0 6px 24px rgba(0,0,0,0.35)",
+        fontFamily: "inherit",
+      }}>
+        Share My Story →
+      </a>
+    </div>
+  );
+}
+
 function Layout({ children }) {
   return (
     <>
       <Navbar />
       <main>{children}</main>
+      <ShareStoryBanner />
       <Footer />
       <AiAssistant context="website" />
     </>
