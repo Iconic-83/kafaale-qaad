@@ -18,7 +18,14 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 import Navbar       from './components/Navbar.jsx';
 import Footer       from './components/Footer.jsx';
 import AiAssistant  from './components/AiAssistant.jsx';
@@ -93,6 +100,7 @@ function App() {
     <LanguageProvider>
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           <Route path="/"              element={<Layout><Home /></Layout>} />
           <Route path="/about"         element={<Layout><PageGate pageKey="about"><About /></PageGate></Layout>} />
