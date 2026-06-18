@@ -10,10 +10,10 @@ import { Link } from "react-router-dom";
  */
 export default function Logo({ size = "md", variant = "full", linked = true, dark = false, style = {} }) {
   const s = {
-    sm: { img: 44,  full: 110, title: 14, sub: 8,  gap: 10 },
-    md: { img: 58,  full: 140, title: 18, sub: 10, gap: 12 },
-    lg: { img: 76,  full: 180, title: 24, sub: 12, gap: 14 },
-  }[size] || { img: 58, full: 140, title: 18, sub: 10, gap: 12 };
+    sm: { img: 56,  title: 14, sub: 8,  gap: 11 },
+    md: { img: 72,  title: 19, sub: 10, gap: 13 },
+    lg: { img: 96,  title: 25, sub: 12, gap: 16 },
+  }[size] || { img: 72, title: 19, sub: 10, gap: 13 };
 
   const titleColor = dark ? "#ffffff" : "#002651";
   const subColor   = dark ? "#E0AB21" : "#4B7D19";
@@ -27,12 +27,23 @@ export default function Logo({ size = "md", variant = "full", linked = true, dar
       textDecoration: "none",
       ...style,
     }}>
-      <img
-        src="/assets/brand/kafaala-qaad-hope-icon.png"
-        alt="Kafaala Qaad Hope Society"
-        style={{ width: s.img, height: s.img, objectFit: "contain", display: "block", flexShrink: 0 }}
-        draggable={false}
-      />
+      {/* White-background icon wrapper */}
+      <div style={{
+        width: s.img, height: s.img, flexShrink: 0,
+        background: "#ffffff",
+        borderRadius: Math.round(s.img * 0.2),
+        padding: Math.round(s.img * 0.07),
+        boxSizing: "border-box",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: dark ? "0 2px 12px rgba(0,0,0,0.25)" : "0 2px 8px rgba(0,38,81,0.12)",
+      }}>
+        <img
+          src="/assets/brand/kafaala-qaad-hope-icon.png"
+          alt="Kafaala Qaad Hope Society"
+          style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+          draggable={false}
+        />
+      </div>
       {variant !== "icon" && (
         <div style={{ lineHeight: 1.2 }}>
           <div style={{ fontSize: s.title, fontWeight: 900, color: titleColor, letterSpacing: -0.5, whiteSpace: "nowrap" }}>

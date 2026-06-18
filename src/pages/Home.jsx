@@ -81,54 +81,64 @@ export default function Home() {
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: C.text }}>
 
       {/* ══════════════════════════════ HERO ══════════════════════════════ */}
-      <section className="kf-hero-dots" style={{
-        background: `linear-gradient(145deg, ${C.navy} 0%, ${C.primary} 55%, ${C.secondary} 100%)`,
-        color: "#fff",
-        padding: isMobile ? "72px 20px 60px" : "110px 32px 90px",
+      <section style={{
         position: "relative", overflow: "hidden",
+        color: "#fff",
+        minHeight: isMobile ? 560 : 680,
+        display: "flex", alignItems: "center",
       }}>
-        {/* Decorative orbs */}
-        <div style={{ position:"absolute", top:-100, right:-100, width:480, height:480, borderRadius:"50%", background:"rgba(255,255,255,0.04)", pointerEvents:"none" }} />
-        <div style={{ position:"absolute", bottom:-80, left:-80,  width:360, height:360, borderRadius:"50%", background:"rgba(255,255,255,0.03)", pointerEvents:"none" }} />
-        <div style={{ position:"absolute", top:"30%", right:"12%", width:180, height:180, borderRadius:"50%", background:"rgba(224,171,33,0.08)", pointerEvents:"none" }} />
+        {/* ── Video background ── drop your video at /assets/hero-video.mp4 */}
+        <video
+          autoPlay muted loop playsInline
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", zIndex:0 }}
+        >
+          <source src="/assets/hero-video.mp4" type="video/mp4" />
+        </video>
 
-        <div style={{ maxWidth: 820, margin: "0 auto", textAlign: "center", position: "relative" }}>
-          {/* Eyebrow */}
-          <div style={{ display:"inline-flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.22)", borderRadius:100, padding:"7px 20px", fontSize:12, fontWeight:800, letterSpacing:1, textTransform:"uppercase", marginBottom:28 }}>
-            <span style={{ width:6, height:6, borderRadius:"50%", background:C.gold, display:"inline-block", boxShadow:`0 0 6px ${C.gold}` }} />
-            {P.hero_badge}
-          </div>
+        {/* ── Dark gradient overlay ── */}
+        <div style={{
+          position:"absolute", inset:0, zIndex:1,
+          background:`linear-gradient(145deg,
+            rgba(0,38,81,0.90) 0%,
+            rgba(0,75,150,0.82) 50%,
+            rgba(75,125,25,0.72) 100%)`,
+        }} />
 
-          {/* Headline */}
-          <h1 style={{ fontSize: "clamp(36px, 6vw, 68px)", fontWeight:900, margin:"0 0 24px", lineHeight:1.08, letterSpacing:-1.5 }}>
-            {P.hero_title1}<br />
-            <span style={{ color:C.gold }}>{P.hero_title2}</span>
-          </h1>
+        {/* ── Content ── */}
+        <div style={{ position:"relative", zIndex:2, width:"100%", padding: isMobile?"72px 20px 60px":"110px 32px 90px" }}>
+          <div style={{ maxWidth:820, margin:"0 auto", textAlign:"center" }}>
 
-          <p style={{ fontSize: "clamp(16px, 2.2vw, 20px)", opacity:0.82, maxWidth:640, margin:"0 auto 44px", lineHeight:1.75 }}>
-            {P.hero_sub}
-          </p>
+            {/* Headline */}
+            <h1 style={{ fontSize:"clamp(36px,6vw,68px)", fontWeight:900, margin:"0 0 24px", lineHeight:1.08, letterSpacing:-1.5 }}>
+              {P.hero_title1}<br />
+              <span style={{ color:C.gold }}>{P.hero_title2}</span>
+            </h1>
 
-          {/* CTA row */}
-          <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
-            <button className="kf-btn kf-btn-gold" onClick={() => navigate("/cases")}
-              style={{ padding: isMobile?"14px 28px":"17px 40px", borderRadius:14, fontSize:isMobile?14:16, fontWeight:800, border:"none" }}>
-              ❤️ {P.btn_sponsor}
-            </button>
-            <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/how-it-works")}
-              style={{ padding: isMobile?"14px 28px":"17px 40px", borderRadius:14, fontSize:isMobile?14:16, fontWeight:700, border:"none" }}>
-              {P.btn_how} →
-            </button>
-          </div>
+            <p style={{ fontSize:"clamp(16px,2.2vw,20px)", opacity:0.86, maxWidth:640, margin:"0 auto 44px", lineHeight:1.75 }}>
+              {P.hero_sub}
+            </p>
 
-          {/* Trust strip */}
-          <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap: isMobile?10:24, marginTop:44, paddingTop:36, borderTop:"1px solid rgba(255,255,255,0.12)" }}>
-            {TRUST.map(t => (
-              <div key={t} style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, fontWeight:600, opacity:0.78 }}>
-                <span style={{ width:16, height:16, borderRadius:"50%", background:"rgba(75,125,25,0.8)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:900, flexShrink:0 }}>✓</span>
-                {t}
-              </div>
-            ))}
+            {/* CTA row */}
+            <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+              <button className="kf-btn kf-btn-gold" onClick={() => navigate("/cases")}
+                style={{ padding:isMobile?"14px 28px":"17px 40px", borderRadius:14, fontSize:isMobile?14:16, fontWeight:800, border:"none" }}>
+                {P.btn_sponsor}
+              </button>
+              <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/how-it-works")}
+                style={{ padding:isMobile?"14px 28px":"17px 40px", borderRadius:14, fontSize:isMobile?14:16, fontWeight:700, border:"none" }}>
+                {P.btn_how}
+              </button>
+            </div>
+
+            {/* Trust strip */}
+            <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", gap:isMobile?10:24, marginTop:44, paddingTop:36, borderTop:"1px solid rgba(255,255,255,0.14)" }}>
+              {TRUST.map(t => (
+                <div key={t} style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, fontWeight:600, opacity:0.82 }}>
+                  <span style={{ width:16, height:16, borderRadius:"50%", background:"rgba(75,125,25,0.9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:900, flexShrink:0 }}>✓</span>
+                  {t}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -265,32 +275,124 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════════════════ USER ROLES ══════════════════════════════ */}
+      {/* ══════════════════════════ BEFORE & AFTER ══════════════════════════ */}
       <section style={sec(C.bg)}>
         <div style={wrap}>
           <div style={{ textAlign:"center", marginBottom: isMobile?40:56 }}>
-            <span className="kf-badge" style={{ background:C.secondary+"18", color:C.secondary }}>{P.roles_badge}</span>
+            <span className="kf-badge" style={{ background:C.secondary+"18", color:C.secondary }}>
+              {lang==="so"?"Saameynta Dhabta ah":lang==="ar"?"الأثر الحقيقي":lang==="tr"?"Gerçek Etki":lang==="es"?"Impacto Real":lang==="fr"?"Impact Réel":"Real Impact"}
+            </span>
             <hr className="kf-rule-center" />
-            <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.4 }}>{P.roles_title}</h2>
-            <p style={{ fontSize:15, color:C.muted }}>{P.roles_sub}</p>
+            <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.4 }}>
+              {lang==="so"?"Ka Hor & Ka Dib":lang==="ar"?"قبل وبعد":lang==="tr"?"Önce & Sonra":lang==="es"?"Antes & Después":lang==="fr"?"Avant & Après":"Before & After"}
+            </h2>
+            <p style={{ fontSize:15, color:C.muted, maxWidth:520, margin:"0 auto" }}>
+              {lang==="so"?"Xaaladda xaqiijisan kasta waxay beddeshaaa nolosha. Natiijada dhabta ah ee deeqaha la gaarsiyay.":lang==="ar"?"كل حالة موثقة تُغير حياة. النتائج الحقيقية للمساعدات المُسلَّمة.":lang==="tr"?"Her doğrulanmış vaka hayatları değiştirir. Ulaştırılan yardımın gerçek sonuçları.":lang==="es"?"Cada caso verificado transforma vidas. Resultados reales de ayuda entregada.":lang==="fr"?"Chaque cas vérifié transforme des vies. Résultats réels de l'aide livrée.":"Every verified case transforms lives. Real results from aid delivered on the ground."}
+            </p>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr": isTablet?"repeat(3,1fr)":"repeat(5,1fr)", gap: isMobile?12:18 }}>
-            {ROLES.map(r => (
-              <div key={r.role} className="kf-card" style={{
-                background:"#fff", borderRadius:18, padding: isMobile?18:26,
-                textAlign:"center", boxShadow:"0 2px 10px rgba(0,38,81,0.05)",
-                border:`1px solid ${C.border}`,
+
+          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(3,1fr)", gap: isMobile?20:28 }}>
+            {[
+              {
+                id:1,
+                label: lang==="so"?"Qoyska Qaxootiga ah":lang==="ar"?"عائلة النازحين":lang==="tr"?"Mülteci Aile":lang==="es"?"Familia Desplazada":lang==="fr"?"Famille Déplacée":"Displaced Family",
+                category: lang==="so"?"Degdeg & Guri":lang==="ar"?"طوارئ وملجأ":lang==="tr"?"Acil & Barınak":lang==="es"?"Emergencia & Refugio":lang==="fr"?"Urgence & Abri":"Emergency & Shelter",
+                before: { bg:"linear-gradient(135deg,#7f8c8d,#95a5a6)", label: lang==="so"?"Ka Hor":lang==="ar"?"قبل":lang==="tr"?"Önce":lang==="es"?"Antes":lang==="fr"?"Avant":"Before", desc: lang==="so"?"Qoys 7 qof ah oo ku nool dhismo dhacay, xaaladda degdeg ah":"Family of 7 living in collapsed structure, critical condition" },
+                after:  { bg:"linear-gradient(135deg,#27ae60,#2ecc71)", label: lang==="so"?"Ka Dib":lang==="ar"?"بعد":lang==="tr"?"Sonra":lang==="es"?"Después":lang==="fr"?"Après":"After",  desc: lang==="so"?"Guri ku meel gaadh ah + raashiin 3 bilood + dhar":"Temporary shelter + 3 months food supplies + clothing" },
+                days: 14, amount: "$820",
+              },
+              {
+                id:2,
+                label: lang==="so"?"Gabar Yar Bukaan":"Child Medical Case",
+                category: lang==="so"?"Caafimaad":"Medical",
+                before: { bg:"linear-gradient(135deg,#c0392b,#e74c3c)", label: lang==="so"?"Ka Hor":"Before", desc: lang==="so"?"Gabar 8 sano jir ah oo la waayay dawooyinka muhiimka ah, xaaladda khatarta ah":"8-year-old girl without critical medication, deteriorating health" },
+                after:  { bg:"linear-gradient(135deg,#16a085,#1abc9c)", label: lang==="so"?"Ka Dib":"After",  desc: lang==="so"?"Dawooyinka la gaadhsiiyay + booqashada dhakhtarka 4 bilood":"Medication delivered + 4 months doctor visits covered" },
+                days: 9, amount: "$540",
+              },
+              {
+                id:3,
+                label: lang==="so"?"Odey Naaf ah":"Elderly & Disabled",
+                category: lang==="so"?"Cuno & Daryeel":"Food & Care",
+                before: { bg:"linear-gradient(135deg,#8e44ad,#9b59b6)", label: lang==="so"?"Ka Hor":"Before", desc: lang==="so"?"Odey 78 sano jir ah oo keligiis ah, aan lahayn cunto iyo daryeel":"78-year-old elder living alone, no food security or care" },
+                after:  { bg:"linear-gradient(135deg,#e67e22,#f39c12)", label: lang==="so"?"Ka Dib":"After",  desc: lang==="so"?"Raashiin toddobaadleh + daryeelka guriga + xiriirka qoyska":"Weekly food delivery + home care + family reconnected" },
+                days: 11, amount: "$460",
+              },
+            ].map(item => (
+              <div key={item.id} style={{
+                background:"#fff", borderRadius:20, overflow:"hidden",
+                boxShadow:"0 4px 20px rgba(0,38,81,0.09)", border:`1px solid ${C.border}`,
               }}>
-                <div style={{
-                  width:64, height:64, borderRadius:18, background:r.bg,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:28, margin:"0 auto 16px",
-                  boxShadow:`0 4px 16px ${r.color}22`,
-                }}>{r.icon}</div>
-                <div style={{ fontSize:13, fontWeight:800, color:r.color, marginBottom:8, letterSpacing:0.2 }}>{r.role}</div>
-                <div style={{ fontSize:12, color:C.muted, lineHeight:1.6 }}>{r.desc}</div>
+                {/* Card header */}
+                <div style={{ background:`linear-gradient(135deg,${C.primary}12,${C.secondary}12)`, padding:"16px 20px", borderBottom:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:1 }}>{item.category}</div>
+                  <div style={{ fontSize:16, fontWeight:800, color:C.text, marginTop:3 }}>{item.label}</div>
+                </div>
+
+                {/* Before / After image panels */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", position:"relative" }}>
+                  {[item.before, item.after].map((panel, pi) => (
+                    <div key={pi} style={{ position:"relative" }}>
+                      {/* Photo placeholder — replace with <img src="..." /> for real photos */}
+                      <div style={{
+                        height: isMobile?120:150,
+                        background: panel.bg,
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                      }}>
+                        <span style={{ fontSize: isMobile?32:40, opacity:0.6 }}>
+                          {pi === 0 ? "😔" : "😊"}
+                        </span>
+                      </div>
+                      {/* Label badge */}
+                      <div style={{
+                        position:"absolute", top:8, left:8,
+                        background: pi===0 ? "rgba(0,0,0,0.55)" : "rgba(39,174,96,0.9)",
+                        color:"#fff", borderRadius:6, padding:"3px 9px",
+                        fontSize:11, fontWeight:800, letterSpacing:0.5,
+                      }}>{panel.label}</div>
+                    </div>
+                  ))}
+                  {/* Arrow divider */}
+                  <div style={{
+                    position:"absolute", top:"50%", left:"50%",
+                    transform:"translate(-50%,-50%)",
+                    width:32, height:32, borderRadius:"50%",
+                    background:C.gold, color:"#fff",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:16, fontWeight:900, zIndex:2,
+                    boxShadow:`0 2px 10px ${C.gold}80`,
+                  }}>→</div>
+                </div>
+
+                {/* Descriptions */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom:`1px solid ${C.border}` }}>
+                  <div style={{ padding:"12px 14px", borderRight:`1px solid ${C.border}`, fontSize:11, color:C.muted, lineHeight:1.5 }}>{item.before.desc}</div>
+                  <div style={{ padding:"12px 14px", fontSize:11, color:C.secondary, fontWeight:600, lineHeight:1.5 }}>{item.after.desc}</div>
+                </div>
+
+                {/* Stats footer */}
+                <div style={{ display:"flex", padding:"12px 20px", gap:16 }}>
+                  <div style={{ fontSize:11, color:C.muted }}>
+                    <span style={{ fontWeight:800, color:C.primary, fontSize:14 }}>{item.days}</span>{" "}
+                    {lang==="so"?"maalmood":lang==="ar"?"يوماً":lang==="tr"?"gün":lang==="es"?"días":lang==="fr"?"jours":"days"}
+                  </div>
+                  <div style={{ fontSize:11, color:C.muted }}>
+                    <span style={{ fontWeight:800, color:C.secondary, fontSize:14 }}>{item.amount}</span>{" "}
+                    {lang==="so"?"la kala qaybiyay":lang==="ar"?"موزعة":lang==="tr"?"dağıtıldı":lang==="es"?"distribuido":lang==="fr"?"distribué":"distributed"}
+                  </div>
+                  <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:4, fontSize:11, color:"#10B981", fontWeight:700 }}>
+                    <span style={{ width:7, height:7, borderRadius:"50%", background:"#10B981", display:"inline-block" }} />
+                    {lang==="so"?"Xaqiijisan":lang==="ar"?"موثق":lang==="tr"?"Doğrulandı":lang==="es"?"Verificado":lang==="fr"?"Vérifié":"Verified"}
+                  </div>
+                </div>
               </div>
             ))}
+          </div>
+
+          <div style={{ textAlign:"center", marginTop:40 }}>
+            <Link to="/cases" className="kf-btn kf-btn-navy"
+              style={{ padding:"13px 32px", borderRadius:12, fontWeight:700, fontSize:14 }}>
+              {P.cases_viewall}
+            </Link>
           </div>
         </div>
       </section>

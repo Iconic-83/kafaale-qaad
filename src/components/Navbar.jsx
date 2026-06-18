@@ -36,14 +36,14 @@ export default function Navbar() {
   }, []);
 
   const links = [
-    { to: "/",            label: t("navHome")           },
-    { to: "/about",       label: t("navAbout")          },
-    { to: "/how-it-works",label: t("navHowItWorks")     },
-    { to: "/cases",       label: `🌍 ${t("navCases")}`  },
-    { to: "/donate",      label: `❤️ ${t("navDonate")}` },
-    { to: "/contact",     label: t("navContact")        },
-    { to: "/partners",   label: `🤝 Partners`          },
-    { to: "/programs",   label: `🌱 Programs`          },
+    { to: "/",            label: t("navHome")       },
+    { to: "/about",       label: t("navAbout")      },
+    { to: "/how-it-works",label: t("navHowItWorks") },
+    { to: "/cases",       label: t("navCases")      },
+    { to: "/donate",      label: t("navDonate")     },
+    { to: "/contact",     label: t("navContact")    },
+    { to: "/partners",    label: "Partners"         },
+    { to: "/programs",    label: "Programs"         },
   ];
 
   const isActive = (path) => path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
