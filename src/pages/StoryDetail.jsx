@@ -129,6 +129,16 @@ const STATIC_ALL = [
     daysToDeliver:null, amountDistributed:"$380,000+", beneficiaries:1800,
     tags:["milestone","platform"],
   },
+  {
+    id:"st6", category:"Partnership", date:"2026-02-18", location:"Mogadishu", icon:"🤝",
+    title:"New Partnership with Regional Health Ministry",
+    lead:"A formal agreement with the Regional Health Ministry now enables Kafaala Qaad field agents to coordinate directly with clinics, cutting verification time from 14 days to under 5.",
+    challenge:"Medical case verification had been a bottleneck. Field agents had to independently confirm diagnoses and treatment availability — a process that could take two weeks in remote areas.",
+    response:"A memorandum of understanding was signed with the Regional Health Ministry. Field agents now have direct access to clinic records and can fast-track referrals for verified medical cases.",
+    outcome:"Medical case verification time dropped from an average of 14 days to under 5. The first 20 cases processed under the new agreement were closed within 4 days on average.",
+    daysToDeliver:null, amountDistributed:null, beneficiaries:null,
+    tags:["partnership","health","ministry"],
+  },
 ];
 
 function readingTime(story) {

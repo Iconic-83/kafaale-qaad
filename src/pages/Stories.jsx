@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext.jsx";
 import { useResponsive } from "../hooks/useResponsive.js";
 
@@ -256,111 +256,7 @@ const fmt = (d) => {
   catch { return d; }
 };
 
-function StoryModal({ story, onClose, navigate }) {
-  if (!story) return null;
-  const cs = catStyle(story.category);
-  const handleShare = () => {
-    const url = window.location.origin + "/stories";
-    if (navigator.share) {
-      navigator.share({ title: story.title, text: story.excerpt, url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url).then(() => alert("Link copied to clipboard!")).catch(() => {});
-    }
-  };
-
-  return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ background:"#fff", borderRadius:20, maxWidth:740, width:"100%", maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
-        {/* Modal header */}
-        <div style={{ padding:"24px 28px 0", display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
-          <div style={{ flex:1 }}>
-            <span style={{ background:cs.bg, color:cs.text, borderRadius:20, padding:"4px 12px", fontSize:12, fontWeight:700 }}>{story.category}</span>
-            {story.date && <span style={{ fontSize:12, color:C.muted, marginLeft:10 }}>{fmt(story.date)}</span>}
-            {story.location && <span style={{ fontSize:12, color:C.muted }}> · 📍 {story.location}</span>}
-          </div>
-          <button onClick={onClose} style={{ background:"#F3F4F6", border:"none", borderRadius:"50%", width:34, height:34, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>×</button>
-        </div>
-
-        <div style={{ padding:"16px 28px 28px" }}>
-          <h2 style={{ fontSize:22, fontWeight:900, color:C.text, margin:"12px 0 16px", lineHeight:1.3 }}>{story.title}</h2>
-          <p style={{ fontSize:15, color:C.muted, lineHeight:1.75, marginBottom:20 }}>{story.excerpt}</p>
-
-          {/* Before / After panels — only if both descriptions exist */}
-          {(story.beforeDesc || story.afterDesc) && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:0, borderRadius:14, overflow:"hidden", marginBottom:20, border:`1px solid ${C.border}` }}>
-              {[
-                { side:"Before", img:story.beforeImg, desc:story.beforeDesc, bg:"linear-gradient(135deg,#6B7280,#9CA3AF)", badge:"rgba(0,0,0,0.6)", emoji:"😔" },
-                { side:"After",  img:story.afterImg,  desc:story.afterDesc,  bg:"linear-gradient(135deg,#059669,#10B981)",  badge:"rgba(5,150,105,0.9)", emoji:"😊" },
-              ].map((p, pi) => (
-                <div key={pi} style={{ borderRight: pi===0 ? `1px solid ${C.border}` : "none" }}>
-                  <div style={{ position:"relative" }}>
-                    {p.img
-                      ? <img src={p.img} alt={p.side} style={{ width:"100%", height:180, objectFit:"cover", display:"block" }} />
-                      : <div style={{ height:180, background:p.bg, display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{ fontSize:48, opacity:0.6 }}>{p.emoji}</span></div>
-                    }
-                    <div style={{ position:"absolute", top:8, left:8, background:p.badge, color:"#fff", borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:800 }}>{p.side}</div>
-                  </div>
-                  {p.desc && <div style={{ padding:"12px 14px", fontSize:13, color:pi===0?C.muted:C.secondary, fontWeight:pi===0?400:600, lineHeight:1.6 }}>{p.desc}</div>}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Stats row */}
-          {(story.daysToDeliver || story.amountDistributed) && (
-            <div style={{ display:"flex", gap:20, background:C.bg, borderRadius:12, padding:"14px 18px", marginBottom:20 }}>
-              {story.daysToDeliver && (
-                <div>
-                  <div style={{ fontSize:22, fontWeight:900, color:C.primary }}>{story.daysToDeliver}</div>
-                  <div style={{ fontSize:11, color:C.muted }}>days to deliver</div>
-                </div>
-              )}
-              {story.amountDistributed && (
-                <div>
-                  <div style={{ fontSize:22, fontWeight:900, color:C.secondary }}>{story.amountDistributed}</div>
-                  <div style={{ fontSize:11, color:C.muted }}>distributed</div>
-                </div>
-              )}
-              <div style={{ marginLeft:"auto", display:"flex", alignItems:"center", gap:6 }}>
-                <span style={{ width:8, height:8, borderRadius:"50%", background:"#10B981", display:"inline-block" }} />
-                <span style={{ fontSize:12, color:"#10B981", fontWeight:700 }}>Verified & Delivered</span>
-              </div>
-            </div>
-          )}
-
-          {/* Tags */}
-          {story.tags?.length > 0 && (
-            <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:20 }}>
-              {story.tags.map(tag => (
-                <span key={tag} style={{ background:"#F3F4F6", color:C.muted, borderRadius:20, padding:"3px 12px", fontSize:12 }}>#{tag}</span>
-              ))}
-            </div>
-          )}
-
-          {/* Action buttons */}
-          <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
-            <button onClick={handleShare}
-              style={{ padding:"11px 22px", background:C.primary, color:"#fff", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:7 }}>
-              🔗 Share This Story
-            </button>
-            <button onClick={() => { navigate("/donate"); onClose(); }}
-              style={{ padding:"11px 22px", background:C.gold, color:"#fff", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-              ❤️ Sponsor a Case
-            </button>
-            <button onClick={() => { navigate("/cases"); onClose(); }}
-              style={{ padding:"11px 22px", background:"none", color:C.primary, border:`1.5px solid ${C.primary}`, borderRadius:10, fontSize:13, fontWeight:600, cursor:"pointer" }}>
-              View All Cases
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function Stories() {
-  const navigate = useNavigate();
   const { lang } = useLang();
   const { isMobile, isTablet } = useResponsive();
 
@@ -394,7 +290,6 @@ export default function Stories() {
   const CATEGORIES = ["All", ...Array.from(new Set(allStories.map(s => s.category)))];
   const [activeCat, setActiveCat] = useState("All");
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState(null);
 
   const displayed = allStories.filter(s => {
     const matchCat = activeCat === "All" || s.category === activeCat;
@@ -571,8 +466,6 @@ export default function Stories() {
         </div>
       </section>
 
-      {/* Full story modal */}
-      {selected && <StoryModal story={selected} onClose={() => setSelected(null)} navigate={navigate} />}
     </>
   );
 }
