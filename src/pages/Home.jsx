@@ -82,7 +82,7 @@ export default function Home() {
   /* ─── Shared style atoms ──────────────────────────────────────────────── */
   const pad  = isMobile ? "0 20px" : "0 32px";
   const wrap = { maxWidth: 1280, margin: "0 auto", padding: pad };
-  const sec  = (bg, py=80) => ({ background: bg, padding: isMobile ? `${py*.75}px 0` : `${py}px 0` });
+  const sec  = (bg, py=56) => ({ background: bg, padding: isMobile ? `${py*.75}px 0` : `${py}px 0` });
 
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: C.text }}>
@@ -507,13 +507,13 @@ export default function Home() {
       </section>
 
       {/* ══════════════════════════ CTA BANNER — real photo background ═════ */}
-      <section style={{ position:"relative", overflow:"hidden", minHeight: isMobile?400:520, display:"flex", alignItems:"center" }}>
+      <section style={{ position:"relative", overflow:"hidden", minHeight: isMobile?300:380, display:"flex", alignItems:"center" }}>
         {/* Real photo bg */}
         <div style={{ position:"absolute", inset:0, backgroundImage:"url('https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1400&q=80')", backgroundSize:"cover", backgroundPosition:"center 40%" }} />
         <div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg, rgba(0,38,81,0.82) 0%, rgba(0,75,150,0.72) 50%, rgba(75,125,25,0.65) 100%)` }} />
         <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize:"36px 36px" }} />
 
-        <div style={{ position:"relative", zIndex:2, width:"100%", padding: isMobile?"64px 20px":"96px 32px", textAlign:"center", color:"#fff" }}>
+        <div style={{ position:"relative", zIndex:2, width:"100%", padding: isMobile?"44px 20px":"56px 32px", textAlign:"center", color:"#fff" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <span style={{ display:"inline-block", background:"rgba(224,171,33,0.2)", border:"1px solid rgba(224,171,33,0.5)", color:C.gold, borderRadius:20, padding:"6px 18px", fontSize:12, fontWeight:800, letterSpacing:1, textTransform:"uppercase", marginBottom:24 }}>MAKE AN IMPACT</span>
             <h2 style={{ fontSize:"clamp(28px,4vw,50px)", fontWeight:900, margin:"0 0 18px", lineHeight:1.1, letterSpacing:-1 }}>{P.cta_title}</h2>

@@ -132,7 +132,7 @@ export default function About() {
       <style>{`@media(max-width:768px){.about-mission-grid{grid-template-columns:1fr !important;}}`}</style>
 
       {/* ── Why Kafaale Qaad Exists ── */}
-      <section style={{ padding:"80px 24px", background:C.bg }}>
+      <section style={{ padding:"56px 24px", background:C.bg }}>
         <div style={{ maxWidth:1200, margin:"0 auto" }}>
           <div style={{ textAlign:"center", marginBottom:56 }}>
             <span className="kf-badge" style={{ background:"#FEE2E2", color:"#991B1B", marginBottom:12 }}>{P.prob_badge}</span>
@@ -173,7 +173,7 @@ export default function About() {
       </section>
 
       {/* ── Core Values — centered ── */}
-      <section style={{ padding:"80px 24px", background:"#fff" }}>
+      <section style={{ padding:"56px 24px", background:"#fff" }}>
         <div style={{ maxWidth:1200, margin:"0 auto" }}>
           <div style={{ textAlign:"center", marginBottom:52 }}>
             <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>{P.values_title}</h2>
@@ -205,7 +205,7 @@ export default function About() {
       </section>
 
       {/* ── Impact Numbers (replaces Roadmap) ── */}
-      <section style={{ padding:"80px 24px", background:`linear-gradient(135deg, ${C.navy} 0%, #0f3460 60%, ${C.secondary}99 100%)`, color:"#fff" }}>
+      <section style={{ padding:"56px 24px", background:`linear-gradient(135deg, ${C.navy} 0%, #0f3460 60%, ${C.secondary}99 100%)`, color:"#fff" }}>
         <div style={{ maxWidth:1000, margin:"0 auto", textAlign:"center" }}>
           <span className="kf-badge" style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.22)", color:"#fff", marginBottom:18 }}>OUR IMPACT</span>
           <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 12px", letterSpacing:-0.5 }}>Aid That Moves at the Speed of Need</h2>
@@ -226,7 +226,7 @@ export default function About() {
 
       {/* ── Team ── */}
       {teamVisible && (
-        <section style={{ padding:"80px 24px", background:"#fff" }}>
+        <section style={{ padding:"56px 24px", background:"#fff" }}>
           <div style={{ maxWidth:1200, margin:"0 auto" }}>
             <div style={{ textAlign:"center", marginBottom:52 }}>
               <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>{P.team_title}</h2>
@@ -285,7 +285,7 @@ export default function About() {
         }
         .kf-about-slide { position:absolute; inset:0; background-size:cover; background-position:center; animation-duration:24s; animation-timing-function:ease-in-out; animation-iteration-count:infinite; }
       `}</style>
-      <section style={{ position:"relative", overflow:"hidden", padding:"100px 24px", textAlign:"center", color:"#fff", minHeight:480, display:"flex", alignItems:"center", background:"#001A40" }}>
+      <section style={{ position:"relative", overflow:"hidden", padding:"64px 24px", textAlign:"center", color:"#fff", minHeight:360, display:"flex", alignItems:"center", background:"#001A40" }}>
         {/* Cinematic slideshow */}
         <div className="kf-about-slide" style={{ backgroundImage:"url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=1400&q=80')", animationName:"kfAboutSlide1" }} />
         <div className="kf-about-slide" style={{ backgroundImage:"url('https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1400&q=80')", animationName:"kfAboutSlide2" }} />
