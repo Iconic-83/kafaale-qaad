@@ -1,7 +1,19 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { auth as authApi, setAuth, clearAuth, getUser, getToken } from '../api/client';
+import { createContext, useContext, useState } from 'react';
+import { auth as authApi, setAuth, clearAuth, getUser } from '../api/client';
 
 const AuthContext = createContext(null);
+
+// Demo-mode accounts — used when the backend is unreachable
+const DEMO_ACCOUNTS = {
+  'superadmin@kafaale.org': { id: 'demo-superadmin', name: 'Super Admin',      role: 'super_admin',     email: 'superadmin@kafaale.org' },
+  'admin@kafaale.org':      { id: 'demo-admin',      name: 'Ahmed Kafaale',    role: 'admin',           email: 'admin@kafaale.org' },
+  'agent@kafaale.org':      { id: 'demo-agent',      name: 'Abdi Yusuf',       role: 'field_agent',     email: 'agent@kafaale.org' },
+  'donor@kafaale.org':      { id: 'demo-donor',      name: 'Fatima Al-Thani',  role: 'donor',           email: 'donor@kafaale.org' },
+  'reporter@kafaale.org':   { id: 'demo-reporter',   name: 'Hodan Farah',      role: 'reporter',        email: 'reporter@kafaale.org' },
+  'programs@kafaale.org':   { id: 'demo-programs',   name: 'Sahra Programs',   role: 'program_manager', email: 'programs@kafaale.org' },
+};
+const DEMO_PASSWORD = 'Kafaale123!';
+const DEMO_TOKEN = 'demo-token-kafaale-qaad';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(getUser());
@@ -16,6 +28,15 @@ export function AuthProvider({ children }) {
         setUser(data.user);
       }
       return data;
+    } catch (err) {
+      // Backend unreachable — fall back to demo accounts
+      const demo = DEMO_ACCOUNTS[email.toLowerCase()];
+      if (demo && password === DEMO_PASSWORD) {
+        setAuth(demo, DEMO_TOKEN);
+        setUser(demo);
+        return { user: demo, token: DEMO_TOKEN };
+      }
+      throw err;
     } finally {
       setLoading(false);
     }

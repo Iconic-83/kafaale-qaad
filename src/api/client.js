@@ -10,9 +10,15 @@ export const setAuth  = (user, token) => { localStorage.setItem('kf_token', toke
 export const clearAuth = () => { localStorage.removeItem('kf_token'); localStorage.removeItem('kf_user'); };
 export const isLoggedIn = () => !!getToken();
 
+const DEMO_TOKEN = 'demo-token-kafaale-qaad';
+
 // ── Core fetch wrapper ────────────────────────────────────────────
 async function req(path, opts = {}) {
   const token = getToken();
+  // Demo mode — skip real API calls, return empty success shapes
+  if (token === DEMO_TOKEN) {
+    return demoFallback(path, opts);
+  }
   const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(opts.headers || {}) };
   const res = await fetch(`${API}${path}`, { ...opts, headers });
   if (res.status === 401) {
@@ -22,6 +28,23 @@ async function req(path, opts = {}) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
   return data;
+}
+
+// Demo fallback — returns plausible empty shapes for every endpoint
+function demoFallback(path, opts = {}) {
+  const method = (opts.method || 'GET').toUpperCase();
+  if (path.startsWith('/auth/me'))     return Promise.resolve(getUser());
+  if (path.startsWith('/auth/logout')) return Promise.resolve({});
+  if (path.startsWith('/auth/refresh'))return Promise.resolve({ token: DEMO_TOKEN });
+  if (path.startsWith('/cases'))       return Promise.resolve({ cases: [], total: 0, page: 1, pages: 1 });
+  if (path.startsWith('/admin/stats')) return Promise.resolve({ totalCases: 0, pendingReview: 0, published: 0, totalRaised: 0, totalDonations: 0, activeAgents: 0 });
+  if (path.startsWith('/admin'))       return Promise.resolve({ success: true, items: [], data: [], cases: [], users: [], donations: [] });
+  if (path.startsWith('/donations'))   return Promise.resolve({ donations: [], total: 0 });
+  if (path.startsWith('/programs'))    return Promise.resolve({ programs: [], beneficiaries: [] });
+  if (path.startsWith('/notifications'))return Promise.resolve({ notifications: [], unread: 0 });
+  if (method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE')
+    return Promise.resolve({ success: true, message: 'Demo mode — changes are local only' });
+  return Promise.resolve({});
 }
 
 // ── Auth endpoints ────────────────────────────────────────────────
