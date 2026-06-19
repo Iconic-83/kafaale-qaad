@@ -16,10 +16,9 @@ export const ALL_ROLES = [
 ] as const;
 export type AppRole = typeof ALL_ROLES[number];
 
-// Roles that require admin approval before accessing the system
-const APPROVAL_REQUIRED_ROLES = new Set([
-  'field_agent','office_staff','program_manager','project_manager','partner',
-]);
+// Roles where registration is open (immediate access)
+const OPEN_ROLES = new Set(['reporter','donor','sponsor']);
+// All other roles require admin to set isActive=true before they can login
 
 const RegisterSchema = z.object({
   name:              z.string().min(2).max(100),
@@ -59,7 +58,7 @@ router.post('/register', async (req: Request, res: Response) => {
     const existing = await prisma.user.findUnique({ where: { email: data.email } });
     if (existing) return res.status(409).json({ error: 'Email already registered' });
 
-    const requiresApproval = APPROVAL_REQUIRED_ROLES.has(data.role);
+    const isOpenRole = OPEN_ROLES.has(data.role);
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
     const user = await prisma.user.create({
@@ -67,22 +66,22 @@ router.post('/register', async (req: Request, res: Response) => {
         name: data.name, email: data.email, password: hashedPassword, role: data.role,
         phone: data.phone, country: data.country, city: data.city,
         organization: data.organization, preferredLanguage: data.preferredLanguage,
-        isApproved: !requiresApproval,
+        isActive: isOpenRole, // reporters/donors get immediate access; others wait for admin
       },
       select: {
         id: true, name: true, email: true, role: true,
-        preferredLanguage: true, isApproved: true,
+        preferredLanguage: true, isActive: true,
       },
     });
 
-    // For approved roles, issue a JWT immediately
-    if (!requiresApproval) {
+    // Open roles (reporter, donor) → issue JWT immediately
+    if (isOpenRole) {
       const token = jwt.sign({ id: user.id, role: user.role, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '7d' });
       sysLog.info(`✅ New user registered: ${user.email} [${user.role}]`);
       return res.status(201).json({ user, token });
     }
 
-    // Staff/agent: account created but pending approval — no token issued
+    // Staff/agent/field: account created but isActive=false until admin approves
     sysLog.info(`✅ New staff registration (pending approval): ${user.email} [${user.role}]`);
     res.status(201).json({
       user,
@@ -101,16 +100,19 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const data = LoginSchema.parse(req.body);
     const user = await prisma.user.findUnique({ where: { email: data.email } });
-    if (!user || !user.isActive) return res.status(401).json({ error: 'Invalid credentials or account suspended' });
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
     const valid = await bcrypt.compare(data.password, user.password);
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // Staff/agent account awaiting admin approval
-    if (!user.isApproved) {
+    // isActive=false means account is pending admin approval or has been suspended
+    if (!user.isActive) {
+      const isOpenRole = OPEN_ROLES.has(user.role);
       return res.status(403).json({
-        error: 'Your account is pending admin approval. You will be notified when access is granted.',
-        code: 'PENDING_APPROVAL',
+        error: isOpenRole
+          ? 'Your account has been suspended. Contact support.'
+          : 'Your account is pending admin approval. You will be notified when access is granted.',
+        code: isOpenRole ? 'ACCOUNT_SUSPENDED' : 'PENDING_APPROVAL',
         role: user.role,
       });
     }
@@ -122,7 +124,7 @@ router.post('/login', async (req: Request, res: Response) => {
     res.json({
       user: {
         id: user.id, name: user.name, email: user.email, role: user.role,
-        preferredLanguage: user.preferredLanguage, isApproved: user.isApproved,
+        preferredLanguage: user.preferredLanguage,
       },
       token,
     });
@@ -150,7 +152,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
       select: {
         id: true, name: true, email: true, phone: true, role: true,
         country: true, city: true, organization: true, preferredLanguage: true,
-        isApproved: true, createdAt: true, lastLoginAt: true,
+        isActive: true, createdAt: true, lastLoginAt: true,
         _count: { select: { reportedCases: true, donations: true } },
       },
     });
@@ -232,7 +234,7 @@ router.post('/verify-otp', async (req: Request, res: Response) => {
     await prisma.otpRecord.update({ where: { id: record.id }, data: { used: true } });
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, name: true, email: true, role: true, isApproved: true },
+      select: { id: true, name: true, email: true, role: true, isActive: true },
     });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -311,12 +313,10 @@ router.get('/approval-status', async (req: Request, res: Response) => {
     if (!email) return res.status(400).json({ error: 'email required' });
     const user = await prisma.user.findUnique({
       where:  { email },
-      select: { isApproved: true, isActive: true, role: true },
+      select: { isActive: true, role: true },
     });
-    // Intentionally vague — don't confirm whether the email exists to prevent enumeration
     if (!user) return res.json({ status: 'pending' });
-    if (!user.isActive)   return res.json({ status: 'rejected' });
-    if (!user.isApproved) return res.json({ status: 'pending'  });
+    if (!user.isActive) return res.json({ status: 'pending' });
     return res.json({ status: 'approved', role: user.role });
   } catch { res.status(500).json({ error: 'Failed to check status' }); }
 });
@@ -326,10 +326,9 @@ router.post('/refresh', authenticate, async (req: AuthRequest, res: Response) =>
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
-      select: { id: true, role: true, email: true, isActive: true, isApproved: true },
+      select: { id: true, role: true, email: true, isActive: true },
     });
-    if (!user || !user.isActive)    return res.status(401).json({ error: 'Account is no longer active' });
-    if (!user.isApproved)           return res.status(401).json({ error: 'Account pending approval' });
+    if (!user || !user.isActive) return res.status(401).json({ error: 'Account is inactive or pending approval' });
 
     // Blacklist the old token so it cannot be reused
     const oldToken = req.headers.authorization?.split(' ')[1];

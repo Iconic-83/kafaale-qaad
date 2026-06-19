@@ -181,14 +181,14 @@ router.get('/users', async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.query as Record<string, string>;
     const where: any = {};
-    if (status === 'pending') where.isApproved = false;
+    if (status === 'pending') where.isActive = false;
     const users = await prisma.user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, name: true, email: true, role: true, phone: true,
         country: true, city: true, organization: true,
-        isActive: true, isApproved: true, createdAt: true, lastLoginAt: true,
+        isActive: true, createdAt: true, lastLoginAt: true,
         _count: { select: { reportedCases: true, donations: true } },
       },
     });
@@ -202,7 +202,7 @@ router.patch('/users/:id/approve', async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data:  { isApproved: true },
+      data:  { isActive: true },
       select: { id: true, name: true, email: true, role: true },
     });
     await prisma.notification.create({
@@ -225,7 +225,7 @@ router.patch('/users/:id/reject', async (req: AuthRequest, res: Response) => {
     const { reason } = req.body;
     const user = await prisma.user.update({
       where: { id: req.params.id },
-      data:  { isApproved: false, isActive: false },
+      data:  { isActive: false },
       select: { id: true, name: true, email: true, role: true },
     });
     sysLog.info(`Admin ${req.user!.email} rejected user ${user.email} [${user.role}] — reason: ${reason || 'not provided'}`);
@@ -426,7 +426,6 @@ router.delete('/users/:id', async (req: AuthRequest, res: Response) => {
       where: { id },
       data: {
         isActive:      false,
-        isApproved:    false,
         name:          '[Deleted User]',
         email:         anonEmail,
         phone:         null,
@@ -700,7 +699,7 @@ router.post('/bulk-import', async (req: AuthRequest, res: Response) => {
 router.get('/field-agents', async (_req: AuthRequest, res: Response) => {
   try {
     const agents = await prisma.user.findMany({
-      where: { role: 'field_agent', isActive: true, isApproved: true },
+      where: { role: 'field_agent', isActive: true },
       select: { id: true, name: true, email: true, phone: true, city: true, organization: true, createdAt: true,
         _count: { select: { assignedCases: true } } },
       orderBy: { name: 'asc' },

@@ -143,11 +143,26 @@ export default function Login() {
 
             {tab === 'register' && (
               <>
-                <select value={form.role} onChange={e => set('role', e.target.value)}
-                  style={{ width:'100%', padding:'12px 16px', border:`1.5px solid ${C.border}`, borderRadius:10, fontSize:15, background:'#fff', color:C.text, outline:'none' }}>
-                  <option value="reporter">{t('roleReporter')}</option>
-                  <option value="donor">{t('roleDonor')}</option>
-                </select>
+                <div>
+                  <select value={form.role} onChange={e => set('role', e.target.value)}
+                    style={{ width:'100%', padding:'12px 16px', border:`1.5px solid ${C.border}`, borderRadius:10, fontSize:15, background:'#fff', color:C.text, outline:'none', boxSizing:'border-box' }}>
+                    <optgroup label="Immediate Access">
+                      <option value="reporter">📝 Community Reporter — submit cases</option>
+                      <option value="donor">❤️ Donor / Sponsor — fund verified cases</option>
+                    </optgroup>
+                    <optgroup label="Requires Admin Approval">
+                      <option value="field_agent">🗺️ Field Agent — verify on the ground</option>
+                      <option value="office_staff">🏛️ Office Staff — verification team</option>
+                      <option value="program_manager">🌱 Program Manager — child programs</option>
+                      <option value="partner">🤝 Partner Organisation</option>
+                    </optgroup>
+                  </select>
+                  {['field_agent','office_staff','program_manager','partner'].includes(form.role) && (
+                    <div style={{ marginTop:6, padding:'8px 12px', background:'#FEF3C7', borderRadius:8, fontSize:12, color:'#92400E', display:'flex', gap:6 }}>
+                      ⏳ This role requires admin approval. You will receive access within 24 hours.
+                    </div>
+                  )}
+                </div>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
                   {inp('country', t('country'))}
                   {inp('city',    t('city'))}
