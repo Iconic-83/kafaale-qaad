@@ -149,7 +149,6 @@ export default function HowItWorks() {
       <section style={{ padding:"80px 24px", background:C.bg }}>
         <div style={{ maxWidth:1280, margin:"0 auto" }}>
           <div style={{ textAlign:"center", marginBottom:56 }}>
-            <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 12px", letterSpacing:-0.5 }}>The 8-Step Verified Workflow</h2>
             <p style={{ fontSize:16, color:C.muted, maxWidth:520, margin:"0 auto" }}>Every case follows the same transparent, AI-assisted journey — no shortcuts, no exceptions.</p>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:24 }}>
@@ -211,30 +210,6 @@ export default function HowItWorks() {
                     <span style={{ fontSize:11, color:s.color, fontWeight:700 }}>{activeStep===s.n ? "Show less ↑" : "Details ↓"}</span>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Who Does What ── */}
-      <section style={{ padding:"80px 24px", background:"#fff" }}>
-        <div style={{ maxWidth:1280, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:48 }}>
-            <h2 style={{ fontSize:"clamp(26px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px" }}>{P.who_title}</h2>
-            <p style={{ fontSize:16, color:C.muted }}>{P.who_sub}</p>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:18 }}>
-            {ROLES_FLOW.map(r => (
-              <div key={r.role} style={{ background:C.bg, borderRadius:18, padding:"24px 18px", textAlign:"center", border:`1px solid ${C.border}`, boxShadow:"0 2px 8px rgba(0,0,0,.04)" }}>
-                <div style={{ width:60, height:60, borderRadius:16, background:`linear-gradient(135deg,${r.color}20,${r.color}40)`, margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, boxShadow:`0 4px 14px ${r.color}30` }}>{r.icon}</div>
-                <div style={{ fontSize:14, fontWeight:800, color:r.color, marginBottom:8 }}>{r.role}</div>
-                <div style={{ display:"flex", gap:6, justifyContent:"center", flexWrap:"wrap", marginBottom:10 }}>
-                  {r.steps.map(n => (
-                    <span key={n} style={{ background:r.color+"20", color:r.color, borderRadius:"50%", width:26, height:26, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900 }}>{n}</span>
-                  ))}
-                </div>
-                <div style={{ fontSize:12, color:C.muted, lineHeight:1.5 }}>{r.desc}</div>
               </div>
             ))}
           </div>

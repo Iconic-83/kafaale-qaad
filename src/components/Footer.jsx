@@ -1,9 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo.jsx";
 import { useLang } from "../context/LanguageContext.jsx";
 import { PT } from "../translations.js";
 import { useResponsive } from "../hooks/useResponsive.js";
+
+function loadPageVis() {
+  try { return JSON.parse(localStorage.getItem("kf_page_settings") || "{}"); }
+  catch { return {}; }
+}
 
 const B = {
   navy:   "#002651",
@@ -18,6 +23,15 @@ export default function Footer() {
   const P = PT.footer[lang] || PT.footer.en;
   const { isMobile, isTablet } = useResponsive();
   const [logoHover, setLogoHover] = useState(false);
+  const [pageVis, setPageVis] = useState(loadPageVis);
+
+  useEffect(() => {
+    const fn = () => setPageVis(loadPageVis());
+    window.addEventListener("storage", fn);
+    return () => window.removeEventListener("storage", fn);
+  }, []);
+
+  const show = (key) => pageVis[key] !== false;
 
   const gridCols = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "2fr 1fr 1fr";
 
@@ -70,18 +84,19 @@ export default function Footer() {
               {P.platform}
             </div>
             {[
-              [P.link_home,   "/"],
-              [P.link_about,  "/about"],
-              [P.link_how,    "/how-it-works"],
-              [P.link_cases,  "/cases"],
-              ["Programs",    "/programs"],
-              ["Stories",     "/stories"],
-              [P.link_donate, "/donate"],
-              ["Partners",    "/partners"],
-              ["Volunteer",   "/volunteer"],
-              ["FAQ",         "/faq"],
-              ["Transparency","/transparency"],
-            ].map(([label, to]) => (
+              [P.link_home,    "/",              true          ],
+              [P.link_about,   "/about",         show("about") ],
+              [P.link_how,     "/how-it-works",  show("howItWorks")],
+              [P.link_cases,   "/cases",         show("cases") ],
+              ["Programs",     "/programs",      show("programs")],
+              ["Stories",      "/stories",       show("stories")],
+              [P.link_donate,  "/donate",        show("donate")],
+              ["Partners",     "/partners",      show("partners")],
+              ["Volunteer",    "/volunteer",     show("volunteer")],
+              ["FAQ",          "/faq",           show("faq")   ],
+              ["Transparency", "/transparency",  show("transparency")],
+              ["Updates",      "/updates",       show("updates")],
+            ].filter(([,,vis]) => vis).map(([label, to]) => (
               <div key={to} style={{ marginBottom: 12 }}>
                 <Link to={to} style={{
                   color: "rgba(255,255,255,0.7)", textDecoration: "none",

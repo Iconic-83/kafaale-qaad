@@ -71,16 +71,19 @@ export default function About() {
   ];
 
   const PROBLEMS = [
-    { icon:"🚨", svgPath:"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z", polyPoints:"12 9 12 13", circleX:"12", circleY:"17",
+    { icon:"🚨",
       title:"Fraud & Duplicates", color:"#C0392B", bg:"#FEF2F2",
+      img:"https://images.unsplash.com/photo-1614107707982-51ac42f4fcdb?w=600&q=75",
       desc:"Fake cases and duplicate applications drain aid budgets. Without verification, resources go to the wrong people.",
       solution:"Multi-layer AI verification flags duplicates before a single dollar leaves the donor." },
-    { icon:"🌫️", svgPath:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z",
+    { icon:"🌫️",
       title:"No Transparency", color:"#D97706", bg:"#FFFBEB",
+      img:"https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=600&q=75",
       desc:"Donors have no way to verify their money reached beneficiaries. Trust erodes, donations decline.",
       solution:"GPS-tagged proof of delivery and immutable audit logs give donors real-time visibility." },
-    { icon:"🐢", svgPath:"M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z",
+    { icon:"🐢",
       title:"Slow Manual Processes", color:"#7C3AED", bg:"#F5F3FF",
+      img:"https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=600&q=75",
       desc:"Paper-based systems slow down aid delivery. Cases sit in queues for weeks unnecessarily.",
       solution:"8-step digital workflow cuts case-to-delivery time from weeks to days." },
   ];
@@ -99,20 +102,34 @@ export default function About() {
         </div>
       </section>
 
-      {/* ── Mission — centered, no boxes ── */}
-      <section style={{ padding:"100px 24px", background:"#fff", textAlign:"center" }}>
-        <div style={{ maxWidth:820, margin:"0 auto" }}>
-          <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary, marginBottom:20 }}>{P.mission_badge}</span>
-          <hr className="kf-rule-center" />
-          <h2 style={{ fontSize:"clamp(26px,4vw,48px)", fontWeight:900, margin:"0 0 12px", lineHeight:1.1, letterSpacing:-1 }}>
-            {P.mission_title}
-          </h2>
-          <p style={{ fontSize:"clamp(17px,2vw,22px)", fontStyle:"italic", color:C.muted, lineHeight:1.85, margin:"0 0 24px", fontWeight:300 }}>
-            "{P.mission_p1}"
-          </p>
-          <p style={{ fontSize:16, color:C.muted, lineHeight:1.8, maxWidth:640, margin:"0 auto" }}>{P.mission_p2}</p>
+      {/* ── Mission — centered with real photo ── */}
+      <section style={{ padding:"0", background:"#fff", overflow:"hidden" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", minHeight:480 }}>
+          {/* Real photo side */}
+          <div style={{ position:"relative", overflow:"hidden", minHeight:320 }}>
+            <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=900&q=80" alt="Aid delivery" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+            <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg, rgba(0,38,81,0.3), rgba(75,125,25,0.25))" }} />
+            <div style={{ position:"absolute", bottom:24, left:24, right:24 }}>
+              <div style={{ background:"rgba(0,0,0,0.55)", backdropFilter:"blur(8px)", borderRadius:12, padding:"12px 18px" }}>
+                <div style={{ color:"rgba(255,255,255,0.9)", fontSize:13, fontWeight:700 }}>📍 Somalia, East Africa</div>
+                <div style={{ color:"rgba(255,255,255,0.6)", fontSize:11, marginTop:2 }}>Field verified · GPS tracked · Delivered</div>
+              </div>
+            </div>
+          </div>
+          {/* Text side */}
+          <div style={{ padding:"72px 48px", display:"flex", flexDirection:"column", justifyContent:"center", background:"#fff" }}>
+            <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary, marginBottom:20, alignSelf:"flex-start" }}>{P.mission_badge}</span>
+            <h2 style={{ fontSize:"clamp(22px,3.5vw,40px)", fontWeight:900, margin:"0 0 16px", lineHeight:1.1, letterSpacing:-0.5 }}>
+              Every dollar, every family — fully accountable
+            </h2>
+            <p style={{ fontSize:"clamp(15px,1.8vw,18px)", fontStyle:"italic", color:C.muted, lineHeight:1.85, margin:"0 0 20px", fontWeight:300 }}>
+              "{P.mission_p1}"
+            </p>
+            <p style={{ fontSize:15, color:C.muted, lineHeight:1.8 }}>{P.mission_p2}</p>
+          </div>
         </div>
       </section>
+      <style>{`@media(max-width:768px){.about-mission-grid{grid-template-columns:1fr !important;}}`}</style>
 
       {/* ── Why Kafaale Qaad Exists ── */}
       <section style={{ padding:"80px 24px", background:C.bg }}>
@@ -127,17 +144,20 @@ export default function About() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", gap:28 }}>
             {PROBLEMS.map((p, i) => (
               <div key={i} style={{ background:"#fff", borderRadius:24, overflow:"hidden", border:`1px solid ${C.border}`, boxShadow:"0 4px 24px rgba(0,0,0,0.06)" }}>
-                {/* Shape header with icon centered */}
-                <div style={{ background:`linear-gradient(135deg, ${p.color}18, ${p.color}08)`, padding:"44px 24px 28px", textAlign:"center", borderBottom:`1px solid ${p.color}20` }}>
-                  <div style={{
-                    width:96, height:96, margin:"0 auto 20px",
-                    background:`linear-gradient(135deg, ${p.color}22, ${p.color}44)`,
-                    border:`2px solid ${p.color}40`,
-                    borderRadius:"30% 70% 70% 30% / 30% 30% 70% 70%",
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:42, boxShadow:`0 8px 24px ${p.color}25`,
-                  }}>{p.icon}</div>
-                  <h3 style={{ fontSize:20, fontWeight:900, color:p.color, margin:"0 0 8px" }}>{p.title}</h3>
+                {/* Real photo header with icon overlay */}
+                <div style={{ position:"relative", height:200, overflow:"hidden" }}>
+                  <img src={p.img} alt={p.title} loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                  <div style={{ position:"absolute", inset:0, background:`linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.65) 100%)` }} />
+                  <div style={{ position:"absolute", bottom:18, left:0, right:0, textAlign:"center" }}>
+                    <div style={{
+                      width:72, height:72, margin:"0 auto 12px",
+                      background:`linear-gradient(135deg, ${p.color}cc, ${p.color})`,
+                      borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:32, boxShadow:`0 8px 24px rgba(0,0,0,0.4)`,
+                      border:"3px solid rgba(255,255,255,0.3)",
+                    }}>{p.icon}</div>
+                    <h3 style={{ fontSize:20, fontWeight:900, color:"#fff", margin:0, textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>{p.title}</h3>
+                  </div>
                 </div>
                 {/* Body */}
                 <div style={{ padding:"22px 26px 28px", textAlign:"center" }}>

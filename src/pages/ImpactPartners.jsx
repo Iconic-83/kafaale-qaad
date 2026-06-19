@@ -1,709 +1,409 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useLang } from "../context/LanguageContext.jsx";
-import { useResponsive } from "../hooks/useResponsive.js";
-import { partners as partnersApi } from "../api/client.js";
 
-const B = {
-  navy:   "#002651",
-  blue:   "#004B96",
-  green:  "#4B7D19",
-  gold:   "#E0AB21",
-  bg:     "#F4F7FC",
-  border: "#D8E4F0",
-  text:   "#0D1F3C",
-  muted:  "#5A6E8A",
+const C = { navy:"#002651", primary:"#004B96", secondary:"#4B7D19", accent:"#E0AB21", muted:"#5A6E8A", bg:"#F4F7FC", border:"#D8E4F0", text:"#0D1F3C", danger:"#C0392B" };
+
+const PARTNER_REG_KEY = "kf_partner_applications";
+
+const ALL_COUNTRIES = [
+  "Afghanistan","Albania","Algeria","Angola","Argentina","Armenia","Australia","Austria","Azerbaijan",
+  "Bahrain","Bangladesh","Belgium","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Bulgaria",
+  "Cambodia","Cameroon","Canada","Chad","Chile","China","Colombia","Congo (DRC)","Costa Rica","Côte d'Ivoire",
+  "Croatia","Czech Republic","Denmark","Djibouti","Dominican Republic","Ecuador","Egypt","El Salvador",
+  "Ethiopia","Finland","France","Gambia","Georgia","Germany","Ghana","Greece","Guatemala","Guinea",
+  "Haiti","Honduras","Hungary","India","Indonesia","Iran","Iraq","Ireland","Italy","Japan","Jordan",
+  "Kazakhstan","Kenya","Kuwait","Lebanon","Liberia","Libya","Madagascar","Malawi","Malaysia","Mali",
+  "Mauritania","Mexico","Morocco","Mozambique","Myanmar","Nepal","Netherlands","New Zealand","Nicaragua",
+  "Niger","Nigeria","Norway","Oman","Pakistan","Palestine","Panama","Peru","Philippines","Poland",
+  "Portugal","Qatar","Romania","Russia","Rwanda","Saudi Arabia","Senegal","Serbia","Sierra Leone",
+  "Somalia","South Africa","South Sudan","Spain","Sri Lanka","Sudan","Sweden","Switzerland","Syria",
+  "Tanzania","Thailand","Tunisia","Turkey","Uganda","Ukraine","United Arab Emirates","United Kingdom",
+  "United States","Uzbekistan","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe",
+];
+
+const ORG_TYPES = [
+  "International NGO","Local NGO","Government Agency","UN Agency","Religious Organization",
+  "Foundation","Corporate CSR","Academic Institution","Media Organization","Community Group","Other",
+];
+
+const FOCUS_AREAS = [
+  "Emergency Relief","Food Security","Healthcare","Education","Shelter","Water & Sanitation",
+  "Child Protection","Women's Empowerment","Disability Support","Mental Health","Livelihoods",
+  "Disaster Risk Reduction","Refugee Support","Orphan Care","Legal Aid","Other",
+];
+
+const EXISTING_PARTNERS = [
+  { id:1, name:"Al-Khair Foundation",     type:"International NGO",        country:"United Kingdom",   color:"#3B82F6", focus:["Food Aid","Medical","Shelter"],          cases:312, img:"🏛️", verified:true },
+  { id:2, name:"Somali Medical Relief",   type:"Healthcare Organization",  country:"Somalia",          color:"#10B981", focus:["Medical","Emergency Care"],              cases:198, img:"🏥", verified:true },
+  { id:3, name:"Horn of Africa NGO",      type:"Local NGO",                country:"Kenya",            color:"#F59E0B", focus:["Education","Child Protection"],          cases:145, img:"🌍", verified:true },
+  { id:4, name:"Gulf Charity Alliance",   type:"Foundation",               country:"Qatar",            color:"#8B5CF6", focus:["Emergency Relief","Water & Sanitation"], cases:421, img:"🤝", verified:true },
+  { id:5, name:"UK Aid Direct",           type:"Government Agency",        country:"United Kingdom",   color:"#06B6D4", focus:["Livelihoods","Food Security"],           cases:89,  img:"🇬🇧", verified:true },
+  { id:6, name:"Turkish Red Crescent",    type:"International NGO",        country:"Turkey",           color:"#C0392B", focus:["Emergency Relief","Healthcare"],         cases:267, img:"🏅", verified:true },
+];
+
+const BLANK = {
+  orgName:"", type:"", country:"", website:"", regNumber:"", yearFounded:"",
+  contactName:"", contactTitle:"", contactEmail:"", contactPhone:"",
+  focusAreas:[], operatingRegions:"", description:"", annualBudget:"", staffCount:"",
+  hasFieldTeam:false, previousSomalia:false, acceptsTerms:false,
 };
 
-// ── Static Impact Stats ──────────────────────────────────────────────────────
-const STATS = [
-  { icon: "👨‍👩‍👧‍👦", value: "3,840+", label: "Families Helped",        color: B.blue  },
-  { icon: "✅",        value: "5,200+", label: "Verified Deliveries",   color: B.green },
-  { icon: "🌍",        value: "14",     label: "Regions Supported",     color: B.gold  },
-  { icon: "❤️",        value: "280+",   label: "Active Sponsors",       color: "#C0392B" },
-];
-
-// ── Featured Impact Partners ─────────────────────────────────────────────────
-const FEATURED = [
-  {
-    id: 1,
-    avatar: "🏛️",
-    name: "Al-Khair Foundation",
-    type: "International NGO",
-    country: "🇬🇧 United Kingdom",
-    color: "#3B82F6",
-    impact: "Providing emergency food and medical support across East Africa since 2019.",
-    casesSupported: 312,
-    focus: ["Food Aid", "Medical", "Shelter"],
-    verified: true,
-  },
-  {
-    id: 2,
-    avatar: "🏥",
-    name: "Somali Medical Relief",
-    type: "Healthcare Organization",
-    country: "🇸🇴 Somalia",
-    color: "#10B981",
-    impact: "Mobile medical units delivering care to remote communities and displaced families.",
-    casesSupported: 198,
-    focus: ["Medical", "Emergency Care"],
-    verified: true,
-  },
-  {
-    id: 3,
-    avatar: "🌱",
-    name: "Hope Bridge Initiative",
-    type: "Humanitarian Aid Group",
-    country: "🇺🇸 United States",
-    color: "#8B5CF6",
-    impact: "Sponsoring orphan education programs and long-term family resilience projects.",
-    casesSupported: 241,
-    focus: ["Education", "Orphan Support"],
-    verified: true,
-  },
-  {
-    id: 4,
-    avatar: "🤝",
-    name: "Gulf Humanitarian Council",
-    type: "Regional Aid Council",
-    country: "🇦🇪 UAE",
-    color: "#F59E0B",
-    impact: "Coordinating large-scale disaster response and shelter rebuilding efforts.",
-    casesSupported: 175,
-    focus: ["Disaster Relief", "Shelter"],
-    verified: true,
-  },
-  {
-    id: 5,
-    avatar: "📚",
-    name: "Education Without Borders",
-    type: "Education NGO",
-    country: "🇨🇦 Canada",
-    color: "#EC4899",
-    impact: "Funding school supplies, teachers, and learning spaces for conflict-affected children.",
-    casesSupported: 133,
-    focus: ["Education", "Children"],
-    verified: true,
-  },
-  {
-    id: 6,
-    avatar: "⛪",
-    name: "Diakonia Relief Services",
-    type: "Faith-Based Aid Org",
-    country: "🇸🇪 Sweden",
-    color: "#06B6D4",
-    impact: "Long-term partnership for food security and livelihoods in southern Somalia.",
-    casesSupported: 89,
-    focus: ["Food Security", "Livelihoods"],
-    verified: true,
-  },
-];
-
-// ── Community Supporters ──────────────────────────────────────────────────────
-const COMMUNITY = [
-  { avatar: "👤", name: "Anonymous Supporter",   country: "🌍 Global",     cases: 14, type: "Individual Donor" },
-  { avatar: "💊", name: "Medical Aid Partner",   country: "🇩🇪 Germany",   cases: 7,  type: "Healthcare Sponsor" },
-  { avatar: "📖", name: "Education Sponsor",     country: "🇳🇱 Netherlands",cases: 11, type: "Education Partner" },
-  { avatar: "🌾", name: "Community Donor",       country: "🌍 Global",     cases: 5,  type: "Community Member" },
-  { avatar: "🏗️", name: "Shelter Aid Friend",    country: "🇹🇷 Turkey",    cases: 9,  type: "Infrastructure Partner" },
-  { avatar: "💧", name: "Water & WASH Sponsor",  country: "🇫🇷 France",    cases: 6,  type: "WASH Partner" },
-  { avatar: "👶", name: "Orphan Care Supporter", country: "🇸🇦 Saudi Arabia", cases: 18, type: "Child Welfare Donor" },
-  { avatar: "🚑", name: "Emergency Responder",   country: "🇳🇴 Norway",    cases: 4,  type: "Emergency Partner" },
-];
-
-// ── Verified Partner Organizations ───────────────────────────────────────────
-const ORGS = [
-  { icon: "🏥", name: "Banadir Regional Hospital",    country: "🇸🇴 Mogadishu",   type: "Public Hospital",          color: "#10B981" },
-  { icon: "🌿", name: "Mogadishu NGO Consortium",     country: "🇸🇴 Somalia",     type: "NGO Network",              color: "#3B82F6" },
-  { icon: "🚜", name: "FAO Somalia Field Office",     country: "🇸🇴 Somalia",     type: "UN Agency Partner",        color: "#F59E0B" },
-  { icon: "📦", name: "WFP Local Distribution Hub",  country: "🇸🇴 Somalia",     type: "Food Distribution",        color: "#8B5CF6" },
-  { icon: "🧒", name: "UNICEF Child Aid Programme",  country: "🌍 Regional",     type: "Child Welfare Agency",     color: "#EC4899" },
-  { icon: "🏗️", name: "Shelter Cluster Somalia",     country: "🇸🇴 Somalia",     type: "Shelter Coordination",     color: "#06B6D4" },
-  { icon: "💉", name: "WHO Immunization Partners",   country: "🌍 Regional",     type: "Health Partner",           color: "#C0392B" },
-  { icon: "📚", name: "UNHCR Education Initiative",  country: "🌍 Regional",     type: "Refugee Education",        color: "#E0AB21" },
-];
-
-// ── Impact Stories ────────────────────────────────────────────────────────────
-const STORIES = [
-  {
-    id: 1,
-    icon: "🏠",
-    color: "#3B82F6",
-    title: "Family of 7 Receives Emergency Shelter",
-    location: "📍 Lower Shabelle, Somalia",
-    before: "A mother and six children were sleeping in an open field after their home was destroyed by flooding. The case was reported by a local community volunteer.",
-    after: "Within 18 days of verification, shelter materials were delivered and assembled. The family now has a safe, weatherproof home.",
-    partner: "Al-Khair Foundation",
-    impact: "Case #KQ-2024-0441 · Completed & Archived",
-    badge: "🏁 Completed",
-    badgeColor: "#10B981",
-  },
-  {
-    id: 2,
-    icon: "💊",
-    color: "#10B981",
-    title: "Child Malnutrition Case Fully Resolved",
-    location: "📍 Baidoa District, Somalia",
-    before: "A 4-year-old boy was referred for severe acute malnutrition. His family had no income and could not afford therapeutic food.",
-    after: "Medical aid partner sponsored 3 months of therapeutic nutrition support. The child recovered to healthy weight and was discharged.",
-    partner: "Somali Medical Relief",
-    impact: "Case #KQ-2024-0189 · Completed & Archived",
-    badge: "🏁 Completed",
-    badgeColor: "#10B981",
-  },
-  {
-    id: 3,
-    icon: "📚",
-    color: "#8B5CF6",
-    title: "12 Orphaned Children Back in School",
-    location: "📍 Kismayo, Somalia",
-    before: "12 children aged 6–14 had dropped out of school after losing their parents. No funds for supplies, uniforms, or school fees.",
-    after: "Education Without Borders sponsored a full academic year for all 12 children — including materials, uniforms, and teacher support.",
-    partner: "Education Without Borders",
-    impact: "Case #KQ-2024-0312 · Completed & Archived",
-    badge: "🏁 Completed",
-    badgeColor: "#10B981",
-  },
-];
-
-// ── Appreciation Wall Messages ────────────────────────────────────────────────
-const APPRECIATION = [
-  "Every family sheltered is a life transformed. Thank you.",
-  "Your trust makes our verification work meaningful.",
-  "Aid without accountability is just charity. You make it justice.",
-  "Because of your support, children are eating today.",
-  "Each verified delivery is a promise kept.",
-  "Together we close the gap between need and relief.",
-  "Transparent aid. Real impact. Because of you.",
-  "No child should go to sleep hungry. You help make that true.",
-];
+const STEPS = ["Organisation","Contact Person","Operations","Review & Submit"];
 
 export default function ImpactPartners() {
-  const { lang } = useLang();
-  const { isMobile, isTablet } = useResponsive();
-  const [activeTab, setActiveTab] = useState("featured");
+  const [tab, setTab]       = useState("partners");   // "partners" | "register"
+  const [step, setStep]     = useState(0);
+  const [form, setForm]     = useState(BLANK);
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  // ── Live data from Supabase via API ────────────────────────────
-  const [liveData,  setLiveData]  = useState(null);
-  const [apiStats,  setApiStats]  = useState(null);
-  const [liveStories, setLiveStories] = useState([]);
-  const [loadingApi,  setLoadingApi]  = useState(true);
+  const set = (k, v) => setForm(f => ({ ...f, [k]:v }));
+  const toggleFocus = (f) => setForm(prev => ({
+    ...prev,
+    focusAreas: prev.focusAreas.includes(f) ? prev.focusAreas.filter(x=>x!==f) : [...prev.focusAreas, f],
+  }));
 
-  useEffect(() => {
-    Promise.all([partnersApi.all(), partnersApi.stories()])
-      .then(([data, storyData]) => {
-        if (data?.featured?.length || data?.community?.length || data?.organizations?.length) {
-          setLiveData(data);
-        }
-        if (storyData?.stories?.length) setLiveStories(storyData.stories);
-        if (data?.totals) setApiStats(data.totals);
-      })
-      .catch(() => { /* silently fall back to static data */ })
-      .finally(() => setLoadingApi(false));
-  }, []);
+  const validate = (s) => {
+    const e = {};
+    if (s === 0) {
+      if (!form.orgName.trim())  e.orgName  = "Required";
+      if (!form.type)            e.type     = "Required";
+      if (!form.country)         e.country  = "Required";
+    }
+    if (s === 1) {
+      if (!form.contactName.trim())  e.contactName  = "Required";
+      if (!form.contactEmail.trim()) e.contactEmail = "Required";
+      if (!form.contactPhone.trim()) e.contactPhone = "Required";
+    }
+    if (s === 2) {
+      if (form.focusAreas.length === 0) e.focusAreas = "Select at least one";
+      if (!form.description.trim())     e.description = "Required";
+    }
+    if (s === 3) {
+      if (!form.acceptsTerms) e.acceptsTerms = "You must accept the terms";
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
-  // merge live stats into STATS display
-  const displayStats = apiStats ? [
-    { icon: "👨‍👩‍👧‍👦", value: (apiStats.familiesImpacted || 3840).toLocaleString() + "+", label: "Families Helped",      color: B.blue  },
-    { icon: "✅",        value: (apiStats.casesSupported  || 5200).toLocaleString() + "+", label: "Verified Deliveries", color: B.green },
-    { icon: "🌍",        value: "14",                                                       label: "Regions Supported",  color: B.gold  },
-    { icon: "❤️",        value: (apiStats.activePartners  || 280).toLocaleString()  + "+", label: "Active Sponsors",    color: "#C0392B" },
-  ] : STATS;
+  const next = () => { if (validate(step)) setStep(s => Math.min(s+1, 3)); };
+  const back = () => setStep(s => Math.max(s-1, 0));
 
-  const displayFeatured  = (liveData?.featured?.length      ? liveData.featured      : FEATURED);
-  const displayCommunity = (liveData?.community?.length     ? liveData.community     : COMMUNITY);
-  const displayOrgs      = (liveData?.organizations?.length ? liveData.organizations : ORGS);
-  const displayStories   = (liveStories.length              ? liveStories.map(s => ({
-    ...s, title: s.impactStory || s.name, before: s.impactBefore, after: s.impactAfter,
-    icon: s.avatar, badge: "🏁 Completed", badgeColor: "#10B981",
-    location: `${s.countryFlag || "📍"} ${s.country || "Somalia"}`,
-    partner: s.name, impact: s.caseRef || "",
-  })) : STORIES);
+  const submit = () => {
+    if (!validate(3)) return;
+    const app = { ...form, id:"app-"+Date.now(), submittedAt:new Date().toISOString(), status:"pending" };
+    try {
+      const existing = JSON.parse(localStorage.getItem(PARTNER_REG_KEY)||"[]");
+      localStorage.setItem(PARTNER_REG_KEY, JSON.stringify([app, ...existing]));
+    } catch {}
+    setSubmitted(true);
+  };
 
-  const partnerCols = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "repeat(3, 1fr)";
-  const orgCols     = isMobile ? "1fr" : isTablet ? "1fr 1fr" : "repeat(4, 1fr)";
-  const statCols    = isMobile ? "1fr 1fr" : "repeat(4, 1fr)";
-  const storyCols   = isMobile ? "1fr" : "repeat(3, 1fr)";
+  const field = (key, label, type="text", placeholder="") => (
+    <div>
+      <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>
+        {label} {["orgName","type","country","contactName","contactEmail","contactPhone","description"].includes(key) ? <span style={{color:C.danger}}>*</span>:""}
+      </label>
+      {type==="textarea"
+        ? <textarea rows={4} value={form[key]} onChange={e=>set(key,e.target.value)} placeholder={placeholder}
+            style={{ width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${errors[key]?C.danger:C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }} />
+        : <input type={type} value={form[key]} onChange={e=>set(key,e.target.value)} placeholder={placeholder}
+            style={{ width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${errors[key]?C.danger:C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }} />
+      }
+      {errors[key] && <div style={{ fontSize:11, color:C.danger, marginTop:4 }}>⚠ {errors[key]}</div>}
+    </div>
+  );
+
+  const select = (key, label, options) => (
+    <div>
+      <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>
+        {label} <span style={{color:C.danger}}>*</span>
+      </label>
+      <select value={form[key]} onChange={e=>set(key,e.target.value)}
+        style={{ width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${errors[key]?C.danger:C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box", background:"#fff" }}>
+        <option value="">Select…</option>
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
+      </select>
+      {errors[key] && <div style={{ fontSize:11, color:C.danger, marginTop:4 }}>⚠ {errors[key]}</div>}
+    </div>
+  );
+
+  const toggle = (key, label, desc) => (
+    <div style={{ display:"flex", alignItems:"flex-start", gap:12, padding:"14px 16px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}` }}>
+      <button onClick={() => set(key, !form[key])} style={{
+        width:44, height:24, borderRadius:99, border:"none", cursor:"pointer",
+        background: form[key] ? C.secondary : "#D1D5DB", position:"relative", transition:"background .2s", flexShrink:0, marginTop:2,
+      }}>
+        <span style={{ position:"absolute", top:3, left: form[key]?22:3, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left .2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
+      </button>
+      <div>
+        <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{label}</div>
+        <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>{desc}</div>
+      </div>
+    </div>
+  );
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: B.text, background: B.bg }}>
+    <div style={{ color:C.text }}>
 
-      {/* ── HERO ─────────────────────────────────────────────────────────────── */}
-      <section
-        className="kf-hero-dots"
-        style={{
-          background: `linear-gradient(145deg, ${B.navy} 0%, ${B.blue} 60%, ${B.green} 100%)`,
-          color: "#fff",
-          padding: isMobile ? "72px 20px 56px" : "96px 24px 72px",
-          textAlign: "center",
-          position: "relative",
-          overflow: "hidden",
-        }}>
-        {/* Decorative orbs */}
-        <div style={{ position: "absolute", top: -100, right: -100, width: 360, height: 360, borderRadius: "50%", background: "rgba(255,255,255,0.04)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -60, left: -60,  width: 280, height: 280, borderRadius: "50%", background: `rgba(224,171,33,0.07)`, pointerEvents: "none" }} />
-
-        <div style={{ maxWidth: 760, margin: "0 auto", position: "relative" }}>
-          <span className="kf-badge" style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.25)", color: "#fff", marginBottom: 20, display: "inline-flex" }}>
-            🤝 Humanitarian Impact Partners
-          </span>
-
-          <h1 style={{
-            fontSize: "clamp(34px, 5.5vw, 58px)",
-            fontWeight: 900,
-            margin: "18px 0 16px",
-            lineHeight: 1.15,
-            letterSpacing: -1,
-          }}>
-            Impact Partners
-          </h1>
-
-          <p style={{
-            fontSize: isMobile ? 16 : 19,
-            opacity: 0.85,
-            lineHeight: 1.75,
-            maxWidth: 600,
-            margin: "0 auto 36px",
-          }}>
-            Organizations, sponsors, and humanitarian supporters helping verified aid reach real people in need.
-          </p>
-
-          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <Link to="/donate" className="kf-btn kf-btn-gold kf-shine" style={{ padding: "13px 28px", borderRadius: 12, fontSize: 14, fontWeight: 800, textDecoration: "none" }}>
-              ❤️ Become a Partner
-            </Link>
-            <Link to="/cases" className="kf-btn kf-btn-ghost" style={{ padding: "13px 28px", borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-              🌍 View Open Cases →
-            </Link>
+      {/* ── Hero ── */}
+      <section style={{ position:"relative", overflow:"hidden", minHeight:360, display:"flex", alignItems:"center" }}>
+        <div style={{ position:"absolute", inset:0, backgroundImage:"url('https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1400&q=80')", backgroundSize:"cover", backgroundPosition:"center 30%" }} />
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg, rgba(0,38,81,0.85) 0%, rgba(0,75,150,0.75) 50%, rgba(75,125,25,0.6) 100%)" }} />
+        <div style={{ position:"relative", zIndex:1, padding:"80px 24px", width:"100%", textAlign:"center", color:"#fff" }}>
+          <div style={{ maxWidth:760, margin:"0 auto" }}>
+            <span style={{ display:"inline-block", background:"rgba(224,171,33,0.2)", border:"1px solid rgba(224,171,33,0.4)", color:C.accent, borderRadius:20, padding:"6px 18px", fontSize:12, fontWeight:800, letterSpacing:1, textTransform:"uppercase", marginBottom:20 }}>IMPACT PARTNERS</span>
+            <h1 style={{ fontSize:"clamp(28px,5vw,52px)", fontWeight:900, margin:"0 0 16px", lineHeight:1.1, letterSpacing:-1 }}>Partner with Kafaale Qaad</h1>
+            <p style={{ fontSize:17, opacity:0.85, lineHeight:1.7, maxWidth:540, margin:"0 auto 32px" }}>Join our network of verified NGOs, foundations, and agencies delivering impact across Somalia and East Africa.</p>
+            <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+              <button onClick={() => setTab("partners")} style={{ padding:"12px 28px", borderRadius:12, fontWeight:800, fontSize:14, border:"none", cursor:"pointer", background: tab==="partners" ? C.accent : "rgba(255,255,255,0.15)", color:"#fff" }}>View Partners</button>
+              <button onClick={() => setTab("register")} style={{ padding:"12px 28px", borderRadius:12, fontWeight:800, fontSize:14, border:"none", cursor:"pointer", background: tab==="register" ? C.accent : "rgba(255,255,255,0.15)", color:"#fff" }}>Register as Partner</button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── GLOBAL IMPACT STATS ──────────────────────────────────────────────── */}
-      <section style={{ padding: isMobile ? "0 16px" : "0 24px", marginTop: -36 }}>
-        <div style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: statCols,
-          gap: isMobile ? 12 : 20,
-        }}>
-          {displayStats.map(s => (
-            <div key={s.label} className="kf-card" style={{
-              background: "#fff",
-              borderRadius: 18,
-              padding: isMobile ? "24px 20px" : "32px 28px",
-              textAlign: "center",
-              boxShadow: "0 6px 28px rgba(0,38,81,0.10)",
-              border: `1px solid ${B.border}`,
-              borderTop: `4px solid ${s.color}`,
-            }}>
-              <div style={{ fontSize: isMobile ? 32 : 38, marginBottom: 10 }}>{s.icon}</div>
-              <div style={{ fontSize: isMobile ? 28 : 36, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: B.muted, fontWeight: 600, marginTop: 8, letterSpacing: 0.3 }}>{s.label}</div>
+      {/* ── Stats bar ── */}
+      <div style={{ background:"#fff", borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ maxWidth:1000, margin:"0 auto", display:"grid", gridTemplateColumns:"repeat(4,1fr)" }}>
+          {[["280+","Active Partners"],["14","Countries"],["5,200+","Aid Deliveries"],["98.8%","Verification Rate"]].map(([v,l]) => (
+            <div key={l} style={{ padding:"28px 20px", textAlign:"center", borderRight:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:28, fontWeight:900, color:C.primary, lineHeight:1 }}>{v}</div>
+              <div style={{ fontSize:12, color:C.muted, marginTop:5, fontWeight:600 }}>{l}</div>
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
-      {/* ── FEATURED IMPACT PARTNERS ─────────────────────────────────────────── */}
-      <section style={{ padding: isMobile ? "64px 16px" : "80px 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <span className="kf-badge" style={{ background: B.blue + "12", color: B.blue, border: `1px solid ${B.blue}22`, marginBottom: 14, display: "inline-flex" }}>
-              🏆 Featured Impact Partners
-            </span>
-            <h2 style={{ fontSize: "clamp(26px, 3.5vw, 42px)", fontWeight: 900, margin: "0 0 14px", letterSpacing: -0.5 }}>
-              Our Leading Supporters
-            </h2>
-            <hr className="kf-rule-center" />
-            <p style={{ fontSize: 16, color: B.muted, maxWidth: 540, margin: "0 auto", lineHeight: 1.7 }}>
-              Organizations and supporters who have made a sustained, verified humanitarian impact through this platform.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: partnerCols, gap: isMobile ? 16 : 24 }}>
-            {displayFeatured.map(p => (
-              <FeaturedCard key={p.id} p={p} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── COMMUNITY SUPPORTERS ─────────────────────────────────────────────── */}
-      <section style={{ background: "#fff", padding: isMobile ? "64px 16px" : "80px 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <span className="kf-badge" style={{ background: B.green + "15", color: B.green, border: `1px solid ${B.green}25`, marginBottom: 14, display: "inline-flex" }}>
-              ❤️ Community Supporters
-            </span>
-            <h2 style={{ fontSize: "clamp(24px, 3vw, 38px)", fontWeight: 900, margin: "0 0 14px", letterSpacing: -0.5 }}>
-              Every Contribution Counts
-            </h2>
-            <hr className="kf-rule-center" />
-            <p style={{ fontSize: 16, color: B.muted, maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>
-              Individual donors and small-group supporters who quietly change lives — one verified case at a time.
-            </p>
-          </div>
-
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr 1fr" : isTablet ? "repeat(4, 1fr)" : "repeat(8, 1fr)",
-            gap: isMobile ? 12 : 16,
-          }}>
-            {displayCommunity.map((c, i) => (
-              <CommunityCard key={i} c={c} />
-            ))}
-          </div>
-
-          <div style={{ textAlign: "center", marginTop: 36 }}>
-            <div style={{
-              display: "inline-block",
-              padding: "14px 28px",
-              background: B.bg,
-              border: `1px solid ${B.border}`,
-              borderRadius: 14,
-              fontSize: 13,
-              color: B.muted,
-              lineHeight: 1.7,
-              maxWidth: 480,
-            }}>
-              🔒 <strong>Privacy-first:</strong> All supporters can choose to remain anonymous. We celebrate impact, not identity.
+      {tab === "partners" && (
+        <section style={{ padding:"64px 24px 80px", background:C.bg }}>
+          <div style={{ maxWidth:1200, margin:"0 auto" }}>
+            <div style={{ textAlign:"center", marginBottom:48 }}>
+              <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>Our Impact Network</h2>
+              <p style={{ fontSize:15, color:C.muted }}>Verified partners delivering aid across the region.</p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── VERIFIED PARTNER ORGANIZATIONS ───────────────────────────────────── */}
-      <section style={{ background: B.bg, padding: isMobile ? "64px 16px" : "80px 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <span className="kf-badge" style={{ background: B.gold + "18", color: "#B8861A", border: `1px solid ${B.gold}30`, marginBottom: 14, display: "inline-flex" }}>
-              🌍 Verified Partner Organizations
-            </span>
-            <h2 style={{ fontSize: "clamp(24px, 3vw, 38px)", fontWeight: 900, margin: "0 0 14px", letterSpacing: -0.5 }}>
-              Trusted Organizations
-            </h2>
-            <hr className="kf-rule-center" />
-            <p style={{ fontSize: 16, color: B.muted, maxWidth: 540, margin: "0 auto", lineHeight: 1.7 }}>
-              NGOs, hospitals, local aid groups, and relief organizations that have completed full verification on this platform.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: orgCols, gap: isMobile ? 12 : 18 }}>
-            {displayOrgs.map((o, i) => (
-              <OrgCard key={i} o={o} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── IMPACT STORIES ───────────────────────────────────────────────────── */}
-      <section style={{ background: "#fff", padding: isMobile ? "64px 16px" : "80px 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <span className="kf-badge" style={{ background: B.blue + "12", color: B.blue, border: `1px solid ${B.blue}22`, marginBottom: 14, display: "inline-flex" }}>
-              📖 Impact Stories
-            </span>
-            <h2 style={{ fontSize: "clamp(24px, 3vw, 38px)", fontWeight: 900, margin: "0 0 14px", letterSpacing: -0.5 }}>
-              Verified Outcomes
-            </h2>
-            <hr className="kf-rule-center" />
-            <p style={{ fontSize: 16, color: B.muted, maxWidth: 520, margin: "0 auto", lineHeight: 1.7 }}>
-              Real cases. Real people. Verified from report to delivery — with proof at every step.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: storyCols, gap: isMobile ? 20 : 28 }}>
-            {displayStories.map(s => (
-              <StoryCard key={s.id} s={s} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── APPRECIATION WALL ────────────────────────────────────────────────── */}
-      <section style={{
-        background: `linear-gradient(145deg, ${B.navy} 0%, ${B.blue} 55%, ${B.green} 100%)`,
-        padding: isMobile ? "72px 16px" : "96px 24px",
-        textAlign: "center",
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)", backgroundSize: "30px 30px", pointerEvents: "none" }} />
-
-        <div style={{ maxWidth: 900, margin: "0 auto", position: "relative" }}>
-          <span className="kf-badge" style={{ background: "rgba(255,255,255,0.14)", color: "#fff", border: "1px solid rgba(255,255,255,0.25)", marginBottom: 20, display: "inline-flex" }}>
-            🧾 Appreciation Wall
-          </span>
-
-          <h2 style={{ fontSize: "clamp(26px, 3.5vw, 44px)", fontWeight: 900, color: "#fff", margin: "16px 0 12px", letterSpacing: -0.5 }}>
-            Thank You
-          </h2>
-          <p style={{ fontSize: 17, color: "rgba(255,255,255,0.75)", marginBottom: 52, lineHeight: 1.7 }}>
-            Thank you to every individual and organization helping create verified humanitarian impact.
-          </p>
-
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "repeat(4, 1fr)",
-            gap: 16,
-            marginBottom: 52,
-          }}>
-            {APPRECIATION.map((msg, i) => (
-              <div key={i} className="kf-card" style={{
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.14)",
-                borderRadius: 16,
-                padding: "22px 20px",
-                color: "rgba(255,255,255,0.88)",
-                fontSize: 14,
-                lineHeight: 1.7,
-                fontStyle: "italic",
-                textAlign: "left",
-              }}>
-                <span style={{ color: B.gold, fontSize: 18, display: "block", marginBottom: 10 }}>"</span>
-                {msg}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))", gap:22 }}>
+              {EXISTING_PARTNERS.map(p => (
+                <div key={p.id} style={{ background:"#fff", borderRadius:18, overflow:"hidden", border:`1px solid ${C.border}`, boxShadow:"0 2px 12px rgba(0,0,0,.06)" }}>
+                  <div style={{ background:`linear-gradient(135deg, ${p.color}18, ${p.color}08)`, padding:"28px 24px 22px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                      <div style={{ width:56, height:56, borderRadius:14, background:`linear-gradient(135deg,${p.color}30,${p.color}60)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>{p.img}</div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:15, fontWeight:800, color:C.text }}>{p.name}</div>
+                        <div style={{ fontSize:12, color:p.color, fontWeight:700, marginTop:2 }}>{p.type}</div>
+                        <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>🌍 {p.country}</div>
+                      </div>
+                      {p.verified && <span style={{ background:"#D1FAE5", color:"#065F46", borderRadius:20, padding:"3px 10px", fontSize:10, fontWeight:800 }}>✓ Verified</span>}
+                    </div>
+                  </div>
+                  <div style={{ padding:"16px 24px 22px" }}>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:14 }}>
+                      {p.focus.map(f => <span key={f} style={{ background:p.color+"15", color:p.color, borderRadius:20, padding:"3px 10px", fontSize:10, fontWeight:700 }}>{f}</span>)}
+                    </div>
+                    <div style={{ fontSize:13, color:C.muted, fontWeight:600 }}>📋 {p.cases} cases supported</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ textAlign:"center", marginTop:48 }}>
+              <div style={{ background:"#fff", borderRadius:18, border:`2px dashed ${C.border}`, padding:"40px 24px", display:"inline-block", maxWidth:480 }}>
+                <div style={{ fontSize:42, marginBottom:12 }}>🤝</div>
+                <h3 style={{ margin:"0 0 8px", fontSize:20, fontWeight:800 }}>Become a Partner</h3>
+                <p style={{ fontSize:14, color:C.muted, marginBottom:20 }}>Join our growing network of verified impact partners.</p>
+                <button onClick={() => setTab("register")} style={{ padding:"12px 28px", background:C.primary, color:"#fff", border:"none", borderRadius:12, cursor:"pointer", fontWeight:800, fontSize:14 }}>Register Your Organisation →</button>
               </div>
-            ))}
-          </div>
-
-          {/* Bottom CTA */}
-          <div style={{
-            background: "rgba(255,255,255,0.09)",
-            border: "1px solid rgba(255,255,255,0.16)",
-            borderRadius: 20,
-            padding: isMobile ? "32px 20px" : "40px 48px",
-          }}>
-            <div style={{ fontSize: 13, color: B.gold, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>Join Us</div>
-            <h3 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: "#fff", margin: "0 0 12px", letterSpacing: -0.3 }}>
-              Become an Impact Partner
-            </h3>
-            <p style={{ color: "rgba(255,255,255,0.72)", fontSize: 15, margin: "0 0 28px", lineHeight: 1.7 }}>
-              Your contribution — large or small — creates traceable, verified change. Every donation is tracked end-to-end with full transparency.
-            </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-              <Link to="/donate" className="kf-btn kf-btn-gold kf-shine" style={{ padding: "14px 32px", borderRadius: 12, fontSize: 15, fontWeight: 800, textDecoration: "none" }}>
-                ❤️ Partner With Us
-              </Link>
-              <Link to="/contact" className="kf-btn kf-btn-ghost" style={{ padding: "14px 28px", borderRadius: 12, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                📩 Contact Our Team
-              </Link>
             </div>
           </div>
-        </div>
-      </section>
-    </div>
-  );
-}
+        </section>
+      )}
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+      {tab === "register" && (
+        <section style={{ padding:"64px 24px 80px", background:C.bg }}>
+          <div style={{ maxWidth:760, margin:"0 auto" }}>
+            {submitted ? (
+              <div style={{ background:"#fff", borderRadius:22, padding:"56px 32px", textAlign:"center", boxShadow:"0 4px 24px rgba(0,0,0,0.08)" }}>
+                <div style={{ width:80, height:80, borderRadius:"50%", background:"#D1FAE5", margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:36 }}>✅</div>
+                <h2 style={{ fontSize:28, fontWeight:900, margin:"0 0 12px", color:C.secondary }}>Application Submitted!</h2>
+                <p style={{ fontSize:15, color:C.muted, lineHeight:1.7, maxWidth:440, margin:"0 auto 24px" }}>
+                  Thank you, <strong>{form.contactName}</strong>. Your partnership application for <strong>{form.orgName}</strong> is under review. Our team will contact you within 3–5 business days at <strong>{form.contactEmail}</strong>.
+                </p>
+                <div style={{ background:C.bg, borderRadius:12, padding:"16px 20px", marginBottom:24, textAlign:"left", maxWidth:400, margin:"0 auto 24px" }}>
+                  <div style={{ fontSize:12, fontWeight:800, color:C.muted, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Application Reference</div>
+                  <div style={{ fontSize:13, color:C.text }}>{form.orgName} · {form.country}</div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>Submitted {new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}</div>
+                </div>
+                <button onClick={() => { setSubmitted(false); setStep(0); setForm(BLANK); setTab("partners"); }} style={{ padding:"12px 28px", background:C.primary, color:"#fff", border:"none", borderRadius:12, cursor:"pointer", fontWeight:800, fontSize:14 }}>Back to Partners</button>
+              </div>
+            ) : (
+              <div>
+                <div style={{ textAlign:"center", marginBottom:36 }}>
+                  <h2 style={{ fontSize:"clamp(24px,3.5vw,38px)", fontWeight:900, margin:"0 0 10px" }}>Partnership Registration</h2>
+                  <p style={{ fontSize:15, color:C.muted }}>Fill in your organisation's details. Applications are reviewed within 3–5 business days.</p>
+                </div>
 
-function FeaturedCard({ p }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: "#fff",
-        borderRadius: 20,
-        overflow: "hidden",
-        boxShadow: hov ? `0 20px 52px rgba(0,38,81,0.14)` : "0 4px 18px rgba(0,38,81,0.07)",
-        border: `1px solid ${B.border}`,
-        transform: hov ? "translateY(-6px)" : "translateY(0)",
-        transition: "transform 0.22s cubic-bezier(0.34,1.5,0.64,1), box-shadow 0.22s ease",
-        display: "flex",
-        flexDirection: "column",
-      }}>
+                {/* Progress steps */}
+                <div style={{ display:"flex", gap:0, marginBottom:36, overflow:"hidden", borderRadius:14, border:`1px solid ${C.border}` }}>
+                  {STEPS.map((s, i) => (
+                    <div key={i} style={{
+                      flex:1, padding:"12px 8px", textAlign:"center", fontSize:12, fontWeight:700,
+                      background: i<step ? C.secondary : i===step ? C.primary : "#fff",
+                      color: i<=step ? "#fff" : C.muted,
+                      borderRight: i < STEPS.length-1 ? `1px solid ${C.border}` : "none",
+                    }}>
+                      <div style={{ fontSize:16, marginBottom:3 }}>{["🏛️","👤","⚙️","✅"][i]}</div>
+                      {s}
+                    </div>
+                  ))}
+                </div>
 
-      {/* Color top stripe */}
-      <div style={{ height: 4, background: `linear-gradient(90deg, ${p.color}, ${p.color}88)` }} />
+                <div style={{ background:"#fff", borderRadius:20, padding:"36px 32px", boxShadow:"0 4px 24px rgba(0,0,0,.07)", border:`1px solid ${C.border}` }}>
 
-      <div style={{ padding: "28px 24px", flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 16,
-            background: p.color + "14",
-            border: `2px solid ${p.color}30`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 28, flexShrink: 0,
-          }}>
-            {p.avatar}
+                  {/* Step 0: Organisation */}
+                  {step === 0 && (
+                    <div style={{ display:"grid", gap:18 }}>
+                      <h3 style={{ margin:"0 0 8px", fontSize:18, fontWeight:800 }}>🏛️ Organisation Information</h3>
+                      {field("orgName", "Organisation Name", "text", "e.g. Al-Khair Foundation")}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                        {select("type", "Organisation Type", ORG_TYPES)}
+                        {select("country", "Country of Registration", ALL_COUNTRIES)}
+                      </div>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                        {field("website", "Website", "url", "https://example.org")}
+                        {field("regNumber", "Registration Number", "text", "NGO-12345")}
+                      </div>
+                      {field("yearFounded", "Year Founded", "number", "e.g. 2010")}
+                    </div>
+                  )}
+
+                  {/* Step 1: Contact */}
+                  {step === 1 && (
+                    <div style={{ display:"grid", gap:18 }}>
+                      <h3 style={{ margin:"0 0 8px", fontSize:18, fontWeight:800 }}>👤 Primary Contact Person</h3>
+                      {field("contactName", "Full Name", "text", "e.g. Ahmed Hassan")}
+                      {field("contactTitle", "Job Title / Position", "text", "e.g. Country Director")}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                        {field("contactEmail", "Email Address", "email", "contact@org.org")}
+                        {field("contactPhone", "Phone Number", "tel", "+252 61 xxx xxxx")}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 2: Operations */}
+                  {step === 2 && (
+                    <div style={{ display:"grid", gap:18 }}>
+                      <h3 style={{ margin:"0 0 8px", fontSize:18, fontWeight:800 }}>⚙️ Operations & Focus</h3>
+                      <div>
+                        <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:8, textTransform:"uppercase", letterSpacing:.5 }}>Focus Areas <span style={{color:C.danger}}>*</span></label>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                          {FOCUS_AREAS.map(f => (
+                            <button key={f} onClick={() => toggleFocus(f)} style={{
+                              padding:"6px 14px", borderRadius:99, fontSize:12, fontWeight:700, border:"1.5px solid", cursor:"pointer", transition:"all .15s",
+                              background: form.focusAreas.includes(f) ? C.primary : "#fff",
+                              color: form.focusAreas.includes(f) ? "#fff" : C.muted,
+                              borderColor: form.focusAreas.includes(f) ? C.primary : C.border,
+                            }}>{f}</button>
+                          ))}
+                        </div>
+                        {errors.focusAreas && <div style={{ fontSize:11, color:C.danger, marginTop:6 }}>⚠ {errors.focusAreas}</div>}
+                      </div>
+                      {field("operatingRegions", "Regions You Operate In", "text", "e.g. Mogadishu, Baidoa, Kismayo")}
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+                        {field("annualBudget", "Annual Aid Budget (USD)", "text", "e.g. $500,000")}
+                        {field("staffCount", "Number of Staff / Volunteers", "number", "e.g. 25")}
+                      </div>
+                      {field("description", "Brief Description of Your Work", "textarea", "Describe your organisation's mission, key programmes, and impact in Somalia or East Africa…")}
+                      <div style={{ display:"grid", gap:12 }}>
+                        {toggle("hasFieldTeam", "We have field teams on the ground", "We can conduct physical verification and aid delivery.")}
+                        {toggle("previousSomalia", "We have previous experience in Somalia", "We have worked in Somalia or East Africa before.")}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 3: Review */}
+                  {step === 3 && (
+                    <div>
+                      <h3 style={{ margin:"0 0 18px", fontSize:18, fontWeight:800 }}>✅ Review & Submit</h3>
+                      <div style={{ background:C.bg, borderRadius:14, padding:"20px 22px", marginBottom:18 }}>
+                        {[
+                          ["Organisation", form.orgName],
+                          ["Type", form.type],
+                          ["Country", form.country],
+                          ["Registration No.", form.regNumber],
+                          ["Contact", `${form.contactName} (${form.contactTitle})`],
+                          ["Email", form.contactEmail],
+                          ["Phone", form.contactPhone],
+                          ["Focus Areas", form.focusAreas.join(", ")],
+                          ["Regions", form.operatingRegions],
+                          ["Annual Budget", form.annualBudget],
+                          ["Staff", form.staffCount],
+                        ].filter(([,v])=>v).map(([k,v]) => (
+                          <div key={k} style={{ display:"grid", gridTemplateColumns:"140px 1fr", gap:12, marginBottom:10, fontSize:14 }}>
+                            <span style={{ color:C.muted, fontWeight:700 }}>{k}</span>
+                            <span style={{ color:C.text }}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div>
+                        <label style={{ display:"flex", gap:12, alignItems:"flex-start", cursor:"pointer" }}>
+                          <input type="checkbox" checked={form.acceptsTerms} onChange={e=>set("acceptsTerms",e.target.checked)}
+                            style={{ marginTop:3, width:18, height:18, cursor:"pointer" }} />
+                          <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>
+                            I confirm that all information provided is accurate. I accept the <a href="#" style={{ color:C.primary, fontWeight:700 }}>Partner Terms & Conditions</a> and understand that Kafaale Qaad will review this application before granting access.
+                          </div>
+                        </label>
+                        {errors.acceptsTerms && <div style={{ fontSize:11, color:C.danger, marginTop:6 }}>⚠ {errors.acceptsTerms}</div>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Navigation buttons */}
+                  <div style={{ display:"flex", gap:12, marginTop:28, justifyContent:"space-between" }}>
+                    <button onClick={back} disabled={step===0}
+                      style={{ padding:"12px 24px", borderRadius:11, border:`1.5px solid ${C.border}`, background:"#fff", fontWeight:700, fontSize:14, cursor: step===0 ? "default" : "pointer", opacity: step===0 ? 0.4 : 1 }}>
+                      ← Back
+                    </button>
+                    {step < 3
+                      ? <button onClick={next} style={{ padding:"12px 32px", borderRadius:11, background:C.primary, color:"#fff", border:"none", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+                          Continue →
+                        </button>
+                      : <button onClick={submit} style={{ padding:"12px 32px", borderRadius:11, background:C.secondary, color:"#fff", border:"none", fontWeight:800, fontSize:14, cursor:"pointer" }}>
+                          ✅ Submit Application
+                        </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: B.text, lineHeight: 1.3, marginBottom: 2 }}>{p.name}</div>
-            <div style={{ fontSize: 12, color: p.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{p.type}</div>
-            <div style={{ fontSize: 12, color: B.muted, marginTop: 2 }}>{p.country}</div>
+        </section>
+      )}
+
+      {/* ── Why Partner With Us ── */}
+      {tab === "partners" && (
+        <section style={{ padding:"64px 24px", background:"#fff" }}>
+          <div style={{ maxWidth:1200, margin:"0 auto" }}>
+            <div style={{ textAlign:"center", marginBottom:44 }}>
+              <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>Why Partner With Kafaale Qaad?</h2>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:20 }}>
+              {[
+                { icon:"🔍", color:"#3B82F6", title:"Verified Pipeline", desc:"All cases you support are multi-layer verified before any funds are released." },
+                { icon:"📍", color:"#10B981", title:"GPS Proof of Delivery", desc:"Every aid delivery is tracked with GPS coordinates and photographic evidence." },
+                { icon:"📊", color:"#F59E0B", title:"Real-Time Reporting", desc:"Live dashboards show exactly how your funds are being used and impact generated." },
+                { icon:"🤝", color:"#8B5CF6", title:"Co-Branded Impact", desc:"Your logo and branding appears on all cases you sponsor, boosting visibility." },
+                { icon:"🔐", color:"#C0392B", title:"Fully Auditable", desc:"Immutable audit logs and financial records available on request." },
+                { icon:"🌍", color:"#06B6D4", title:"Regional Reach", desc:"Access to 14 regions across Somalia and East Africa through our field network." },
+              ].map((f, i) => (
+                <div key={i} style={{ background:C.bg, borderRadius:16, padding:"24px 20px", border:`1px solid ${C.border}`, textAlign:"center" }}>
+                  <div style={{ width:56, height:56, borderRadius:14, background:`linear-gradient(135deg,${f.color}20,${f.color}40)`, margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{f.icon}</div>
+                  <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:6 }}>{f.title}</div>
+                  <div style={{ fontSize:12, color:C.muted, lineHeight:1.6 }}>{f.desc}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          {p.verified && (
-            <span style={{ background: "#D1FAE5", color: "#065F46", fontSize: 10, fontWeight: 800, padding: "4px 10px", borderRadius: 20, whiteSpace: "nowrap", flexShrink: 0 }}>
-              ✓ Verified
-            </span>
-          )}
-        </div>
-
-        {/* Impact text */}
-        <p style={{ fontSize: 13.5, color: "#374151", lineHeight: 1.7, margin: "0 0 18px", flex: 1 }}>
-          {p.impact}
-        </p>
-
-        {/* Focus tags */}
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 18 }}>
-          {p.focus.map(f => (
-            <span key={f} style={{
-              background: p.color + "14", color: p.color,
-              border: `1px solid ${p.color}28`,
-              borderRadius: 20, padding: "3px 10px",
-              fontSize: 11, fontWeight: 700,
-            }}>{f}</span>
-          ))}
-        </div>
-
-        {/* Cases supported */}
-        <div style={{
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "12px 16px",
-          background: B.bg,
-          borderRadius: 12,
-          border: `1px solid ${B.border}`,
-        }}>
-          <span style={{ fontSize: 13, color: B.muted, fontWeight: 600 }}>Cases Supported</span>
-          <span style={{ fontSize: 18, fontWeight: 900, color: p.color }}>{p.casesSupported}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CommunityCard({ c }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: hov ? B.blue + "07" : "#fff",
-        borderRadius: 16,
-        padding: "18px 14px",
-        textAlign: "center",
-        border: `1px solid ${hov ? B.blue + "30" : B.border}`,
-        boxShadow: hov ? `0 8px 24px rgba(0,38,81,0.09)` : "none",
-        transform: hov ? "translateY(-3px)" : "translateY(0)",
-        transition: "all 0.2s ease",
-        cursor: "default",
-      }}>
-      <div style={{ fontSize: 28, marginBottom: 8 }}>{c.avatar}</div>
-      <div style={{ fontSize: 12, fontWeight: 800, color: B.text, marginBottom: 4, lineHeight: 1.3 }}>{c.name}</div>
-      <div style={{ fontSize: 11, color: B.muted, marginBottom: 6 }}>{c.country}</div>
-      <div style={{ fontSize: 11, color: B.blue, fontWeight: 700, background: B.blue + "10", borderRadius: 20, padding: "2px 8px", display: "inline-block" }}>
-        {c.cases} cases
-      </div>
-    </div>
-  );
-}
-
-function OrgCard({ o }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      className="kf-feature-card"
-      style={{
-        background: "#fff",
-        borderRadius: 16,
-        padding: "22px 18px",
-        border: `1px solid ${B.border}`,
-        borderLeft: `4px solid ${hov ? o.color : B.border}`,
-        boxShadow: hov ? `0 10px 30px rgba(0,38,81,0.10)` : "0 2px 8px rgba(0,38,81,0.04)",
-        transform: hov ? "translateY(-3px)" : "translateY(0)",
-        transition: "all 0.2s ease",
-      }}>
-      <div style={{ fontSize: 30, marginBottom: 10 }}>{o.icon}</div>
-      <div style={{ fontWeight: 800, fontSize: 13, color: B.text, marginBottom: 4, lineHeight: 1.4 }}>{o.name}</div>
-      <div style={{ fontSize: 11, color: o.color, fontWeight: 700, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>{o.type}</div>
-      <div style={{ fontSize: 11, color: B.muted }}>{o.country}</div>
-      <div style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 4, background: "#D1FAE5", color: "#065F46", fontSize: 10, fontWeight: 800, padding: "3px 10px", borderRadius: 20 }}>
-        ✓ Partner Verified
-      </div>
-    </div>
-  );
-}
-
-function StoryCard({ s }) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: "#fff",
-        borderRadius: 20,
-        overflow: "hidden",
-        boxShadow: hov ? `0 18px 48px rgba(0,38,81,0.12)` : "0 4px 16px rgba(0,38,81,0.06)",
-        border: `1px solid ${B.border}`,
-        transform: hov ? "translateY(-5px)" : "translateY(0)",
-        transition: "transform 0.22s cubic-bezier(0.34,1.5,0.64,1), box-shadow 0.22s ease",
-        display: "flex",
-        flexDirection: "column",
-      }}>
-
-      {/* Header band */}
-      <div style={{
-        background: `linear-gradient(135deg, ${s.color}18, ${s.color}08)`,
-        borderBottom: `1px solid ${s.color}20`,
-        padding: "22px 22px 18px",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-          <div style={{
-            width: 48, height: 48, borderRadius: 14,
-            background: s.color + "18", border: `2px solid ${s.color}30`,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
-          }}>{s.icon}</div>
-          <div>
-            <span style={{ background: s.badgeColor + "18", color: s.badgeColor, fontSize: 10, fontWeight: 800, padding: "3px 10px", borderRadius: 20, display: "inline-block", marginBottom: 6 }}>
-              {s.badge}
-            </span>
-            <div style={{ fontSize: 13, color: B.muted }}>{s.location}</div>
-          </div>
-        </div>
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: B.text, lineHeight: 1.4 }}>{s.title}</h3>
-      </div>
-
-      {/* Before / After */}
-      <div style={{ padding: "20px 22px", flex: 1 }}>
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: "#C0392B", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>
-            BEFORE
-          </div>
-          <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.7 }}>{s.before}</p>
-        </div>
-        <div style={{ width: "100%", height: 1, background: B.border, margin: "14px 0" }} />
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 800, color: "#10B981", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>
-            AFTER
-          </div>
-          <p style={{ margin: 0, fontSize: 13, color: "#374151", lineHeight: 1.7 }}>{s.after}</p>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div style={{
-        padding: "14px 22px",
-        borderTop: `1px solid ${B.border}`,
-        background: B.bg,
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        gap: 8, flexWrap: "wrap",
-      }}>
-        <span style={{ fontSize: 11, color: B.muted }}>🤝 {s.partner}</span>
-        <span style={{ fontSize: 10, color: B.muted, fontStyle: "italic" }}>{s.impact}</span>
-      </div>
+        </section>
+      )}
     </div>
   );
 }

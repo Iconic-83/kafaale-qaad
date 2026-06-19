@@ -5629,7 +5629,8 @@ export default function KafaaleQaadApp() {
       }
     } catch (e) {
       console.error("Failed to load data:", e);
-      if (e.message?.includes('Session expired')) { logout(); navigate("/login"); }
+      // Only hard-logout on explicit auth failure, not generic network errors
+      if (e.message === 'Session expired. Please log in again.') { logout(); navigate("/login"); }
     } finally {
       setDataLoading(false);
     }

@@ -395,32 +395,7 @@ export default function Home() {
             <p style={{ fontSize:17, color:C.muted, maxWidth:540, margin:"0 auto", lineHeight:1.7 }}>{P.workflow_sub}</p>
           </div>
 
-          {/* ── Row 1: First 4 workflow steps ── */}
-          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr 1fr": isTablet?"repeat(2,1fr)":"repeat(4,1fr)", gap: isMobile?14:22, marginBottom: isMobile?14:22 }}>
-            {WORKFLOW.slice(0,4).map((s) => (
-              <div key={s.n} style={{
-                background:"#fff", borderRadius:18,
-                padding: isMobile ? "18px 16px" : "26px 22px",
-                boxShadow:"0 2px 16px rgba(0,38,81,0.07)",
-                border:`1.5px solid ${C.border}`,
-                position:"relative", overflow:"hidden",
-                transition:"box-shadow .2s, transform .2s",
-              }}
-                onMouseOver={e => { e.currentTarget.style.boxShadow="0 8px 32px rgba(0,38,81,0.13)"; e.currentTarget.style.transform="translateY(-3px)"; }}
-                onMouseOut={e  => { e.currentTarget.style.boxShadow="0 2px 16px rgba(0,38,81,0.07)"; e.currentTarget.style.transform="none"; }}
-              >
-                <div style={{ position:"absolute", top:0, left:0, right:0, height:4, background:s.color, borderRadius:"18px 18px 0 0" }} />
-                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, marginTop:6 }}>
-                  <div style={{ width:isMobile?38:46, height:isMobile?38:46, borderRadius:"50%", background:s.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?18:22, flexShrink:0 }}>{s.icon}</div>
-                  <div style={{ width:isMobile?28:34, height:isMobile?28:34, borderRadius:"50%", background:s.color, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:isMobile?13:16, fontWeight:900, flexShrink:0, boxShadow:`0 3px 10px ${s.color}60` }}>{s.n}</div>
-                </div>
-                <div style={{ fontSize:isMobile?13:15, fontWeight:800, color:s.color, marginBottom:8, lineHeight:1.3 }}>{s.label}</div>
-                <div style={{ fontSize:isMobile?11:13, color:C.muted, lineHeight:1.7 }}>{s.desc}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* ── Row 2: Impact story cards (from admin or fallback) ── */}
+          {/* ── Impact story cards (from admin or fallback) ── */}
           {(() => {
             let stories = [];
             try { stories = JSON.parse(localStorage.getItem("kf_impact_stories") || "[]"); } catch {}
@@ -493,27 +468,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════════════════════ CTA BANNER ══════════════════════════════ */}
-      <section className="kf-hero-dots" style={{
-        background: `linear-gradient(135deg, ${C.navy} 0%, ${C.primary} 60%, ${C.secondary} 100%)`,
-        padding: isMobile?"64px 20px":"96px 32px",
-        textAlign:"center", color:"#fff",
-        position:"relative", overflow:"hidden",
-      }}>
-        <div style={{ position:"absolute", top:-60, right:-60, width:320, height:320, borderRadius:"50%", background:"rgba(255,255,255,0.03)", pointerEvents:"none" }} />
-        <div style={{ maxWidth:680, margin:"0 auto", position:"relative" }}>
-          <div style={{ fontSize: isMobile?44:56, marginBottom:20 }}>🤝</div>
-          <h2 style={{ fontSize:"clamp(26px,3.5vw,44px)", fontWeight:900, margin:"0 0 16px", letterSpacing:-0.5 }}>{P.cta_title}</h2>
-          <p style={{ fontSize: isMobile?15:18, opacity:0.84, marginBottom:44, lineHeight:1.7, maxWidth:520, margin:"0 auto 44px" }}>{P.cta_sub}</p>
-          <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
-            <button className="kf-btn kf-btn-gold" onClick={() => navigate("/donate")}
-              style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:800, border:"none" }}>
-              ❤️ {P.cta_donor}
-            </button>
-            <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/contact")}
-              style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:700, border:"none" }}>
-              {P.cta_report}
-            </button>
+      {/* ══════════════════════════ CTA BANNER — real photo background ═════ */}
+      <section style={{ position:"relative", overflow:"hidden", minHeight: isMobile?400:520, display:"flex", alignItems:"center" }}>
+        {/* Real photo bg */}
+        <div style={{ position:"absolute", inset:0, backgroundImage:"url('https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=1400&q=80')", backgroundSize:"cover", backgroundPosition:"center 40%" }} />
+        <div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg, rgba(0,38,81,0.82) 0%, rgba(0,75,150,0.72) 50%, rgba(75,125,25,0.65) 100%)` }} />
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize:"36px 36px" }} />
+
+        <div style={{ position:"relative", zIndex:2, width:"100%", padding: isMobile?"64px 20px":"96px 32px", textAlign:"center", color:"#fff" }}>
+          <div style={{ maxWidth:700, margin:"0 auto" }}>
+            <span style={{ display:"inline-block", background:"rgba(224,171,33,0.2)", border:"1px solid rgba(224,171,33,0.5)", color:C.gold, borderRadius:20, padding:"6px 18px", fontSize:12, fontWeight:800, letterSpacing:1, textTransform:"uppercase", marginBottom:24 }}>MAKE AN IMPACT</span>
+            <h2 style={{ fontSize:"clamp(28px,4vw,50px)", fontWeight:900, margin:"0 0 18px", lineHeight:1.1, letterSpacing:-1 }}>{P.cta_title}</h2>
+            <p style={{ fontSize: isMobile?15:18, opacity:0.88, marginBottom:44, lineHeight:1.7, maxWidth:520, margin:"0 auto 44px" }}>{P.cta_sub}</p>
+            <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+              <button className="kf-btn kf-btn-gold" onClick={() => navigate("/donate")}
+                style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:800, border:"none", boxShadow:`0 8px 28px rgba(224,171,33,0.4)` }}>
+                ❤️ {P.cta_donor}
+              </button>
+              <button className="kf-btn kf-btn-ghost" onClick={() => navigate("/contact")}
+                style={{ padding: isMobile?"14px 28px":"16px 40px", borderRadius:14, fontSize: isMobile?14:16, fontWeight:700, border:"none" }}>
+                {P.cta_report}
+              </button>
+            </div>
           </div>
         </div>
       </section>
