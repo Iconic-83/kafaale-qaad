@@ -3466,9 +3466,9 @@ const BLANK_MEMBER = { id:"", name:"", role:"", bio:"", photo:"", linkedin:"", s
 const BLANK_UPDATE = { id:"", type:"General", published:false, title:"", date:"", location:"", severity:"medium", body:"", img:"", needs:[] };
 const UPDATE_TYPES = ["Disaster","Flood","Drought","Emergency","Conflict","Disease","General"];
 
-const SiteSettingsPanel = ({ showToast, currentUser }) => {
+const SiteSettingsPanel = ({ showToast, currentUser, defaultTab }) => {
   const C = COLORS;
-  const [settingsTab, setSettingsTab] = useState("pages");
+  const [settingsTab, setSettingsTab] = useState(defaultTab || "pages");
   const [pageVis,  setPageVis]  = useState(loadPageVis);
   const [siteInfo, setSiteInfo] = useState(loadSiteInfo);
   const [saved,    setSaved]    = useState(false);
@@ -4160,7 +4160,7 @@ const STORIES_KEY = "kf_impact_stories";
 const loadStories = () => { try { return JSON.parse(localStorage.getItem(STORIES_KEY) || "[]"); } catch { return []; } };
 
 const ImpactStoriesPanel = ({ showToast }) => {
-  const { isMobile } = useResponsive();
+  const isMobile = useIsMobile();
   const [stories, setStories] = useState(loadStories);
   const [form, setForm] = useState({ title:"", category:"", location:"", beforeDesc:"", afterDesc:"", daysToDeliver:"", amountDistributed:"", beforeImg:null, afterImg:null, beforePreview:"", afterPreview:"" });
   const [editing, setEditing] = useState(null);
@@ -4388,7 +4388,7 @@ const parseCSV = (text) => {
 };
 
 const BulkImportPanel = ({ showToast, currentUser }) => {
-  const { isMobile } = useResponsive();
+  const isMobile = useIsMobile();
   const [rows, setRows] = useState([]);
   const [fileName, setFileName] = useState("");
   const [importMode, setImportMode] = useState("individual"); // "individual" | "program"
