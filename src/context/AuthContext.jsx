@@ -5,12 +5,13 @@ const AuthContext = createContext(null);
 
 // Demo-mode accounts — used when the backend is unreachable
 const DEMO_ACCOUNTS = {
-  'superadmin@kafaale.org': { id: 'demo-superadmin', name: 'Super Admin',      role: 'super_admin',     email: 'superadmin@kafaale.org' },
-  'admin@kafaale.org':      { id: 'demo-admin',      name: 'Ahmed Kafaale',    role: 'admin',           email: 'admin@kafaale.org' },
-  'agent@kafaale.org':      { id: 'demo-agent',      name: 'Abdi Yusuf',       role: 'field_agent',     email: 'agent@kafaale.org' },
-  'donor@kafaale.org':      { id: 'demo-donor',      name: 'Fatima Al-Thani',  role: 'donor',           email: 'donor@kafaale.org' },
-  'reporter@kafaale.org':   { id: 'demo-reporter',   name: 'Hodan Farah',      role: 'reporter',        email: 'reporter@kafaale.org' },
-  'programs@kafaale.org':   { id: 'demo-programs',   name: 'Sahra Programs',   role: 'program_manager', email: 'programs@kafaale.org' },
+  'superadmin@kafaale.org': { id: 'demo-superadmin', name: 'Super Admin',      role: 'super_admin',        email: 'superadmin@kafaale.org' },
+  'admin@kafaale.org':      { id: 'demo-admin',      name: 'Ahmed Kafaale',    role: 'admin',              email: 'admin@kafaale.org' },
+  'verifier@kafaale.org':   { id: 'demo-verifier',   name: 'Fadumo Warsame',   role: 'verification_office',email: 'verifier@kafaale.org' },
+  'agent@kafaale.org':      { id: 'demo-agent',      name: 'Abdi Yusuf',       role: 'field_agent',        email: 'agent@kafaale.org' },
+  'donor@kafaale.org':      { id: 'demo-donor',      name: 'Fatima Al-Thani',  role: 'donor',              email: 'donor@kafaale.org' },
+  'reporter@kafaale.org':   { id: 'demo-reporter',   name: 'Hodan Farah',      role: 'reporter',           email: 'reporter@kafaale.org' },
+  'programs@kafaale.org':   { id: 'demo-programs',   name: 'Sahra Programs',   role: 'program_manager',    email: 'programs@kafaale.org' },
 };
 const DEMO_PASSWORD = 'Kafaale123!';
 const DEMO_TOKEN = 'demo-token-kafaale-qaad';

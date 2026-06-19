@@ -5781,8 +5781,8 @@ const ProgramManagerDashboard = ({ currentUser, showToast }) => {
 // ─── Role → internal dashboard key ─────────────────────────────────────────
 const ROLE_MAP = {
   reporter:            "observer",
-  admin:               "verification_office",
-  super_admin:         "super_admin",
+  admin:               "admin",           // → AdminDashboard grid (limited tiles)
+  super_admin:         "super_admin",     // → AdminDashboard grid (all tiles)
   field_agent:         "field_team",
   donor:               "donor",
   // legacy keys (pass-through)
@@ -5793,12 +5793,13 @@ const ROLE_MAP = {
 };
 
 const ROLE_LABELS = {
-  observer:            { icon: "📝", label: "Reporter" },
-  verification_office: { icon: "🏛️", label: "Admin / Verification" },
-  field_team:          { icon: "🗺️", label: "Field Agent" },
-  donor:               { icon: "❤️", label: "Donor / Sponsor" },
-  super_admin:         { icon: "🛡️", label: "Super Admin" },
-  program_manager:     { icon: "🌱", label: "Program Manager" },
+  observer:            { icon: "📝",  label: "Reporter"              },
+  admin:               { icon: "🟠",  label: "Administrator"         },
+  verification_office: { icon: "🏛️", label: "Verification Officer"   },
+  field_team:          { icon: "🗺️", label: "Field Agent"            },
+  donor:               { icon: "❤️", label: "Donor / Sponsor"        },
+  super_admin:         { icon: "🛡️", label: "Super Administrator"    },
+  program_manager:     { icon: "🌱",  label: "Program Manager"       },
 };
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────
@@ -5906,7 +5907,7 @@ export default function KafaaleQaadApp() {
     if (!authUser) return;
     if (showLoader) setDataLoading(true);
     try {
-      if (["admin","super_admin","verification_office"].includes(authUser.role)) {
+      if (["admin","super_admin","verification_office","program_manager"].includes(authUser.role)) {
         const data = await adminApi.cases({ limit: 30 });
         if (data?.cases) setCases(data.cases.map(c => mapCase(c, "admin")));
         // Load users + donations after dashboard is visible (non-blocking)
@@ -6099,11 +6100,25 @@ export default function KafaaleQaadApp() {
   const roleInfo = ROLE_LABELS[internalRole] || { icon: "👤", label: "User" };
 
   // ─── ROLE DASHBOARDS MAP (locked to real role) ──────────────────────────
+  const sharedAdminProps = {
+    cases: filteredCases, users, donations, sponsors, agents,
+    onViewCase: setSelectedCase, onAddUser: () => setShowAddUser(true),
+    onDeleteUser: handleDeleteUser, onChangeRole: handleChangeRole,
+    onExport: () => setShowExport(true),
+    onConfirmDonation: handleConfirmDonation, onComplete: setCompleteCase,
+    onStartDelivery: setDeliveryAssign, onFullReport: setFullReportId,
+    currentUser, showToast,
+  };
   const ROLE_DASHBOARDS = {
     observer: (
       <ObserverDashboard cases={filteredCases} currentUser={currentUser}
         onReport={() => setShowReport(true)} onViewCase={setSelectedCase} />
     ),
+    // admin role → new grid dashboard with limited tiles (no Users/Settings)
+    admin: (
+      <AdminDashboard {...sharedAdminProps} isSuperAdmin={false} />
+    ),
+    // verification_office → case workflow pipeline view
     verification_office: (
       <VerificationDashboard cases={filteredCases} agents={agents} donations={donations}
         onViewCase={setSelectedCase} onAssign={setAssignCase} onReject={setRejectCase}
@@ -6121,13 +6136,9 @@ export default function KafaaleQaadApp() {
       <DonorDashboard cases={filteredCases}
         currentUser={currentUser} onViewCase={setSelectedCase} onSponsor={setSponsorCase} />
     ),
+    // super_admin → full grid (all 12 tiles)
     super_admin: (
-      <AdminDashboard cases={filteredCases} users={users} donations={donations} sponsors={sponsors} agents={agents}
-        onViewCase={setSelectedCase} onAddUser={() => setShowAddUser(true)} onDeleteUser={handleDeleteUser}
-        onChangeRole={handleChangeRole} onExport={() => setShowExport(true)} isSuperAdmin={authUser?.role === "super_admin"}
-        onConfirmDonation={handleConfirmDonation} onComplete={setCompleteCase}
-        onStartDelivery={setDeliveryAssign} onFullReport={setFullReportId}
-        currentUser={currentUser} showToast={showToast} />
+      <AdminDashboard {...sharedAdminProps} isSuperAdmin={true} />
     ),
     program_manager: (
       <ProgramManagerDashboard currentUser={currentUser} showToast={showToast} />
