@@ -28,6 +28,7 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.15.1",
     "socket.io": "^4.8.3",
+    "vercel": "^54.14.2",
     "winston": "^3.19.0",
     "zod": "^4.4.3"
   },

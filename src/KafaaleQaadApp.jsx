@@ -3419,6 +3419,7 @@ const PAGE_DEFAULTS = {
   volunteer:    { label: "Volunteer",      path: "/volunteer",    icon: "🤝", group: "More" },
   faq:          { label: "FAQ",            path: "/faq",          icon: "❓", group: "More" },
   transparency: { label: "Transparency",   path: "/transparency", icon: "📊", group: "More" },
+  updates:      { label: "Updates",        path: "/updates",      icon: "🚨", group: "More" },
   contact:      { label: "Contact",        path: "/contact",      icon: "📬", group: "Contact" },
 };
 
@@ -3440,12 +3441,48 @@ const SITE_INFO_DEFAULTS = {
 const loadPageVis   = () => { try { return { ...Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true])), ...JSON.parse(localStorage.getItem("kf_page_settings")||"{}") }; } catch { return Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true])); } };
 const loadSiteInfo  = () => { try { return { ...SITE_INFO_DEFAULTS, ...JSON.parse(localStorage.getItem("kf_site_settings")||"{}") }; } catch { return { ...SITE_INFO_DEFAULTS }; } };
 
+// ── Team & Updates helpers ────────────────────────────────────────────────────
+const TEAM_KEY_ADMIN    = "kf_team_data";
+const TEAM_VIS_KEY_ADMIN = "kf_team_visible";
+const UPDATES_ADMIN_KEY = "kf_updates";
+
+const DEFAULT_TEAM_ADMIN = [
+  { id:"t1", name:"Abdimalik Hassan", role:"Project Lead & CEO",       bio:"Humanitarian sector leader with 10+ years in crisis response across the Horn of Africa.", photo:"", linkedin:"", show:true },
+  { id:"t2", name:"Asha Mohammed",    role:"Product Manager",          bio:"Driving platform strategy and community partnerships across 4 countries.", photo:"", linkedin:"", show:true },
+  { id:"t3", name:"Fatima Ali",       role:"Design Lead",              bio:"Award-winning UX designer focused on making aid technology accessible in low-connectivity environments.", photo:"", linkedin:"", show:true },
+  { id:"t4", name:"Omar Ibrahim",     role:"Lead Backend Engineer",    bio:"Full-stack engineer specialising in secure, high-availability humanitarian platforms.", photo:"", linkedin:"", show:true },
+  { id:"t5", name:"Hodan Warsame",    role:"Field Operations Manager", bio:"Former UNHCR field officer with direct experience in IDP camp management and emergency response.", photo:"", linkedin:"", show:true },
+  { id:"t6", name:"Mahad Yusuf",      role:"Security & DevOps",        bio:"Cybersecurity specialist ensuring donor data and beneficiary privacy across all systems.", photo:"", linkedin:"", show:true },
+];
+const DEFAULT_UPDATES_ADMIN = [
+  { id:"upd-1", type:"Flood",    published:true,  title:"Severe Flooding Displaces 3,000+ Families in Beledweyne", date:"2026-06-15", location:"Beledweyne, Hiran Region",  severity:"critical", body:"Unprecedented flooding along the Shabelle River has displaced over 3,000 families in Beledweyne. Access roads are cut off. Emergency food, shelter, and clean water are urgently needed.", img:"https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=700&q=75", needs:["Emergency Shelter Kits","Clean Water","Food Packages"] },
+  { id:"upd-2", type:"Drought",  published:true,  title:"Drought Alert: Bay Region Facing Critical Food Shortage",  date:"2026-06-10", location:"Baidoa, Bay Region",         severity:"high",     body:"Three consecutive failed rainy seasons have pushed Bay Region into a severe food crisis. Over 15,000 people face acute malnutrition.",  img:"https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=700&q=75", needs:["Food Packages","Livestock Feed","Water Trucking"] },
+  { id:"upd-3", type:"Emergency",published:true,  title:"IDP Camp Medical Emergency — Mogadishu North",            date:"2026-06-05", location:"Mogadishu, Benadir",         severity:"high",     body:"A disease outbreak in Mogadishu North IDP camp is affecting hundreds of families. Medical supplies are critically low.", img:"https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=700&q=75", needs:["Medicine","ORS Kits","Mobile Clinic"] },
+  { id:"upd-4", type:"General",  published:true,  title:"Kafaale Qaad Expands to Lower Jubba Region",              date:"2026-05-28", location:"Kismayo, Lower Jubba",       severity:"info",     body:"We are proud to announce our expansion into the Lower Jubba region. Local field agents have been trained and onboarded.", img:"https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=700&q=75", needs:[] },
+];
+const loadTeamAdmin = () => { try { return JSON.parse(localStorage.getItem(TEAM_KEY_ADMIN)||"null")||DEFAULT_TEAM_ADMIN; } catch { return DEFAULT_TEAM_ADMIN; } };
+const loadUpdatesAdmin = () => { try { return JSON.parse(localStorage.getItem(UPDATES_ADMIN_KEY)||"null")||DEFAULT_UPDATES_ADMIN; } catch { return DEFAULT_UPDATES_ADMIN; } };
+const BLANK_MEMBER = { id:"", name:"", role:"", bio:"", photo:"", linkedin:"", show:true };
+const BLANK_UPDATE = { id:"", type:"General", published:false, title:"", date:"", location:"", severity:"medium", body:"", img:"", needs:[] };
+const UPDATE_TYPES = ["Disaster","Flood","Drought","Emergency","Conflict","Disease","General"];
+
 const SiteSettingsPanel = ({ showToast, currentUser }) => {
   const C = COLORS;
   const [settingsTab, setSettingsTab] = useState("pages");
   const [pageVis,  setPageVis]  = useState(loadPageVis);
   const [siteInfo, setSiteInfo] = useState(loadSiteInfo);
   const [saved,    setSaved]    = useState(false);
+
+  // Team management
+  const [team,        setTeam]        = useState(loadTeamAdmin);
+  const [teamVisible, setTeamVisible] = useState(() => { try { const s=localStorage.getItem(TEAM_VIS_KEY_ADMIN); return s===null?true:s==="true"; } catch { return true; } });
+  const [editMember,  setEditMember]  = useState(null); // null | member object
+  const [memberForm,  setMemberForm]  = useState(BLANK_MEMBER);
+
+  // Updates management
+  const [updatesData,  setUpdatesData]  = useState(loadUpdatesAdmin);
+  const [editUpdate,   setEditUpdate]   = useState(null);
+  const [updateForm,   setUpdateForm]   = useState(BLANK_UPDATE);
 
   const isSuperAdmin = currentUser?.role === "super_admin";
 
@@ -3470,13 +3507,79 @@ const SiteSettingsPanel = ({ showToast, currentUser }) => {
     setPageVis(v => ({ ...v, [key]: !v[key] }));
   };
 
+  // Team helpers
+  const saveTeam = (newTeam, newVis) => {
+    const t = newTeam !== undefined ? newTeam : team;
+    const v = newVis  !== undefined ? newVis  : teamVisible;
+    localStorage.setItem(TEAM_KEY_ADMIN,     JSON.stringify(t));
+    localStorage.setItem(TEAM_VIS_KEY_ADMIN, String(v));
+    window.dispatchEvent(new Event("storage"));
+    showToast("Team saved");
+  };
+  const openNewMember  = () => { setMemberForm({ ...BLANK_MEMBER, id: "t" + Date.now() }); setEditMember("new"); };
+  const openEditMember = (m) => { setMemberForm({ ...m });                                   setEditMember(m.id); };
+  const saveMember = () => {
+    const f = memberForm;
+    if (!f.name.trim()) return showToast("Name is required");
+    const existing = team.find(m => m.id === f.id);
+    const newTeam  = existing ? team.map(m => m.id===f.id ? f : m) : [...team, f];
+    setTeam(newTeam);
+    saveTeam(newTeam, undefined);
+    setEditMember(null);
+  };
+  const deleteMember = (id) => {
+    const newTeam = team.filter(m => m.id !== id);
+    setTeam(newTeam);
+    saveTeam(newTeam, undefined);
+    showToast("Member removed");
+  };
+  const toggleMemberShow = (id) => {
+    const newTeam = team.map(m => m.id===id ? { ...m, show: !m.show } : m);
+    setTeam(newTeam);
+    saveTeam(newTeam, undefined);
+  };
+  const toggleTeamSection = () => {
+    const newVis = !teamVisible;
+    setTeamVisible(newVis);
+    saveTeam(undefined, newVis);
+  };
+
+  // Updates helpers
+  const saveUpdates = (list) => {
+    localStorage.setItem(UPDATES_ADMIN_KEY, JSON.stringify(list));
+    window.dispatchEvent(new Event("storage"));
+    showToast("Updates saved");
+  };
+  const openNewUpdate  = () => { setUpdateForm({ ...BLANK_UPDATE, id: "upd-" + Date.now() }); setEditUpdate("new"); };
+  const openEditUpdate = (u) => { setUpdateForm({ ...u }); setEditUpdate(u.id); };
+  const saveUpdate = () => {
+    if (!updateForm.title.trim()) return showToast("Title is required");
+    const existing = updatesData.find(u => u.id === updateForm.id);
+    const newList  = existing ? updatesData.map(u => u.id===updateForm.id ? updateForm : u) : [updateForm, ...updatesData];
+    setUpdatesData(newList);
+    saveUpdates(newList);
+    setEditUpdate(null);
+  };
+  const deleteUpdate = (id) => {
+    const newList = updatesData.filter(u => u.id !== id);
+    setUpdatesData(newList);
+    saveUpdates(newList);
+  };
+  const togglePublish = (id) => {
+    const newList = updatesData.map(u => u.id===id ? { ...u, published: !u.published } : u);
+    setUpdatesData(newList);
+    saveUpdates(newList);
+  };
+
   const groups = [...new Set(Object.values(PAGE_DEFAULTS).map(p => p.group))];
 
   const STABS = [
-    { id: "pages",   label: "📄 Page Visibility" },
-    { id: "siteinfo",label: "🏢 Site Information" },
-    { id: "homepage",label: "🏠 Homepage Content" },
-    { id: "social",  label: "📱 Social & Contact" },
+    { id: "pages",       label: "📄 Page Visibility" },
+    { id: "siteinfo",   label: "🏢 Site Information" },
+    { id: "homepage",   label: "🏠 Homepage Content" },
+    { id: "social",     label: "📱 Social & Contact" },
+    { id: "team",       label: "👥 Meet the Team" },
+    { id: "updates_mgr",label: "🚨 Updates" },
   ];
 
   const fieldStyle = {
@@ -3673,6 +3776,217 @@ const SiteSettingsPanel = ({ showToast, currentUser }) => {
             <button onClick={saveSiteInfo} style={{ padding: "11px 28px", borderRadius: 10, border: "none", cursor: "pointer", background: C.primary, color: "#fff", fontWeight: 800, fontSize: 14 }}>
               {saved ? "✓ Saved" : "Save Social Links"}
             </button>
+          )}
+        </div>
+      )}
+
+      {/* ── TEAM MANAGEMENT ── */}
+      {settingsTab === "team" && (
+        <div>
+          {/* Global show/hide */}
+          <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:14, padding:"16px 20px", marginBottom:24, display:"flex", alignItems:"center", justifyContent:"space-between", gap:16 }}>
+            <div>
+              <div style={{ fontSize:14, fontWeight:800, color:C.navy }}>Show "Meet the Team" section on About page</div>
+              <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>When OFF, the entire team section is hidden from the About page.</div>
+            </div>
+            <button onClick={toggleTeamSection} style={{
+              width:52, height:28, borderRadius:99, border:"none", cursor:"pointer",
+              background: teamVisible ? C.secondary : "#D1D5DB", position:"relative", transition:"background .2s", flexShrink:0,
+            }}>
+              <span style={{ position:"absolute", top:3, left: teamVisible ? 26 : 3, width:22, height:22, borderRadius:"50%", background:"#fff", transition:"left .2s", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
+            </button>
+          </div>
+
+          {/* Add member button */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+            <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{team.length} team members</div>
+            <button onClick={openNewMember} style={{ padding:"9px 20px", background:C.primary, color:"#fff", border:"none", borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:13 }}>+ Add Member</button>
+          </div>
+
+          {/* Member list */}
+          <div style={{ display:"grid", gap:10, marginBottom:24 }}>
+            {team.map((m, i) => (
+              <div key={m.id||i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:12, padding:"14px 16px", display:"flex", alignItems:"center", gap:14 }}>
+                <div style={{ width:44, height:44, borderRadius:"50%", overflow:"hidden", flexShrink:0, background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:900, color:C.primary }}>
+                  {m.photo ? <img src={m.photo} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (m.name||"?")[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:800, color:C.text }}>{m.name || <em style={{ color:C.muted }}>No name</em>}</div>
+                  <div style={{ fontSize:12, color:C.primary, fontWeight:600 }}>{m.role}</div>
+                  {m.bio && <div style={{ fontSize:11, color:C.muted, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:320 }}>{m.bio}</div>}
+                </div>
+                <div style={{ display:"flex", gap:8, alignItems:"center", flexShrink:0 }}>
+                  {/* Show/hide toggle */}
+                  <button onClick={() => toggleMemberShow(m.id)} style={{
+                    width:40, height:22, borderRadius:99, border:"none", cursor:"pointer", position:"relative",
+                    background: m.show !== false ? C.secondary : "#D1D5DB", transition:"background .2s",
+                  }}>
+                    <span style={{ position:"absolute", top:2, left: m.show!==false ? 20:2, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left .2s", boxShadow:"0 1px 3px rgba(0,0,0,0.2)" }} />
+                  </button>
+                  <button onClick={() => openEditMember(m)} style={{ padding:"6px 14px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, cursor:"pointer", fontSize:12, fontWeight:700, color:C.text }}>Edit</button>
+                  <button onClick={() => deleteMember(m.id)} style={{ padding:"6px 12px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:8, cursor:"pointer", fontSize:12, fontWeight:700, color:"#C0392B" }}>✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Edit/Add member form modal */}
+          {editMember && (
+            <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:900, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+              <div style={{ background:"#fff", borderRadius:20, padding:28, maxWidth:520, width:"100%", maxHeight:"90vh", overflowY:"auto" }}>
+                <h3 style={{ margin:"0 0 20px", fontSize:18, fontWeight:800 }}>{editMember==="new" ? "Add New Member" : "Edit Member"}</h3>
+                <div style={{ display:"grid", gap:14 }}>
+                  {[
+                    { key:"name",     label:"Full Name *",    type:"text"  },
+                    { key:"role",     label:"Role / Title",   type:"text"  },
+                    { key:"photo",    label:"Photo URL",      type:"url"   },
+                    { key:"linkedin", label:"LinkedIn URL",   type:"url"   },
+                  ].map(({key,label,type}) => (
+                    <div key={key}>
+                      <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>{label}</label>
+                      <input type={type} value={memberForm[key]||""} onChange={e => setMemberForm(f => ({...f,[key]:e.target.value}))}
+                        style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }} />
+                    </div>
+                  ))}
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Bio</label>
+                    <textarea rows={3} value={memberForm.bio||""} onChange={e => setMemberForm(f => ({...f,bio:e.target.value}))}
+                      style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }} />
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <label style={{ fontSize:13, fontWeight:700, color:C.text }}>Visible on About page</label>
+                    <button onClick={() => setMemberForm(f => ({...f,show:!f.show}))} style={{ width:44, height:24, borderRadius:99, border:"none", cursor:"pointer", position:"relative", background: memberForm.show!==false ? C.secondary:"#D1D5DB", transition:"background .2s" }}>
+                      <span style={{ position:"absolute", top:3, left: memberForm.show!==false ? 22:3, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left .2s" }} />
+                    </button>
+                  </div>
+                </div>
+                {memberForm.photo && (
+                  <div style={{ marginTop:14, textAlign:"center" }}>
+                    <img src={memberForm.photo} alt="" style={{ width:72, height:72, borderRadius:"50%", objectFit:"cover", border:`2px solid ${C.border}` }} />
+                  </div>
+                )}
+                <div style={{ display:"flex", gap:12, marginTop:22 }}>
+                  <button onClick={saveMember} style={{ flex:1, padding:"11px", background:C.primary, color:"#fff", border:"none", borderRadius:10, cursor:"pointer", fontWeight:800, fontSize:14 }}>
+                    {editMember==="new" ? "Add Member" : "Save Changes"}
+                  </button>
+                  <button onClick={() => setEditMember(null)} style={{ padding:"11px 20px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:14 }}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── UPDATES MANAGEMENT ── */}
+      {settingsTab === "updates_mgr" && (
+        <div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+            <div>
+              <div style={{ fontSize:15, fontWeight:700 }}>{updatesData.length} updates total — {updatesData.filter(u=>u.published).length} published</div>
+              <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>Manage disaster alerts, flood reports, and field updates shown on the /updates page.</div>
+            </div>
+            <button onClick={openNewUpdate} style={{ padding:"9px 20px", background:C.primary, color:"#fff", border:"none", borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:13 }}>+ New Update</button>
+          </div>
+
+          <div style={{ display:"grid", gap:10, marginBottom:24 }}>
+            {updatesData.map((u) => {
+              const typeColors = { Disaster:"#C0392B", Flood:"#1D4ED8", Drought:"#D97706", Emergency:"#7C3AED", Conflict:"#374151", Disease:"#065F46", General:"#0369A1" };
+              const tc = typeColors[u.type] || typeColors.General;
+              return (
+                <div key={u.id} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:12, padding:"14px 16px", display:"flex", alignItems:"flex-start", gap:14 }}>
+                  {u.img && <img src={u.img} alt="" style={{ width:60, height:50, objectFit:"cover", borderRadius:8, flexShrink:0 }} />}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:4, flexWrap:"wrap" }}>
+                      <span style={{ background:tc+"18", color:tc, borderRadius:20, padding:"2px 10px", fontSize:10, fontWeight:800 }}>{u.type}</span>
+                      <span style={{ fontSize:11, color:C.muted }}>{u.date}</span>
+                      <span style={{ fontSize:11, color:C.muted }}>📍 {u.location}</span>
+                    </div>
+                    <div style={{ fontSize:14, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{u.title || <em style={{color:C.muted}}>Untitled</em>}</div>
+                  </div>
+                  <div style={{ display:"flex", gap:8, flexShrink:0, alignItems:"center" }}>
+                    <button onClick={() => togglePublish(u.id)} style={{
+                      padding:"5px 12px", borderRadius:20, border:"none", cursor:"pointer", fontSize:11, fontWeight:800,
+                      background: u.published ? "#D1FAE5" : C.bg, color: u.published ? "#065F46" : C.muted,
+                    }}>{u.published ? "✓ Live" : "Draft"}</button>
+                    <button onClick={() => openEditUpdate(u)} style={{ padding:"6px 14px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, cursor:"pointer", fontSize:12, fontWeight:700 }}>Edit</button>
+                    <button onClick={() => deleteUpdate(u.id)} style={{ padding:"6px 12px", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:8, cursor:"pointer", fontSize:12, fontWeight:700, color:"#C0392B" }}>✕</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Edit/Add update form modal */}
+          {editUpdate && (
+            <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:900, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"40px 16px", overflowY:"auto" }}>
+              <div style={{ background:"#fff", borderRadius:20, padding:28, maxWidth:580, width:"100%", maxHeight:"90vh", overflowY:"auto" }}>
+                <h3 style={{ margin:"0 0 20px", fontSize:18, fontWeight:800 }}>{editUpdate==="new" ? "New Update" : "Edit Update"}</h3>
+                <div style={{ display:"grid", gap:14 }}>
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Title *</label>
+                    <input value={updateForm.title} onChange={e=>setUpdateForm(f=>({...f,title:e.target.value}))}
+                      style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }} />
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                    <div>
+                      <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Type</label>
+                      <select value={updateForm.type} onChange={e=>setUpdateForm(f=>({...f,type:e.target.value}))}
+                        style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }}>
+                        {UPDATE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Severity</label>
+                      <select value={updateForm.severity} onChange={e=>setUpdateForm(f=>({...f,severity:e.target.value}))}
+                        style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }}>
+                        {["critical","high","medium","low","info"].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                    <div>
+                      <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Date</label>
+                      <input type="date" value={updateForm.date} onChange={e=>setUpdateForm(f=>({...f,date:e.target.value}))}
+                        style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }} />
+                    </div>
+                    <div>
+                      <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Location</label>
+                      <input value={updateForm.location} onChange={e=>setUpdateForm(f=>({...f,location:e.target.value}))}
+                        style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }} />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Body / Description</label>
+                    <textarea rows={4} value={updateForm.body} onChange={e=>setUpdateForm(f=>({...f,body:e.target.value}))}
+                      style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box", resize:"vertical", lineHeight:1.6 }} />
+                  </div>
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Cover Image URL</label>
+                    <input type="url" value={updateForm.img} onChange={e=>setUpdateForm(f=>({...f,img:e.target.value}))}
+                      style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }} />
+                    {updateForm.img && <img src={updateForm.img} alt="" style={{ marginTop:8, height:80, borderRadius:8, objectFit:"cover", maxWidth:"100%" }} />}
+                  </div>
+                  <div>
+                    <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Needs (comma-separated)</label>
+                    <input value={(updateForm.needs||[]).join(",")} onChange={e=>setUpdateForm(f=>({...f,needs:e.target.value.split(",").map(s=>s.trim()).filter(Boolean)}))}
+                      placeholder="Emergency Shelter, Clean Water, Food"
+                      style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }} />
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <label style={{ fontSize:13, fontWeight:700, color:C.text }}>Publish immediately</label>
+                    <button onClick={() => setUpdateForm(f=>({...f,published:!f.published}))} style={{ width:44, height:24, borderRadius:99, border:"none", cursor:"pointer", position:"relative", background: updateForm.published ? C.secondary:"#D1D5DB", transition:"background .2s" }}>
+                      <span style={{ position:"absolute", top:3, left: updateForm.published ? 22:3, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left .2s" }} />
+                    </button>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:12, marginTop:22 }}>
+                  <button onClick={saveUpdate} style={{ flex:1, padding:"11px", background:C.primary, color:"#fff", border:"none", borderRadius:10, cursor:"pointer", fontWeight:800, fontSize:14 }}>
+                    {editUpdate==="new" ? "Create Update" : "Save Changes"}
+                  </button>
+                  <button onClick={() => setEditUpdate(null)} style={{ padding:"11px 20px", background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:14 }}>Cancel</button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}

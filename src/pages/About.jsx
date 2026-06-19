@@ -1,71 +1,95 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext.jsx";
 import { PT } from "../translations.js";
 
-const C = { navy: "#002651", primary: "#004B96", secondary: "#4B7D19", accent: "#E0AB21", danger: "#C0392B", muted: "#5A6E8A", bg: "#F4F7FC", border: "#D8E4F0", text: "#0D1F3C", gold: "#E0AB21", green: "#4B7D19", blue: "#004B96" };
+const C = { navy:"#002651", primary:"#004B96", secondary:"#4B7D19", accent:"#E0AB21", muted:"#5A6E8A", bg:"#F4F7FC", border:"#D8E4F0", text:"#0D1F3C", gold:"#E0AB21", green:"#4B7D19", blue:"#004B96" };
 
-const TEAM = [
-  { name: "Abdimalik Hassan", role: "Project Lead & CEO",       icon: "👨‍💼", bg: "#DBEAFE", color: "#1D4ED8" },
-  { name: "Asha Mohammed",    role: "Product Manager",          icon: "👩‍💼", bg: "#D1FAE5", color: "#065F46" },
-  { name: "Fatima Ali",       role: "Design Lead",              icon: "👩‍🎨", bg: "#FCE7F3", color: "#9D174D" },
-  { name: "Omar Ibrahim",     role: "Lead Backend Engineer",    icon: "👨‍💻", bg: "#EDE9FE", color: "#5B21B6" },
-  { name: "Hodan Warsame",    role: "Field Operations Manager", icon: "👩‍🔬", bg: "#FEF3C7", color: "#92400E" },
-  { name: "Mahad Yusuf",      role: "Security & DevOps",        icon: "👨‍🔧", bg: "#FEE2E2", color: "#991B1B" },
+const TEAM_KEY    = "kf_team_data";
+const TEAM_VIS_KEY = "kf_team_visible";
+
+const DEFAULT_TEAM = [
+  { id:"t1", name:"Abdimalik Hassan", role:"Project Lead & CEO",       bio:"Humanitarian sector leader with 10+ years in crisis response across the Horn of Africa.", photo:"", linkedin:"", show:true },
+  { id:"t2", name:"Asha Mohammed",    role:"Product Manager",          bio:"Driving platform strategy and community partnerships across 4 countries.", photo:"", linkedin:"", show:true },
+  { id:"t3", name:"Fatima Ali",       role:"Design Lead",              bio:"Award-winning UX designer focused on making aid technology accessible in low-connectivity environments.", photo:"", linkedin:"", show:true },
+  { id:"t4", name:"Omar Ibrahim",     role:"Lead Backend Engineer",    bio:"Full-stack engineer specialising in secure, high-availability humanitarian platforms.", photo:"", linkedin:"", show:true },
+  { id:"t5", name:"Hodan Warsame",    role:"Field Operations Manager", bio:"Former UNHCR field officer with direct experience in IDP camp management and emergency response.", photo:"", linkedin:"", show:true },
+  { id:"t6", name:"Mahad Yusuf",      role:"Security & DevOps",        bio:"Cybersecurity specialist ensuring donor data and beneficiary privacy across all systems.", photo:"", linkedin:"", show:true },
 ];
 
-const MILESTONES = [
-  { year: "2025 Q1", done: true  },
-  { year: "2025 Q2", done: true  },
-  { year: "2025 Q3", done: true  },
-  { year: "2025 Q4", done: true  },
-  { year: "2026 Q1", done: true  },
-  { year: "2026 Q2", done: true  },
-  { year: "2026 Q3", done: false },
-  { year: "2027",    done: false },
+const INITIALS_COLORS = [
+  ["#DBEAFE","#1D4ED8"],["#D1FAE5","#065F46"],["#FCE7F3","#9D174D"],
+  ["#EDE9FE","#5B21B6"],["#FEF3C7","#92400E"],["#FEE2E2","#991B1B"],
+];
+
+function getTeam() {
+  try { const s = JSON.parse(localStorage.getItem(TEAM_KEY)||"null"); return s||DEFAULT_TEAM; } catch { return DEFAULT_TEAM; }
+}
+function getTeamVisible() {
+  try { const s = localStorage.getItem(TEAM_VIS_KEY); return s === null ? true : s === "true"; } catch { return true; }
+}
+
+const IMPACT_STATS = [
+  { val:"2,400+", label:"Cases Processed",    color:C.primary },
+  { val:"$1.2M",  label:"Aid Distributed",    color:C.secondary },
+  { val:"98.8%",  label:"Verification Rate",  color:C.accent },
+  { val:"6",      label:"Regions Covered",    color:"#8B5CF6" },
 ];
 
 export default function About() {
   const { lang } = useLang();
   const P = PT.about[lang] || PT.about.en;
 
-  const MILESTONE_EVENTS = [
-    lang === "so" ? "Fikradda mashruuca iyo uruurinta shuruucda"                                         : lang === "ar" ? "مفهوم المشروع وجمع المتطلبات"                                    : lang === "tr" ? "Proje konsepti ve gereksinim toplama"                                           : lang === "es" ? "Concepto del proyecto y recopilación de requisitos"                     : lang === "fr" ? "Concept du projet et collecte des exigences"                                    : "Project concept & requirements gathering",
-    lang === "so" ? "Naqshadaynta nidaamka iyo qorshaha xogta"                                           : lang === "ar" ? "تصميم بنية النظام ومخطط قاعدة البيانات"                           : lang === "tr" ? "Sistem mimarisi tasarımı ve veritabanı şeması"                                  : lang === "es" ? "Diseño de arquitectura del sistema y esquema de base de datos"          : lang === "fr" ? "Conception de l'architecture système et schéma de base de données"              : "System architecture design and database schema",
-    lang === "so" ? "Horumarinta platform-ka aasaasiga (frontend + backend)"                             : lang === "ar" ? "بدء تطوير المنصة الأساسية (الواجهة الأمامية + الخلفية)"          : lang === "tr" ? "Temel platform geliştirmesi başlıyor (frontend + backend)"                    : lang === "es" ? "Desarrollo de la plataforma principal comienza (frontend + backend)"    : lang === "fr" ? "Développement de la plateforme principale (frontend + backend)"                : "Core platform development begins (frontend + backend)",
-    lang === "so" ? "App mobile-ka kooxda goobta + isku-dhafka GPS"                                      : lang === "ar" ? "تطبيق الجوال لفريق الميدان + تكامل GPS"                          : lang === "tr" ? "Saha ekibi mobil uygulaması + GPS entegrasyonu"                                 : lang === "es" ? "App móvil para equipo de campo + integración GPS"                       : lang === "fr" ? "Application mobile équipe terrain + intégration GPS"                           : "Field team mobile app + GPS integration",
-    lang === "so" ? "Isku-dhafka boobka lacag-bixinta (Stripe, PayPal, Ama)"                             : lang === "ar" ? "تكامل بوابة الدفع (Stripe وPayPal وAma)"                        : lang === "tr" ? "Ödeme ağ geçidi entegrasyonu (Stripe, PayPal, Ama)"                           : lang === "es" ? "Integración de pasarela de pago (Stripe, PayPal, Ama)"                 : lang === "fr" ? "Intégration de la passerelle de paiement (Stripe, PayPal, Ama)"               : "Payment gateway integration (Stripe, PayPal, Ama)",
-    lang === "so" ? "Bilaabista Platform-ka — diyaar u ah waxsoosaarka ✅"                               : lang === "ar" ? "إطلاق المنصة — جاهزة للإنتاج ✅"                                : lang === "tr" ? "Platform lansmanı — üretime hazır ✅"                                           : lang === "es" ? "Lanzamiento de la plataforma — lista para producción ✅"                 : lang === "fr" ? "Lancement de la plateforme — prête pour la production ✅"                      : "Platform launch — production ready ✅",
-    lang === "so" ? "Ogeysiisyada SMS/WhatsApp + falanqaynta horumarsan"                                 : lang === "ar" ? "إشعارات SMS/WhatsApp + تحليلات متقدمة"                          : lang === "tr" ? "SMS/WhatsApp bildirimleri + gelişmiş analitik"                                 : lang === "es" ? "Notificaciones SMS/WhatsApp + análisis avanzado"                      : lang === "fr" ? "Notifications SMS/WhatsApp + analytique avancée"                              : "SMS/WhatsApp notifications + advanced analytics",
-    lang === "so" ? "AI-ga kala-soocida xaaladda + isku-dhafka xogta UNHCR"                             : lang === "ar" ? "تحديد أولويات الحالات بالذكاء الاصطناعي + تكامل قاعدة بيانات UNHCR": lang === "tr" ? "Yapay zeka vaka önceliklendirme + UNHCR veritabanı entegrasyonu"               : lang === "es" ? "Priorización de casos con IA + integración base de datos UNHCR"        : lang === "fr" ? "Priorisation des cas par IA + intégration base de données UNHCR"              : "AI case prioritization + UNHCR database integration",
-  ];
+  const [team, setTeam] = useState(getTeam);
+  const [teamVisible, setTeamVisible] = useState(getTeamVisible);
+
+  useEffect(() => {
+    const fn = () => { setTeam(getTeam()); setTeamVisible(getTeamVisible()); };
+    window.addEventListener("storage", fn);
+    return () => window.removeEventListener("storage", fn);
+  }, []);
 
   const VALUES = [
-    { icon: "🔍", title: lang === "so" ? "Shafafnaanta"  : lang === "ar" ? "الشفافية"   : lang === "tr" ? "Şeffaflık"    : lang === "es" ? "Transparencia" : lang === "fr" ? "Transparence" : "Transparency",  desc: lang === "so" ? "Xaaladda kasta, macaamiil kastaa, iyo ficil kastaa waxaa lagu duubaa oo la xisaabin karaa. Wax lama qariyaan." : lang === "ar" ? "كل حالة وكل معاملة وكل إجراء مُسجَّل وقابل للتدقيق. لا شيء مخفي." : lang === "tr" ? "Her vaka, her işlem ve her eylem kayıt altında ve denetlenebilir. Hiçbir şey gizli değil." : lang === "es" ? "Cada caso, cada transacción y cada acción está registrada y es auditable. Nada está oculto." : lang === "fr" ? "Chaque cas, chaque transaction et chaque action est enregistré et auditable. Rien n'est caché." : "Every case, every transaction, and every action is logged and auditable. Nothing is hidden." },
-    { icon: "🛡️", title: lang === "so" ? "Aaminaad"      : lang === "ar" ? "الثقة"      : lang === "tr" ? "Güven"        : lang === "es" ? "Confianza"     : lang === "fr" ? "Confiance"    : "Trust",         desc: lang === "so" ? "Xaqiijinta dhinacyo badan, ogaanshaha sixitaanka, iyo lacag-bixiyaadka sir ah waxay dhisaan kalsooni deeq-bixiyeyaasha." : lang === "ar" ? "التحقق متعدد الطبقات وكشف الاحتيال والمدفوعات المشفرة تبني ثقة المانحين." : lang === "tr" ? "Çok katmanlı doğrulama, dolandırıcılık tespiti ve şifreli ödemeler bağışçı güvenini inşa eder." : lang === "es" ? "La verificación multicapa, la detección de fraude y los pagos cifrados generan confianza en los donantes." : lang === "fr" ? "La vérification multi-couches, la détection de fraude et les paiements chiffrés renforcent la confiance des donateurs." : "Multi-layer verification, fraud detection, and encrypted payments build donor confidence." },
-    { icon: "⚡", title: lang === "so" ? "Hufnaanta"     : lang === "ar" ? "الكفاءة"    : lang === "tr" ? "Verimlilik"   : lang === "es" ? "Eficiencia"    : lang === "fr" ? "Efficacité"   : "Efficiency",    desc: lang === "so" ? "Nidaamka shaqada ee 8-tallaabada wuxuu yaraynayaa shaqada gacanta, dheereynayaa gaarsiinta gargaarka oo samaynayaa caqabadaha." : lang === "ar" ? "سير العمل التلقائي من 8 خطوات يقلل العمل اليدوي ويسرّع توزيع المساعدات ويزيل الاختناقات." : lang === "tr" ? "8 adımlı otomatik iş akışı manuel çalışmayı azaltır, yardım teslimatını hızlandırır ve darboğazları ortadan kaldırır." : lang === "es" ? "El flujo de trabajo automatizado de 8 pasos reduce el trabajo manual, acelera la entrega de ayuda y elimina cuellos de botella." : lang === "fr" ? "Le flux de travail automatisé en 8 étapes réduit le travail manuel, accélère la distribution de l'aide et élimine les goulots d'étranglement." : "8-step automated workflow reduces manual work, speeds up aid delivery and eliminates bottlenecks." },
-    { icon: "🌍", title: lang === "so" ? "Saameynta"     : lang === "ar" ? "الأثر"      : lang === "tr" ? "Etki"         : lang === "es" ? "Impacto"       : lang === "fr" ? "Impact"       : "Impact",        desc: lang === "so" ? "Saameynta dunida dhabta ah oo lagu cabiro sawirrada caddaynta-gaarsiinta, xaqiijinta GPS, iyo warbixinnada saameynta." : lang === "ar" ? "تأثير حقيقي يُقاس بصور دليل التسليم والتحقق عبر GPS وتقارير التأثير." : lang === "tr" ? "Teslimat kanıt fotoğrafları, GPS doğrulama ve etki raporları ile ölçülen gerçek dünya etkisi." : lang === "es" ? "Impacto en el mundo real medido con fotos de prueba de entrega, verificación GPS e informes de impacto." : lang === "fr" ? "Impact réel mesuré avec des photos de preuve de livraison, la vérification GPS et des rapports d'impact." : "Real-world impact measured with proof-of-delivery photos, GPS verification, and impact reports." },
-    { icon: "🤝", title: lang === "so" ? "Iskaashiga"    : lang === "ar" ? "التعاون"    : lang === "tr" ? "İşbirliği"    : lang === "es" ? "Colaboración"  : lang === "fr" ? "Collaboration": "Collaboration",  desc: lang === "so" ? "Xidid warbixiyeyaasha, kooxaha goobta, deeq-bixiyeyaasha, iyo maamulayaasha hal platform oo toosan." : lang === "ar" ? "ربط المراسلين وفرق الميدان والمانحين والمديرين في منصة واحدة متكاملة." : lang === "tr" ? "Muhabirler, saha ekipleri, bağışçılar ve yöneticileri tek bir platformda birbirine bağlar." : lang === "es" ? "Conectando reporteros, equipos de campo, donantes y administradores en una plataforma sin interrupciones." : lang === "fr" ? "Connecter les rapporteurs, les équipes de terrain, les donateurs et les administrateurs sur une seule plateforme." : "Connecting reporters, field teams, donors, and administrators in one seamless platform." },
-    { icon: "📱", title: lang === "so" ? "Helitaan"      : lang === "ar" ? "إمكانية الوصول" : lang === "tr" ? "Erişilebilirlik" : lang === "es" ? "Accesibilidad" : lang === "fr" ? "Accessibilité" : "Accessibility", desc: lang === "so" ? "Web, mobile, iyo waxqabadka la'aanta internet — wuxuu u shaqeeyaa xaaladaha xiriirka yar ee goobta." : lang === "ar" ? "ويب وجوال ويعمل دون إنترنت — يعمل في بيئات منخفضة الاتصال في الميدان." : lang === "tr" ? "Web, mobil ve çevrimdışı yetenekli — sahada düşük bağlantılı ortamlarda çalışır." : lang === "es" ? "Web, móvil y con capacidad offline — funciona en entornos de baja conectividad en el campo." : lang === "fr" ? "Web, mobile et hors ligne — fonctionne dans des environnements à faible connectivité sur le terrain." : "Web, mobile, and offline-capable — works in low-connectivity environments in the field." },
+    { icon:"🔍", svg: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+      title:"Transparency", color:"#3B82F6",
+      desc:"Every case, transaction, and action is logged and publicly auditable. Donors see exactly where their money goes." },
+    { icon:"🛡️", svg: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+      title:"Trust", color:"#10B981",
+      desc:"Multi-layer verification, fraud detection and encrypted payments build unshakeable donor confidence." },
+    { icon:"⚡", svg: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+      title:"Efficiency", color:"#F59E0B",
+      desc:"8-step automated workflow reduces manual work, speeds aid delivery and eliminates bottlenecks." },
+    { icon:"🌍", svg: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+      title:"Impact", color:"#8B5CF6",
+      desc:"Real impact measured with GPS-verified proof-of-delivery photos and transparent impact reports." },
+    { icon:"🤝", svg: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>,
+      title:"Collaboration", color:"#EC4899",
+      desc:"Connecting reporters, field teams, donors, and administrators in one seamless platform." },
+    { icon:"📱", svg: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>,
+      title:"Accessibility", color:"#06B6D4",
+      desc:"Web, mobile, and offline-capable. Works in low-connectivity field environments across the region." },
   ];
 
   const PROBLEMS = [
-    { icon: "🚨", title: lang === "so" ? "Sixitaanka & Laba Jibbaarka"  : lang === "ar" ? "الاحتيال والازدواجية"   : lang === "tr" ? "Dolandırıcılık ve Tekrarlar" : lang === "es" ? "Fraude y Duplicados"    : lang === "fr" ? "Fraude et Doublons"         : "Fraud & Duplicates",    desc: lang === "so" ? "Xaaladaha been abuur ah iyo codsiyada laba jibbaaran ayaa miisaaniyatka gargaarka mariya. Xaqiijin la'aantii, kheyraadku wuxuu u tagaa dadka khaldan." : lang === "ar" ? "الحالات المزيفة والطلبات المكررة تستنزف ميزانيات المساعدات. بدون تحقق، تذهب الموارد للأشخاص الخطأ." : lang === "tr" ? "Sahte vakalar ve mükerrer başvurular yardım bütçelerini tüketir. Doğrulama olmadan kaynaklar yanlış kişilere gider." : lang === "es" ? "Los casos falsos y las solicitudes duplicadas agotan los presupuestos de ayuda. Sin verificación, los recursos van a las personas equivocadas." : lang === "fr" ? "Les faux cas et les demandes en double épuisent les budgets d'aide. Sans vérification, les ressources vont aux mauvaises personnes." : "Fake cases and duplicate applications drain aid budgets. Without verification, resources go to the wrong people.", color: "#C0392B", bg: "#FEF2F2" },
-    { icon: "🌫️", title: lang === "so" ? "Shafafnaan La'aan"            : lang === "ar" ? "غياب الشفافية"         : lang === "tr" ? "Şeffaflık Yok"             : lang === "es" ? "Sin Transparencia"    : lang === "fr" ? "Aucune Transparence"       : "No Transparency",       desc: lang === "so" ? "Deeq-bixiyeyaashu ma heli karaan hab ay ku xaqiijiyaan lacagtoodu inay gaartay faa'iideyaasha. Kalsoonigu wuu baxaa, deeqahuna wey yaraadaan." : lang === "ar" ? "لا توجد طريقة للمانحين للتحقق من وصول أموالهم للمستفيدين. تتآكل الثقة وتتراجع التبرعات." : lang === "tr" ? "Bağışçıların paralarının yararlanıcılara ulaştığını doğrulamanın yolu yok. Güven azalır, bağışlar düşer." : lang === "es" ? "Los donantes no tienen forma de verificar que su dinero llegó a los beneficiarios. La confianza se erosiona, las donaciones disminuyen." : lang === "fr" ? "Les donateurs n'ont aucun moyen de vérifier que leur argent a atteint les bénéficiaires. La confiance s'érode, les dons diminuent." : "Donors have no way to verify their money reached beneficiaries. Trust erodes, donations decline.", color: "#F59E0B", bg: "#FFFBEB" },
-    { icon: "🐢", title: lang === "so" ? "Hababka Gacanta Gaabiska ah"  : lang === "ar" ? "إجراءات يدوية بطيئة"   : lang === "tr" ? "Yavaş Manuel Süreçler"    : lang === "es" ? "Procesos Manuales Lentos": lang === "fr" ? "Processus Manuels Lents"    : "Slow Manual Processes",  desc: lang === "so" ? "Nidaamyada warqadda ku salaysan ama kala goosan ayaa tardiya gaarsiinta gargaarka. Xaaladaha ayaa istaagayaan safaf todobaadyo badan iyagoon u baahnayn." : lang === "ar" ? "الأنظمة الورقية أو المنفصلة تبطئ توزيع المساعدات. تقبع الحالات في قوائم الانتظار أسابيع دون داعٍ." : lang === "tr" ? "Kağıt tabanlı veya bağlantısız sistemler yardım dağıtımını yavaşlatır. Vakalar gereksiz yere haftalarca kuyruklarda bekler." : lang === "es" ? "Los sistemas basados en papel o desconectados ralentizan la entrega de ayuda. Los casos se quedan en colas durante semanas innecesariamente." : lang === "fr" ? "Les systèmes papier ou déconnectés ralentissent la distribution de l'aide. Les cas restent dans des files d'attente pendant des semaines inutilement." : "Paper-based or disconnected systems slow down aid delivery. Cases sit in queues for weeks unnecessarily.", color: "#8B5CF6", bg: "#F5F3FF" },
-  ];
-
-  const MISSION_STATS = [
-    { icon: "📋", val: lang === "so" ? "8 Tallaabo" : lang === "ar" ? "8 خطوات" : lang === "tr" ? "8 Adım" : lang === "es" ? "8 Pasos" : lang === "fr" ? "8 Étapes" : "8 Steps",     label: P.stat_steps,    color: C.primary },
-    { icon: "👥", val: lang === "so" ? "5 Door"     : lang === "ar" ? "5 أدوار" : lang === "tr" ? "5 Rol"  : lang === "es" ? "5 Roles" : lang === "fr" ? "5 Rôles"  : "5 Roles",     label: P.stat_roles,    color: "#8B5CF6" },
-    { icon: "🔐", val: "100%",                                                                                                                                                          label: P.stat_enc,      color: C.secondary },
-    { icon: "📊", val: lang === "so" ? "Wakhtiga Dhabta" : lang === "ar" ? "فوري" : lang === "tr" ? "Gerçek Zamanlı" : lang === "es" ? "Tiempo Real" : lang === "fr" ? "Temps Réel" : "Real-time", label: P.stat_realtime, color: C.accent },
+    { icon:"🚨", svgPath:"M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z", polyPoints:"12 9 12 13", circleX:"12", circleY:"17",
+      title:"Fraud & Duplicates", color:"#C0392B", bg:"#FEF2F2",
+      desc:"Fake cases and duplicate applications drain aid budgets. Without verification, resources go to the wrong people.",
+      solution:"Multi-layer AI verification flags duplicates before a single dollar leaves the donor." },
+    { icon:"🌫️", svgPath:"M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z",
+      title:"No Transparency", color:"#D97706", bg:"#FFFBEB",
+      desc:"Donors have no way to verify their money reached beneficiaries. Trust erodes, donations decline.",
+      solution:"GPS-tagged proof of delivery and immutable audit logs give donors real-time visibility." },
+    { icon:"🐢", svgPath:"M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z",
+      title:"Slow Manual Processes", color:"#7C3AED", bg:"#F5F3FF",
+      desc:"Paper-based systems slow down aid delivery. Cases sit in queues for weeks unnecessarily.",
+      solution:"8-step digital workflow cuts case-to-delivery time from weeks to days." },
   ];
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: "#0D1F3C" }}>
+    <div style={{ color:C.text }}>
 
-      {/* Hero */}
-      <section className="kf-hero-dots" style={{ background:`linear-gradient(145deg, ${C.navy}, ${C.primary} 60%, ${C.secondary})`, color:"#fff", padding:"92px 24px 72px", textAlign:"center" }}>
+      {/* ── Hero ── */}
+      <section className="kf-hero-dots" style={{ background:`linear-gradient(145deg,${C.navy},${C.primary} 60%,${C.secondary})`, color:"#fff", padding:"92px 24px 72px", textAlign:"center" }}>
         <div style={{ maxWidth:760, margin:"0 auto" }}>
           <span className="kf-badge" style={{ background:"rgba(255,255,255,.14)", border:"1px solid rgba(255,255,255,.24)", color:"#fff" }}>{P.hero_badge}</span>
           <h1 style={{ fontSize:"clamp(30px,5vw,52px)", fontWeight:900, margin:"20px 0 16px", lineHeight:1.1, letterSpacing:-1 }}>
@@ -75,134 +99,173 @@ export default function About() {
         </div>
       </section>
 
-      {/* Mission & Vision */}
-      <section style={{ padding:"80px 24px", background:"#fff" }}>
-        <div style={{ maxWidth:1280, margin:"0 auto", display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", gap:48, alignItems:"center" }}>
-          <div>
-            <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary }}>{P.mission_badge}</span>
-            <hr className="kf-rule" />
-            <h2 style={{ fontSize:"clamp(24px,3.5vw,38px)", fontWeight:900, margin:"0 0 16px", lineHeight:1.2, letterSpacing:-0.5 }}>{P.mission_title}</h2>
-            <p style={{ fontSize:16, color:C.muted, lineHeight:1.8, marginBottom:16 }}>{P.mission_p1}</p>
-            <p style={{ fontSize:16, color:C.muted, lineHeight:1.8 }}>{P.mission_p2}</p>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            {MISSION_STATS.map(s => (
-              <div key={s.label} className="kf-card" style={{ background:C.bg, borderRadius:18, padding:24, textAlign:"center", border:`1px solid ${C.border}` }}>
-                <div style={{ fontSize:30, marginBottom:8 }}>{s.icon}</div>
-                <div style={{ fontSize:22, fontWeight:900, color:s.color, letterSpacing:-0.5 }}>{s.val}</div>
-                <div style={{ fontSize:12, color:C.muted, marginTop:5, fontWeight:500 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+      {/* ── Mission — centered, no boxes ── */}
+      <section style={{ padding:"100px 24px", background:"#fff", textAlign:"center" }}>
+        <div style={{ maxWidth:820, margin:"0 auto" }}>
+          <span className="kf-badge" style={{ background:C.primary+"15", color:C.primary, marginBottom:20 }}>{P.mission_badge}</span>
+          <hr className="kf-rule-center" />
+          <h2 style={{ fontSize:"clamp(26px,4vw,48px)", fontWeight:900, margin:"0 0 12px", lineHeight:1.1, letterSpacing:-1 }}>
+            {P.mission_title}
+          </h2>
+          <p style={{ fontSize:"clamp(17px,2vw,22px)", fontStyle:"italic", color:C.muted, lineHeight:1.85, margin:"0 0 24px", fontWeight:300 }}>
+            "{P.mission_p1}"
+          </p>
+          <p style={{ fontSize:16, color:C.muted, lineHeight:1.8, maxWidth:640, margin:"0 auto" }}>{P.mission_p2}</p>
         </div>
       </section>
 
-      {/* The Problem */}
+      {/* ── Why Kafaale Qaad Exists ── */}
       <section style={{ padding:"80px 24px", background:C.bg }}>
-        <div style={{ maxWidth:1280, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:52 }}>
-            <span className="kf-badge" style={{ background:"#FEE2E2", color:"#991B1B" }}>{P.prob_badge}</span>
+        <div style={{ maxWidth:1200, margin:"0 auto" }}>
+          <div style={{ textAlign:"center", marginBottom:56 }}>
+            <span className="kf-badge" style={{ background:"#FEE2E2", color:"#991B1B", marginBottom:12 }}>{P.prob_badge}</span>
             <hr className="kf-rule-center" />
             <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>{P.prob_title}</h2>
+            <p style={{ fontSize:15, color:C.muted, maxWidth:520, margin:"0 auto" }}>Three systemic failures keep aid from reaching those who need it most.</p>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:24 }}>
-            {PROBLEMS.map(p => (
-              <div key={p.title} className="kf-card" style={{ background:"#fff", borderRadius:20, padding:32, border:`1px solid ${C.border}`, boxShadow:"0 2px 12px rgba(0,0,0,.04)", borderTop:`3px solid ${p.color}` }}>
-                <div style={{ width:54, height:54, borderRadius:16, background:p.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, marginBottom:18 }}>{p.icon}</div>
-                <div style={{ fontSize:16, fontWeight:800, color:p.color, marginBottom:10 }}>{p.title}</div>
-                <div style={{ fontSize:14, color:C.muted, lineHeight:1.7 }}>{p.desc}</div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(300px,1fr))", gap:28 }}>
+            {PROBLEMS.map((p, i) => (
+              <div key={i} style={{ background:"#fff", borderRadius:24, overflow:"hidden", border:`1px solid ${C.border}`, boxShadow:"0 4px 24px rgba(0,0,0,0.06)" }}>
+                {/* Shape header with icon centered */}
+                <div style={{ background:`linear-gradient(135deg, ${p.color}18, ${p.color}08)`, padding:"44px 24px 28px", textAlign:"center", borderBottom:`1px solid ${p.color}20` }}>
+                  <div style={{
+                    width:96, height:96, margin:"0 auto 20px",
+                    background:`linear-gradient(135deg, ${p.color}22, ${p.color}44)`,
+                    border:`2px solid ${p.color}40`,
+                    borderRadius:"30% 70% 70% 30% / 30% 30% 70% 70%",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:42, boxShadow:`0 8px 24px ${p.color}25`,
+                  }}>{p.icon}</div>
+                  <h3 style={{ fontSize:20, fontWeight:900, color:p.color, margin:"0 0 8px" }}>{p.title}</h3>
+                </div>
+                {/* Body */}
+                <div style={{ padding:"22px 26px 28px", textAlign:"center" }}>
+                  <p style={{ fontSize:14, color:C.muted, lineHeight:1.75, margin:"0 0 18px" }}>{p.desc}</p>
+                  <div style={{ background:p.bg, borderRadius:12, padding:"12px 16px", fontSize:13, color:p.color, fontWeight:700, lineHeight:1.6 }}>
+                    ✓ {p.solution}
+                  </div>
+                </div>
               </div>
             ))}
-          </div>
-          <div style={{ textAlign:"center", marginTop:44 }}>
-            <div className="kf-shine" style={{ display:"inline-block", background:`linear-gradient(135deg, ${C.primary}, ${C.secondary})`, borderRadius:20, padding:"30px 52px", color:"#fff", maxWidth:700 }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
-              <div style={{ fontSize:20, fontWeight:900, marginBottom:10 }}>{P.prob_solve}</div>
-              <div style={{ fontSize:15, opacity:0.88, lineHeight:1.7 }}>{P.prob_solve_sub}</div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Values */}
+      {/* ── Core Values — centered ── */}
       <section style={{ padding:"80px 24px", background:"#fff" }}>
-        <div style={{ maxWidth:1280, margin:"0 auto" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto" }}>
           <div style={{ textAlign:"center", marginBottom:52 }}>
             <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>{P.values_title}</h2>
             <hr className="kf-rule-center" />
+            <p style={{ fontSize:15, color:C.muted, maxWidth:480, margin:"0 auto" }}>The principles that guide every decision we make.</p>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:20 }}>
             {VALUES.map((v, i) => (
-              <div key={i} className="kf-card kf-feature-card" style={{ padding:26, borderRadius:16, border:`1px solid ${C.border}`, borderLeft:`3px solid ${C.primary}`, background:"#FAFBFF", display:"flex", gap:16 }}>
-                <div style={{ fontSize:28, flexShrink:0 }}>{v.icon}</div>
-                <div>
-                  <div style={{ fontSize:15, fontWeight:800, marginBottom:8 }}>{v.title}</div>
-                  <div style={{ fontSize:13, color:C.muted, lineHeight:1.65 }}>{v.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Roadmap */}
-      <section style={{ padding:"80px 24px", background:C.bg }}>
-        <div style={{ maxWidth:860, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:52 }}>
-            <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>{P.road_title}</h2>
-            <hr className="kf-rule-center" />
-            <p style={{ fontSize:16, color:C.muted }}>{P.road_sub}</p>
-          </div>
-          {MILESTONES.map((m, i) => (
-            <div key={i} style={{ display:"flex", gap:20, marginBottom:20, alignItems:"flex-start" }}>
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", flexShrink:0, width:40 }}>
+              <div key={i} className="kf-card" style={{
+                padding:"32px 20px", borderRadius:20, border:`1px solid ${C.border}`,
+                background:"#FAFBFF", textAlign:"center",
+                boxShadow:"0 2px 12px rgba(0,0,0,0.04)",
+              }}>
                 <div style={{
-                  width:24, height:24, borderRadius:"50%",
-                  background: m.done ? C.secondary : "#D1D5DB",
-                  border:"3px solid #fff",
-                  boxShadow:`0 0 0 2px ${m.done ? C.secondary : "#D1D5DB"}`,
+                  width:68, height:68, borderRadius:18, margin:"0 auto 16px",
+                  background:`linear-gradient(135deg, ${v.color}18, ${v.color}30)`,
+                  border:`1.5px solid ${v.color}30`,
                   display:"flex", alignItems:"center", justifyContent:"center",
+                  color:v.color, boxShadow:`0 4px 16px ${v.color}20`,
                 }}>
-                  {m.done && <span style={{ color:"#fff", fontSize:9, fontWeight:900 }}>✓</span>}
+                  {v.svg}
                 </div>
-                {i < MILESTONES.length-1 && <div style={{ width:2, height:28, background: m.done ? C.secondary+"50" : "#E5E7EB", marginTop:6 }} />}
-              </div>
-              <div style={{ background:"#fff", borderRadius:14, padding:"14px 22px", flex:1, border:`1px solid ${C.border}`, opacity: m.done?1:0.5, boxShadow: m.done?"0 2px 8px rgba(0,38,81,0.05)":"none" }}>
-                <span style={{ background: m.done?"#D1FAE5":"#F3F4F6", color: m.done?"#065F46":C.muted, borderRadius:100, padding:"3px 11px", fontSize:11, fontWeight:700 }}>{m.year}</span>
-                <div style={{ fontSize:14, fontWeight: m.done?700:500, color: m.done?C.text:C.muted, marginTop:8 }}>{MILESTONE_EVENTS[i]}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Team */}
-      <section style={{ padding:"80px 24px", background:"#fff" }}>
-        <div style={{ maxWidth:1280, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:52 }}>
-            <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>{P.team_title}</h2>
-            <hr className="kf-rule-center" />
-            <p style={{ fontSize:16, color:C.muted }}>{P.team_sub}</p>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:22 }}>
-            {TEAM.map((t, i) => (
-              <div key={i} className="kf-card" style={{ textAlign:"center", padding:32, background:"#FAFBFF", borderRadius:20, border:`1px solid ${C.border}` }}>
-                <div style={{ width:72, height:72, borderRadius:"50%", background:t.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:34, margin:"0 auto 16px", boxShadow:`0 4px 16px ${t.color}22` }}>{t.icon}</div>
-                <div style={{ fontSize:15, fontWeight:800, color:C.text }}>{t.name}</div>
-                <div style={{ fontSize:12, color:t.color, fontWeight:700, marginTop:4 }}>{t.role}</div>
+                <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:8 }}>{v.title}</div>
+                <div style={{ fontSize:12, color:C.muted, lineHeight:1.65 }}>{v.desc}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="kf-hero-dots" style={{ background:`linear-gradient(135deg, ${C.navy}, ${C.primary} 60%, ${C.secondary})`, padding:"72px 24px", textAlign:"center", color:"#fff" }}>
-        <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 16px", letterSpacing:-0.5 }}>{P.cta_title}</h2>
-        <p style={{ fontSize:17, opacity:0.84, marginBottom:36, maxWidth:480, margin:"0 auto 36px", lineHeight:1.7 }}>{P.cta_sub}</p>
-        <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
-          <Link to="/donate"  className="kf-btn kf-btn-gold"  style={{ padding:"14px 34px", borderRadius:12, fontWeight:800, fontSize:15 }}>{P.cta_donor}</Link>
-          <Link to="/contact" className="kf-btn kf-btn-ghost" style={{ padding:"14px 34px", borderRadius:12, fontWeight:700, fontSize:15 }}>{P.cta_contact}</Link>
+      {/* ── Impact Numbers (replaces Roadmap) ── */}
+      <section style={{ padding:"80px 24px", background:`linear-gradient(135deg, ${C.navy} 0%, #0f3460 60%, ${C.secondary}99 100%)`, color:"#fff" }}>
+        <div style={{ maxWidth:1000, margin:"0 auto", textAlign:"center" }}>
+          <span className="kf-badge" style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.22)", color:"#fff", marginBottom:18 }}>OUR IMPACT</span>
+          <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 12px", letterSpacing:-0.5 }}>Aid That Moves at the Speed of Need</h2>
+          <p style={{ fontSize:16, opacity:0.75, maxWidth:520, margin:"0 auto 56px", lineHeight:1.7 }}>Every number below represents a real person whose situation was verified, funded, and delivered with full transparency.</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:2 }}>
+            {IMPACT_STATS.map((s, i) => (
+              <div key={i} style={{
+                padding:"36px 24px", textAlign:"center",
+                borderRight: i < IMPACT_STATS.length-1 ? "1px solid rgba(255,255,255,0.12)" : "none",
+              }}>
+                <div style={{ fontSize:"clamp(36px,5vw,56px)", fontWeight:900, lineHeight:1, color:s.color === C.accent ? C.accent : "#fff", letterSpacing:-2 }}>{s.val}</div>
+                <div style={{ fontSize:13, opacity:0.7, marginTop:8, fontWeight:600, textTransform:"uppercase", letterSpacing:1 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Team ── */}
+      {teamVisible && (
+        <section style={{ padding:"80px 24px", background:"#fff" }}>
+          <div style={{ maxWidth:1200, margin:"0 auto" }}>
+            <div style={{ textAlign:"center", marginBottom:52 }}>
+              <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>{P.team_title}</h2>
+              <hr className="kf-rule-center" />
+              <p style={{ fontSize:15, color:C.muted }}>{P.team_sub}</p>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))", gap:22 }}>
+              {team.filter(t => t.show !== false).map((t, i) => {
+                const [bg, color] = INITIALS_COLORS[i % INITIALS_COLORS.length];
+                const initials = t.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+                return (
+                  <div key={t.id || i} className="kf-card" style={{ textAlign:"center", padding:"32px 22px", background:"#FAFBFF", borderRadius:22, border:`1px solid ${C.border}` }}>
+                    <div style={{ width:80, height:80, borderRadius:"50%", margin:"0 auto 16px", overflow:"hidden", boxShadow:`0 4px 16px ${color}22` }}>
+                      {t.photo ? (
+                        <img src={t.photo} alt={t.name} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      ) : (
+                        <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg, ${bg}, ${color}30)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, fontWeight:900, color }}>
+                          {initials}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize:15, fontWeight:800, color:C.text }}>{t.name}</div>
+                    <div style={{ fontSize:12, color, fontWeight:700, marginTop:4, marginBottom: t.bio ? 10 : 0 }}>{t.role}</div>
+                    {t.bio && <div style={{ fontSize:11, color:C.muted, lineHeight:1.6 }}>{t.bio}</div>}
+                    {t.linkedin && (
+                      <a href={t.linkedin} target="_blank" rel="noopener noreferrer" style={{ display:"inline-block", marginTop:10, fontSize:11, color:C.primary, fontWeight:700, textDecoration:"none" }}>LinkedIn →</a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Join the Mission — video background ── */}
+      <section style={{ position:"relative", overflow:"hidden", padding:"100px 24px", textAlign:"center", color:"#fff", minHeight:400, display:"flex", alignItems:"center" }}>
+        {/* Animated video-like gradient background */}
+        <div style={{
+          position:"absolute", inset:0,
+          background:`linear-gradient(135deg, ${C.navy} 0%, ${C.primary} 50%, ${C.secondary} 100%)`,
+        }} />
+        {/* Animated overlay shimmer */}
+        <div style={{
+          position:"absolute", inset:0,
+          backgroundImage:"radial-gradient(ellipse at 20% 50%, rgba(75,125,25,0.35) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(0,75,150,0.4) 0%, transparent 60%)",
+          animation:"kf-pulse 6s ease-in-out infinite",
+        }} />
+        {/* Dot pattern */}
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)", backgroundSize:"40px 40px" }} />
+
+        <div style={{ position:"relative", zIndex:1, maxWidth:700, margin:"0 auto" }}>
+          <span className="kf-badge" style={{ background:"rgba(224,171,33,0.2)", border:"1px solid rgba(224,171,33,0.4)", color:C.accent, marginBottom:24 }}>JOIN US</span>
+          <h2 style={{ fontSize:"clamp(28px,4.5vw,52px)", fontWeight:900, margin:"0 0 20px", lineHeight:1.1, letterSpacing:-1 }}>{P.cta_title}</h2>
+          <p style={{ fontSize:18, opacity:0.85, marginBottom:40, lineHeight:1.75, maxWidth:520, margin:"0 auto 40px" }}>{P.cta_sub}</p>
+          <div style={{ display:"flex", gap:14, justifyContent:"center", flexWrap:"wrap" }}>
+            <Link to="/donate" className="kf-btn kf-btn-gold" style={{ padding:"16px 40px", borderRadius:14, fontWeight:800, fontSize:16, boxShadow:"0 8px 30px rgba(224,171,33,0.4)" }}>{P.cta_donor}</Link>
+            <Link to="/contact" className="kf-btn kf-btn-ghost" style={{ padding:"16px 40px", borderRadius:14, fontWeight:700, fontSize:16 }}>{P.cta_contact}</Link>
+          </div>
         </div>
       </section>
     </div>

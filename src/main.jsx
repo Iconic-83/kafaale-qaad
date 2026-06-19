@@ -46,6 +46,7 @@ import Volunteer      from './pages/Volunteer.jsx';
 import FAQ            from './pages/FAQ.jsx';
 import Transparency   from './pages/Transparency.jsx';
 import Projects       from './pages/Projects.jsx';
+import Updates        from './pages/Updates.jsx';
 import Login          from './pages/Login.jsx';
 import Dashboard    from './KafaaleQaadApp.jsx';
 
@@ -162,6 +163,7 @@ function App() {
           <Route path="/volunteer"     element={<Layout><PageGate pageKey="volunteer"><Volunteer /></PageGate></Layout>} />
           <Route path="/faq"           element={<Layout><PageGate pageKey="faq"><FAQ /></PageGate></Layout>} />
           <Route path="/transparency"  element={<Layout><PageGate pageKey="transparency"><Transparency /></PageGate></Layout>} />
+          <Route path="/updates"       element={<Layout><PageGate pageKey="updates"><Updates /></PageGate></Layout>} />
           <Route path="/login"         element={<Login />} />
           <Route path="/dashboard"     element={<Dashboard />} />
           <Route path="/dashboard/*"   element={<Dashboard />} />
