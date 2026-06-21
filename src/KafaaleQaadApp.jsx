@@ -6906,6 +6906,7 @@ const EnrollBeneficiaryModal = ({ programs: progList, onClose, onDone, showToast
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Input label="Age (public)" type="number" value={form.publicAge} onChange={e => set("publicAge", e.target.value)} placeholder="e.g. 10" />
             <Select label="Gender" value={form.publicGender} onChange={e => set("publicGender", e.target.value)}>
+              <option value="">— Select —</option>
               <option value="female">Female</option>
               <option value="male">Male</option>
               <option value="other">Other</option>
@@ -7148,10 +7149,20 @@ const BulkChildEnrollModal = ({ programs, onClose, onDone, showToast }) => {
                 {FIELDS.map(f => (
                   <td key={f.key} style={{ padding: '4px 4px' }}>
                     {f.select ? (
-                      <select value={row[f.key]} onChange={e => setRow(i, f.key, e.target.value)}
-                        style={{ width: '100%', padding: '5px 6px', borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, background: '#fff' }}>
-                        {f.select.map(s => <option key={s} value={s}>{s || '—'}</option>)}
-                      </select>
+                      <div style={{ display: 'flex', gap: 2 }}>
+                        {f.select.filter(s => s !== '').map(s => (
+                          <button key={s} type="button"
+                            onClick={() => setRow(i, f.key, row[f.key] === s ? '' : s)}
+                            style={{
+                              flex: 1, padding: '4px 2px', borderRadius: 5, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                              border: `1.5px solid ${row[f.key] === s ? C.primary : C.border}`,
+                              background: row[f.key] === s ? C.primary : '#fff',
+                              color: row[f.key] === s ? '#fff' : C.muted,
+                            }}>
+                            {s === 'male' ? '♂' : s === 'female' ? '♀' : s}
+                          </button>
+                        ))}
+                      </div>
                     ) : (
                       <input type={f.type || 'text'} value={row[f.key]} onChange={e => setRow(i, f.key, e.target.value)}
                         style={{ width: '100%', padding: '5px 6px', borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, boxSizing: 'border-box', outline: 'none' }}
