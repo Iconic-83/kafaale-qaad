@@ -3106,7 +3106,7 @@ const PublicUserDashboard = ({ cases, currentUser, onReport, onViewCase, onSpons
   const [loadingSpons,    setLoadingSpons]    = useState(true);
 
   useEffect(() => {
-    programs.mySponsorships()
+    programsApi.mySponsorships()
       .then(data => { if (Array.isArray(data)) setMySponsorships(data); })
       .catch(() => {})
       .finally(() => setLoadingSpons(false));
@@ -3114,19 +3114,19 @@ const PublicUserDashboard = ({ cases, currentUser, onReport, onViewCase, onSpons
 
   const handlePayNow = async (spId) => {
     try {
-      await programs.submitPayment(spId, {});
+      await programsApi.submitPayment(spId, {});
       showToast("✅ Payment submitted — admin will confirm receipt.");
-      programs.mySponsorships().then(d => Array.isArray(d) && setMySponsorships(d));
+      programsApi.mySponsorships().then(d => Array.isArray(d) && setMySponsorships(d));
     } catch { showToast("Failed to submit payment", "error"); }
   };
 
   const handleViewInvoice = async (spId) => {
-    try { setSponsorInvoice(await programs.getInvoice(spId)); } catch { showToast("Could not load invoice", "error"); }
+    try { setSponsorInvoice(await programsApi.getInvoice(spId)); } catch { showToast("Could not load invoice", "error"); }
   };
 
   const handleViewReport = async (spId) => {
     const now = new Date();
-    try { setSponsorReport(await programs.getMonthlyReport(spId, now.getFullYear(), now.getMonth()+1)); }
+    try { setSponsorReport(await programsApi.getMonthlyReport(spId, now.getFullYear(), now.getMonth()+1)); }
     catch { showToast("No report available yet for this month", "error"); }
   };
 
@@ -3440,7 +3440,7 @@ const PublicUserDashboard = ({ cases, currentUser, onReport, onViewCase, onSpons
                             try {
                               await programsApi.renewContract(s.id, { months: 12 });
                               showToast("✅ Contract renewed for 12 more months — thank you!");
-                              programs.mySponsorships().then(d => Array.isArray(d) && setMySponsorships(d));
+                              programsApi.mySponsorships().then(d => Array.isArray(d) && setMySponsorships(d));
                             } catch (e) { showToast(e.message || "Failed to renew", "error"); }
                           }}>🔄 Renew Contract</Btn>
                         )}
