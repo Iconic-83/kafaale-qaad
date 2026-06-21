@@ -30,12 +30,16 @@ export function AuthProvider({ children }) {
       }
       return data;
     } catch (err) {
-      // Backend unreachable — fall back to demo accounts
-      const demo = DEMO_ACCOUNTS[email.toLowerCase()];
-      if (demo && password === DEMO_PASSWORD) {
-        setAuth(demo, DEMO_TOKEN);
-        setUser(demo);
-        return { user: demo, token: DEMO_TOKEN };
+      // Only fall back to demo if the backend is truly unreachable (network/fetch error).
+      // Do NOT fall back on 429 (rate limited), 401 (wrong password), or any HTTP error.
+      const isNetworkError = err instanceof TypeError || err.message?.toLowerCase().includes('failed to fetch') || err.message?.toLowerCase().includes('network');
+      if (isNetworkError) {
+        const demo = DEMO_ACCOUNTS[email.toLowerCase()];
+        if (demo && password === DEMO_PASSWORD) {
+          setAuth(demo, DEMO_TOKEN);
+          setUser(demo);
+          return { user: demo, token: DEMO_TOKEN };
+        }
       }
       throw err;
     } finally {

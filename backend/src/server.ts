@@ -155,13 +155,13 @@ const globalLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
 });
 
-// Auth: 10 login/register attempts per 15 min per IP (brute-force protection)
+// Auth: 20 login/register attempts per 15 min per IP (brute-force protection)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many login attempts. Please wait 15 minutes and try again.' },
+  message: { error: 'Too many login attempts. Please wait 15 minutes before trying again. If you forgot your password, contact your administrator.' },
 });
 
 // Donation: 20 donation attempts per hour per IP (fraud prevention)

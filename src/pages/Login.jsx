@@ -115,20 +115,39 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const [tab,          setTab]         = useState(searchParams.get('tab') === 'register' ? 'register' : 'login');
   const [error,        setError]       = useState('');
+  const [rateLocked,   setRateLocked]  = useState(false);
+  const [countdown,    setCountdown]   = useState(0);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [form,         setForm]        = useState({ email:'', password:'', name:'', role:'reporter', country:'', city:'', phone:'' });
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [countdown]);
+
   const handle = async (e) => {
     e.preventDefault();
+    if (rateLocked) return;
     setError('');
     try {
       tab === 'login'
         ? await login(form.email, form.password)
         : await register({ name:form.name, email:form.email, password:form.password, role:form.role, country:form.country, city:form.city, phone:form.phone });
       nav('/dashboard');
-    } catch (err) { setError(err.message); }
+    } catch (err) {
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('too many') || msg.includes('429')) {
+        setRateLocked(true);
+        setCountdown(15 * 60); // 15 minutes
+        setTimeout(() => setRateLocked(false), 15 * 60 * 1000);
+        setError('rate_limited');
+      } else {
+        setError(msg);
+      }
+    }
   };
 
   const inp = (key, placeholder, type = 'text') => (
@@ -228,9 +247,28 @@ export default function Login() {
             ))}
           </div>
 
-          {error && (
+          {error && error !== 'rate_limited' && (
             <div style={{ background:'#FEF2F2', border:`1px solid ${C.error}30`, color:C.error, padding:'11px 15px', borderRadius:10, marginBottom:16, fontSize:13, fontWeight:600 }}>
               ⚠️ {error}
+            </div>
+          )}
+          {error === 'rate_limited' && (
+            <div style={{ background:'#FFF7ED', border:'1px solid #FCD34D', borderRadius:12, padding:'14px 16px', marginBottom:16 }}>
+              <div style={{ fontWeight:800, fontSize:14, color:'#92400E', marginBottom:4 }}>🔒 Too Many Attempts</div>
+              <div style={{ fontSize:13, color:'#92400E', lineHeight:1.5 }}>
+                Login is temporarily locked due to too many failed attempts.
+              </div>
+              {countdown > 0 && (
+                <div style={{ marginTop:10, background:'#FEF3C7', borderRadius:8, padding:'8px 12px', textAlign:'center' }}>
+                  <div style={{ fontSize:22, fontWeight:900, color:'#D97706', fontVariantNumeric:'tabular-nums' }}>
+                    {String(Math.floor(countdown / 60)).padStart(2,'0')}:{String(countdown % 60).padStart(2,'0')}
+                  </div>
+                  <div style={{ fontSize:11, color:'#92400E', marginTop:2 }}>minutes remaining</div>
+                </div>
+              )}
+              <div style={{ fontSize:12, color:'#92400E', marginTop:8 }}>
+                Contact your administrator if you need immediate access.
+              </div>
             </div>
           )}
 
@@ -261,18 +299,20 @@ export default function Login() {
               </>
             )}
 
-            <button type="submit" disabled={loading} className="kf-btn kf-btn-navy"
+            <button type="submit" disabled={loading || rateLocked} className="kf-btn kf-btn-navy"
               style={{
                 padding:'14px', border:'none', borderRadius:12,
                 fontSize:15, fontWeight:700, marginTop:4,
-                opacity: loading ? 0.7 : 1,
-                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: (loading || rateLocked) ? 0.6 : 1,
+                cursor: (loading || rateLocked) ? 'not-allowed' : 'pointer',
               }}>
               {loading
                 ? `⏳ ${t('pleaseWait')}`
-                : tab === 'login'
-                  ? `🔐 ${t('signIn')}`
-                  : `✨ ${t('createAccount')}`}
+                : rateLocked
+                  ? `🔒 Locked — ${String(Math.floor(countdown/60)).padStart(2,'0')}:${String(countdown%60).padStart(2,'0')}`
+                  : tab === 'login'
+                    ? `🔐 ${t('signIn')}`
+                    : `✨ ${t('createAccount')}`}
             </button>
           </form>
 
