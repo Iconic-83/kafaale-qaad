@@ -322,26 +322,34 @@ export default function Stories() {
 
   return (
     <>
-      {/* Hero */}
-      <section style={{ background:`linear-gradient(135deg,${C.navy} 0%,${C.primary} 60%,${C.secondary} 100%)`, color:"#fff", padding: isMobile?"60px 16px 48px":"100px 32px 72px", textAlign:"center", position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", top:-80, right:-80, width:340, height:340, borderRadius:"50%", background:"rgba(255,255,255,0.04)", pointerEvents:"none" }} />
-        <div style={{ position:"relative", maxWidth:700, margin:"0 auto" }}>
-          <span style={{ background:"rgba(255,255,255,0.15)", borderRadius:100, padding:"6px 18px", fontSize:12, fontWeight:800, letterSpacing:1.5, textTransform:"uppercase" }}>
-            {lang==="so"?"Wararkii & Xikaayada":lang==="ar"?"الأخبار والقصص":lang==="tr"?"Haberler & Hikayeler":lang==="es"?"Noticias & Historias":lang==="fr"?"Actualités & Histoires":"News & Stories"}
-          </span>
-          <h1 style={{ fontSize:"clamp(28px,5vw,56px)", fontWeight:900, margin:"20px 0 18px", lineHeight:1.1, letterSpacing:-1 }}>
-            {lang==="so"?"Xikaayada Saameynta Dhabta ah":lang==="ar"?"قصص الأثر الحقيقي":lang==="tr"?"Gerçek Etki Hikayeleri":lang==="es"?"Historias de Impacto Real":lang==="fr"?"Histoires d'Impact Réel":"Real Impact Stories"}
-          </h1>
-          <p style={{ fontSize:"clamp(14px,2vw,18px)", opacity:0.85, lineHeight:1.7, marginBottom:32 }}>
-            {lang==="so"?"Xaaladda la xaqiijiyay kasta waxay bedeshaa nolosha. Halkan waxaad ka akhrin kartaa siday u dhacday.":lang==="ar"?"كل حالة موثقة تغير حياة. اقرأ هنا كيف حدث ذلك.":lang==="tr"?"Her doğrulanmış vaka hayatları değiştirir. Nasıl olduğunu buradan okuyun.":lang==="es"?"Cada caso verificado transforma vidas. Lea aquí cómo ocurrió.":lang==="fr"?"Chaque cas vérifié transforme des vies. Lisez ici comment cela s'est passé.":"Every verified case transforms lives. Read here how it happened."}
-          </p>
-          {/* Search */}
-          <div style={{ maxWidth:440, margin:"0 auto", position:"relative" }}>
-            <input value={search} onChange={e=>setSearch(e.target.value)}
-              placeholder={lang==="so"?"Raadi xikaayo...":lang==="ar"?"ابحث عن قصة...":lang==="tr"?"Hikaye ara...":lang==="es"?"Buscar historia...":lang==="fr"?"Chercher une histoire...":"Search stories…"}
-              style={{ width:"100%", padding:"13px 46px 13px 16px", borderRadius:12, border:"none", fontSize:14, boxSizing:"border-box", outline:"none" }}
-            />
-            <span style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", fontSize:18, opacity:0.5 }}>🔍</span>
+      {/* Hero — split layout */}
+      <section style={{ overflow:"hidden", background:C.navy }}>
+        <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", minHeight: isMobile?"auto":440 }}>
+          {/* Left — image */}
+          <div style={{ background:"#001028", display:"flex", alignItems:"center", justifyContent:"center", padding: isMobile?"32px 24px":"48px 40px", minHeight: isMobile?260:440 }}>
+            <img src="/stories-hero.jpg" alt="Knowledge grows"
+              style={{ width:"100%", maxWidth:340, height:"auto", objectFit:"contain", display:"block", filter:"drop-shadow(0 0 32px rgba(0,200,255,0.25))" }} />
+          </div>
+          {/* Right — message + search */}
+          <div style={{ background:`linear-gradient(145deg,${C.navy} 0%,${C.primary} 60%,${C.secondary} 100%)`, padding: isMobile?"40px 24px":"72px 52px", display:"flex", flexDirection:"column", justifyContent:"center", color:"#fff", position:"relative", overflow:"hidden" }}>
+            <div style={{ position:"absolute", top:-60, right:-60, width:280, height:280, borderRadius:"50%", background:"rgba(255,255,255,0.04)", pointerEvents:"none" }} />
+            <span style={{ display:"inline-block", background:"rgba(255,255,255,0.14)", border:"1.5px solid rgba(255,255,255,0.28)", borderRadius:24, padding:"5px 18px", fontSize:11, fontWeight:800, letterSpacing:2, textTransform:"uppercase", marginBottom:22, width:"fit-content", backdropFilter:"blur(6px)" }}>
+              {lang==="so"?"Wararkii & Xikaayada":"News & Stories"}
+            </span>
+            <h1 style={{ fontSize:"clamp(26px,3.8vw,48px)", fontWeight:900, margin:"0 0 18px", lineHeight:1.1, letterSpacing:-1, textShadow:"0 2px 20px rgba(0,0,0,0.4)" }}>
+              {lang==="so"?"Xikaayada Saameynta Dhabta ah":"Real Impact Stories"}
+            </h1>
+            <p style={{ fontSize:16, color:"rgba(255,255,255,0.85)", lineHeight:1.85, margin:"0 0 32px", maxWidth:400 }}>
+              {lang==="so"?"Xaaladda la xaqiijiyay kasta waxay bedeshaa nolosha.":"Every verified case transforms a life. These are the stories behind the numbers — real people, real crises, real outcomes made possible by verified giving."}
+            </p>
+            {/* Search */}
+            <div style={{ maxWidth:420, position:"relative" }}>
+              <input value={search} onChange={e=>setSearch(e.target.value)}
+                placeholder={lang==="so"?"Raadi xikaayo...":"Search stories…"}
+                style={{ width:"100%", padding:"14px 48px 14px 18px", borderRadius:50, border:"none", fontSize:14, boxSizing:"border-box", outline:"none", boxShadow:"0 4px 20px rgba(0,0,0,0.25)" }}
+              />
+              <span style={{ position:"absolute", right:18, top:"50%", transform:"translateY(-50%)", fontSize:18, opacity:0.45 }}>🔍</span>
+            </div>
           </div>
         </div>
       </section>
