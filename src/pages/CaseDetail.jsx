@@ -285,20 +285,17 @@ export default function CaseDetail() {
               <div style={{ fontSize: 13, color: C.muted, marginTop: 4, fontWeight: 600 }}>
                 {pct >= 100 ? "Fully Funded 🎉" : "funded so far"}
               </div>
-              {/* Show goal $ only when 100% */}
-              {pct >= 100 && (
-                <div style={{ fontSize: 13, color: C.secondary, fontWeight: 700, marginTop: 6 }}>
-                  Goal: ${(kase.targetGoal || 0).toLocaleString()} ✓
+              {/* Goal amount always shown */}
+              {kase.targetGoal > 0 && (
+                <div style={{ fontSize: 13, color: pct >= 100 ? C.secondary : C.muted, fontWeight: 700, marginTop: 6 }}>
+                  Goal: ${(kase.targetGoal || 0).toLocaleString()} {pct >= 100 ? "✓" : "needed"}
                 </div>
               )}
             </div>
 
             {/* Progress bar */}
-            <div style={{ background: "#F3F4F6", borderRadius: 20, height: 10, overflow: "hidden", marginBottom: 10 }}>
+            <div style={{ background: "#F3F4F6", borderRadius: 20, height: 10, overflow: "hidden", marginBottom: 20 }}>
               <div style={{ width: `${pct}%`, height: "100%", background: pct >= 100 ? C.secondary : `linear-gradient(90deg, ${C.primary}, ${C.accent})`, borderRadius: 20, transition: "width .6s ease" }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", fontSize: 12, color: C.muted, marginBottom: 20 }}>
-              {remaining > 0 && <span><strong style={{ color: C.danger }}>${remaining.toLocaleString()}</strong> still needed</span>}
             </div>
 
             {/* Donate button */}
@@ -352,16 +349,16 @@ export default function CaseDetail() {
       </div>
 
       {/* Bottom CTA */}
-      {(kase.status === "waiting_for_sponsor" || kase.status === "sponsored") && remaining > 0 && (
+      {(kase.status === "waiting_for_sponsor" || kase.status === "sponsored") && pct < 100 && (
         <div style={{ background: C.primary, color: "#fff", padding: "40px 24px", textAlign: "center" }}>
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
             <h2 style={{ margin: "0 0 10px", fontSize: 24, fontWeight: 900 }}>Help Complete This Case</h2>
             <p style={{ margin: "0 0 24px", opacity: 0.85, fontSize: 15 }}>
-              ${remaining.toLocaleString()} is still needed. Every contribution is tracked and delivered with proof.
+              {pct}% funded toward a ${(kase.targetGoal || 0).toLocaleString()} goal. Every contribution is tracked and delivered with proof.
             </p>
             <Link to={`/donate?caseId=${kase.id}`}
               style={{ display: "inline-block", background: C.accent, color: "#fff", padding: "16px 40px", borderRadius: 14, fontWeight: 800, fontSize: 16, textDecoration: "none", boxShadow: `0 6px 24px ${C.accent}60` }}>
-              ❤️ Sponsor This Case — ${remaining.toLocaleString()} Needed
+              ❤️ Sponsor This Case — ${(kase.targetGoal || 0).toLocaleString()} Goal
             </Link>
           </div>
         </div>
