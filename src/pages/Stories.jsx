@@ -303,31 +303,33 @@ export default function Stories() {
 
   return (
     <>
-      {/* Hero — split layout */}
-      <section style={{ overflow:"hidden", background:C.navy }}>
-        <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", minHeight: isMobile?"auto":440 }}>
-          {/* Left — image */}
-          <div style={{ background:"#001028", display:"flex", alignItems:"center", justifyContent:"center", padding: isMobile?"32px 24px":"48px 40px", minHeight: isMobile?260:440 }}>
-            <img src="/stories-hero.jpg" alt="Knowledge grows"
-              style={{ width:"100%", maxWidth:340, height:"auto", objectFit:"contain", display:"block", filter:"drop-shadow(0 0 32px rgba(0,200,255,0.25))" }} />
-          </div>
-          {/* Right — message + search */}
-          <div style={{ background:`linear-gradient(145deg,${C.navy} 0%,${C.primary} 60%,${C.secondary} 100%)`, padding: isMobile?"40px 24px":"72px 52px", display:"flex", flexDirection:"column", justifyContent:"center", color:"#fff", position:"relative", overflow:"hidden" }}>
-            <div style={{ position:"absolute", top:-60, right:-60, width:280, height:280, borderRadius:"50%", background:"rgba(255,255,255,0.04)", pointerEvents:"none" }} />
-            <span style={{ display:"inline-block", background:"rgba(255,255,255,0.14)", border:"1.5px solid rgba(255,255,255,0.28)", borderRadius:24, padding:"5px 18px", fontSize:11, fontWeight:800, letterSpacing:2, textTransform:"uppercase", marginBottom:22, width:"fit-content", backdropFilter:"blur(6px)" }}>
+      {/* Hero — tree image as full-bleed background */}
+      <section style={{ position:"relative", overflow:"hidden", minHeight: isMobile?360:480, display:"flex", alignItems:"center" }}>
+        {/* Tree image — full cover */}
+        <img src="/stories-hero.jpg" alt=""
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:"center center", display:"block" }} />
+        {/* Dark gradient overlay — heavier on text side so copy is readable */}
+        <div style={{ position:"absolute", inset:0, background: isMobile
+          ? "linear-gradient(to bottom, rgba(0,14,40,0.72) 0%, rgba(0,25,60,0.85) 100%)"
+          : "linear-gradient(to right, rgba(0,14,40,0.18) 0%, rgba(0,25,60,0.55) 40%, rgba(0,14,40,0.88) 65%, rgba(0,10,30,0.95) 100%)"
+        }} />
+        {/* Content — pushed to right on desktop, centered on mobile */}
+        <div style={{ position:"relative", zIndex:1, width:"100%", maxWidth:1200, margin:"0 auto", padding: isMobile?"48px 24px":"72px 48px", display:"flex", justifyContent: isMobile?"center":"flex-end" }}>
+          <div style={{ maxWidth:480, color:"#fff", textAlign: isMobile?"center":"left" }}>
+            <span style={{ display:"inline-block", background:"rgba(255,255,255,0.14)", border:"1.5px solid rgba(255,255,255,0.32)", borderRadius:24, padding:"5px 18px", fontSize:11, fontWeight:800, letterSpacing:2, textTransform:"uppercase", marginBottom:22, backdropFilter:"blur(8px)" }}>
               {lang==="so"?"Wararkii & Xikaayada":"News & Stories"}
             </span>
-            <h1 style={{ fontSize:"clamp(26px,3.8vw,48px)", fontWeight:900, margin:"0 0 18px", lineHeight:1.1, letterSpacing:-1, textShadow:"0 2px 20px rgba(0,0,0,0.4)" }}>
+            <h1 style={{ fontSize:"clamp(28px,4vw,52px)", fontWeight:900, margin:"0 0 18px", lineHeight:1.08, letterSpacing:-1.5, textShadow:"0 2px 24px rgba(0,0,0,0.5)" }}>
               {lang==="so"?"Xikaayada Saameynta Dhabta ah":"Real Impact Stories"}
             </h1>
-            <p style={{ fontSize:16, color:"rgba(255,255,255,0.85)", lineHeight:1.85, margin:"0 0 32px", maxWidth:400 }}>
+            <p style={{ fontSize:16, color:"rgba(255,255,255,0.88)", lineHeight:1.85, margin:"0 0 32px" }}>
               {lang==="so"?"Xaaladda la xaqiijiyay kasta waxay bedeshaa nolosha.":"Every verified case transforms a life. These are the stories behind the numbers — real people, real crises, real outcomes made possible by verified giving."}
             </p>
             {/* Search */}
             <div style={{ maxWidth:420, position:"relative" }}>
               <input value={search} onChange={e=>setSearch(e.target.value)}
                 placeholder={lang==="so"?"Raadi xikaayo...":"Search stories…"}
-                style={{ width:"100%", padding:"14px 48px 14px 18px", borderRadius:50, border:"none", fontSize:14, boxSizing:"border-box", outline:"none", boxShadow:"0 4px 20px rgba(0,0,0,0.25)" }}
+                style={{ width:"100%", padding:"14px 48px 14px 18px", borderRadius:50, border:"none", fontSize:14, boxSizing:"border-box", outline:"none", boxShadow:"0 6px 24px rgba(0,0,0,0.35)" }}
               />
               <span style={{ position:"absolute", right:18, top:"50%", transform:"translateY(-50%)", fontSize:18, opacity:0.45 }}>🔍</span>
             </div>
