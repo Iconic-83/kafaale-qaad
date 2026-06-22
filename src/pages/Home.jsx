@@ -481,7 +481,11 @@ export default function Home() {
                       {c.kind==="project" ? "View Project →" : P.case_view}
                     </Link>
                     <Link
-                      to={c.kind==="project" ? "/donate" : (c.id ? `/donate?caseId=${c.id}` : "/donate")}
+                      to={
+                        c.kind==="project"
+                          ? `/donate?projectId=${c.id}&title=${encodeURIComponent(c.publicTitle||c.desc||"Community Project")}&goal=${c.goal||0}&location=${encodeURIComponent(c.location||"")}`
+                          : (c.id ? `/donate?caseId=${c.id}` : "/donate")
+                      }
                       className="kf-btn kf-btn-gold"
                       style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:800, textAlign:"center", border:"none" }}>
                       {P.case_sponsor}

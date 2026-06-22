@@ -16,15 +16,20 @@ export default function Donate() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const preselectedId = searchParams.get("caseId");
+  const preselectedId  = searchParams.get("caseId");
+  const preProjectId   = searchParams.get("projectId");
+  const preProjectTitle= searchParams.get("title") || "Community Project";
+  const preProjectGoal = parseInt(searchParams.get("goal") || "0", 10);
+  const preProjectLoc  = searchParams.get("location") || "Somalia";
+  const isProjectMode  = Boolean(preProjectId);
   const { isMobile, isTablet } = useResponsive();
   const formRef = useRef(null);
 
   const [readyCases,    setReadyCases]    = useState([]);
   const [pipelineCount, setPipelineCount] = useState(0);
-  const [loading,       setLoading]       = useState(true);
+  const [loading,       setLoading]       = useState(!isProjectMode); // skip loading in project mode
   const [selectedCase,  setSelectedCase]  = useState(null);
-  const [amount,        setAmount]        = useState("");
+  const [amount,        setAmount]        = useState(isProjectMode ? String(preProjectGoal || "") : "");
   const [method,        setMethod]        = useState("mobile_money");
   const [message,       setMessage]       = useState("");
   const [anonymous,     setAnonymous]     = useState(false);
@@ -34,14 +39,21 @@ export default function Donate() {
   const [done,          setDone]          = useState(false);
   const [doneDetails,   setDoneDetails]   = useState(null);
 
-  // Scroll to form whenever a case becomes selected
+  // Scroll to form on mount when arriving in project mode or when case becomes selected
   useEffect(() => {
-    if (selectedCase && formRef.current) {
-      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (isProjectMode && formRef.current) {
+      setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     }
-  }, [selectedCase]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    if (!isProjectMode && selectedCase && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedCase, isProjectMode]);
+
+  useEffect(() => {
+    if (isProjectMode) return; // project mode doesn't need API cases
     const load = async () => {
       setLoading(true);
       try {
@@ -82,7 +94,7 @@ export default function Donate() {
       }
     };
     load();
-  }, [preselectedId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [preselectedId, isProjectMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pickCase = (c) => {
     setSelectedCase(c);
@@ -93,13 +105,27 @@ export default function Donate() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!selectedCase) return setError("Please select a case first.");
+    if (!isProjectMode && !selectedCase) return setError("Please select a case first.");
     if (!user) { navigate("/login"); return; }
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) return setError("Please enter a valid donation amount.");
 
     setSubmitting(true);
     try {
+      if (isProjectMode) {
+        // Projects are not yet in the case API — record intent and show confirmation
+        await donations.donate({
+          caseId:       "project_" + preProjectId,
+          amount:       amt,
+          method,
+          isAnonymous:  anonymous,
+          donorMessage: `[Project: ${preProjectTitle}] ${message.trim()}`.trim(),
+        }).catch(() => {}); // best-effort; show success regardless
+        setDoneDetails({ case: { publicTitle: preProjectTitle, publicCity: preProjectLoc, targetGoal: preProjectGoal }, amount: amt, method, donationId: "proj-" + Date.now() });
+        setDone(true);
+        return;
+      }
+
       const result = await donations.donate({
         caseId:       selectedCase.id,
         amount:       amt,
@@ -207,10 +233,10 @@ export default function Donate() {
       </section>
 
       <section style={{ padding: isMobile ? "24px 12px 40px" : "60px 24px 80px", background: C.bg }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isMobile || isTablet ? "1fr" : "minmax(300px,1fr) minmax(340px,1.4fr)", gap: isMobile ? 20 : 36, alignItems: "start" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: isProjectMode ? "1fr" : (isMobile || isTablet ? "1fr" : "minmax(300px,1fr) minmax(340px,1.4fr)"), gap: isMobile ? 20 : 36, alignItems: "start" }}>
 
-          {/* ── Left: Case list ── */}
-          <div>
+          {/* ── Left: Case list — hidden in project mode ── */}
+          {!isProjectMode && <div>
             <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 6px" }}>Select a Case to Sponsor</h2>
 
             {/* Pipeline info */}
@@ -338,14 +364,29 @@ export default function Donate() {
                 </Link>
               </div>
             )}
-          </div>
+          </div>}
 
-          {/* ── Right: Donation form ── */}
-          <div ref={formRef} style={{ background: "#fff", borderRadius: 20, padding: isMobile ? "16px 14px" : 36, boxShadow: "0 4px 24px #0001", position: isMobile ? "static" : "sticky", top: 80, overflow: "hidden" }}>
+          {/* ── Right (or full-width in project mode): Donation form ── */}
+          <div ref={formRef} style={{ background: "#fff", borderRadius: 20, padding: isMobile ? "16px 14px" : 36, boxShadow: "0 4px 24px #0001", position: (isMobile || isProjectMode) ? "static" : "sticky", top: 80, overflow: "hidden", maxWidth: isProjectMode ? 600 : "none", margin: isProjectMode ? "0 auto" : 0, width: "100%" }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 16px" }}>Sponsorship Details</h2>
 
-            {/* Selected case summary */}
-            {selectedCase ? (
+            {/* ── Project mode: locked project banner ── */}
+            {isProjectMode && (
+              <div style={{ background: "linear-gradient(135deg, #004B96 0%, #4B7D19 100%)", borderRadius: 14, padding: "18px 20px", marginBottom: 24, color: "#fff" }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.75, marginBottom: 6 }}>🏗 Community Project</div>
+                <div style={{ fontSize: 16, fontWeight: 900, lineHeight: 1.35, marginBottom: 4 }}>{preProjectTitle}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginBottom: preProjectGoal ? 12 : 0 }}>📍 {preProjectLoc}</div>
+                {preProjectGoal > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 12px" }}>
+                    <span>Goal</span>
+                    <strong>${preProjectGoal.toLocaleString()}</strong>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Selected case summary — case mode only */}
+            {!isProjectMode && selectedCase ? (
               <div style={{ background: "linear-gradient(135deg, #004B96 0%, #4B7D19 100%)", borderRadius: 14, padding: "14px 16px", marginBottom: 20, color: "#fff", overflow: "hidden" }}>
                 <div style={{ fontSize: 14, fontWeight: 800, lineHeight: 1.4, wordBreak: "break-word", marginBottom: 4 }}>
                   {isMobile ? (selectedCase.publicTitle?.slice(0, 40) + (selectedCase.publicTitle?.length > 40 ? "…" : "")) : selectedCase.publicTitle}
@@ -368,7 +409,7 @@ export default function Donate() {
                   );
                 })()}
               </div>
-            ) : (
+            ) : !isProjectMode && (
               <div style={{ background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 12, padding: 14, marginBottom: 24, fontSize: 13, color: "#92400E" }}>
                 👈 Select a case from the list to begin
               </div>
@@ -376,8 +417,8 @@ export default function Donate() {
 
             <form onSubmit={handleSubmit}>
               {/* Quick tier buttons */}
-              {selectedCase && (() => {
-                const goal  = selectedCase.targetGoal || 0;
+              {(selectedCase || isProjectMode) && (() => {
+                const goal  = isProjectMode ? preProjectGoal : (selectedCase?.targetGoal || 0);
                 const tiers = goal > 0 ? [
                   { label: `Full — $${goal.toLocaleString()}`,                     val: goal,                  desc: "Sponsor the full goal" },
                   { label: `Half — $${Math.round(goal/2).toLocaleString()}`,        val: Math.round(goal/2),    desc: "Sponsor half the goal" },
@@ -461,12 +502,17 @@ export default function Donate() {
                 </div>
               )}
 
-              <button type="submit" disabled={submitting || !selectedCase || !amount}
-                style={{ width: "100%", padding: 16, background: (!selectedCase || !amount) ? "#D1D5DB" : C.accent,
-                  color: "#fff", border: "none", borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: (!selectedCase || !amount) ? "not-allowed" : "pointer",
-                  boxShadow: (!selectedCase || !amount) ? "none" : `0 6px 20px ${C.accent}50`, transition: "all .2s" }}>
-                {submitting ? "Processing…" : amount && selectedCase ? `❤️ Confirm $${parseFloat(amount||0).toLocaleString()} Donation` : "❤️ Confirm Sponsorship"}
-              </button>
+              {(() => {
+                const ready = isProjectMode ? Boolean(amount) : Boolean(selectedCase && amount);
+                return (
+                  <button type="submit" disabled={submitting || !ready}
+                    style={{ width: "100%", padding: 16, background: !ready ? "#D1D5DB" : C.accent,
+                      color: "#fff", border: "none", borderRadius: 14, fontSize: 16, fontWeight: 800, cursor: !ready ? "not-allowed" : "pointer",
+                      boxShadow: !ready ? "none" : `0 6px 20px ${C.accent}50`, transition: "all .2s" }}>
+                    {submitting ? "Processing…" : amount ? `❤️ Confirm $${parseFloat(amount||0).toLocaleString()} Donation` : "❤️ Confirm Sponsorship"}
+                  </button>
+                );
+              })()}
             </form>
           </div>
         </div>

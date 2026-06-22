@@ -197,6 +197,21 @@ export default function Projects() {
                   <ProgressBar pct={pct} color={pct >= 100 ? B.green : B.blue} />
                   {pct >= 100 && <div style={{ fontSize: 11, color: B.green, fontWeight: 700, marginTop: 5 }}>🎉 Fully Funded</div>}
                   <div style={{ marginTop: 10, fontSize: 12, color: B.muted }}>👥 {p.beneficiaries.toLocaleString()} beneficiaries</div>
+                  {p.status !== "completed" && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); setSelected(p.id); }}
+                        style={{ flex: 1, padding: "9px 0", background: B.bg, border: `1px solid ${B.border}`, borderRadius: 10, cursor: "pointer", fontSize: 13, fontWeight: 700, color: B.text }}>
+                        Details
+                      </button>
+                      <Link
+                        to={`/donate?projectId=${p.id}&title=${encodeURIComponent(p.title)}&goal=${p.goal}&location=${encodeURIComponent(p.location)}`}
+                        onClick={e => e.stopPropagation()}
+                        style={{ flex: 1, padding: "9px 0", background: B.gold, borderRadius: 10, fontSize: 13, fontWeight: 800, color: "#fff", textDecoration: "none", textAlign: "center" }}>
+                        ❤️ Sponsor
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -254,10 +269,12 @@ export default function Projects() {
                 </div>
               ))}
               <div style={{ display: "flex", gap: 12, marginTop: 28 }}>
-                <Link to="/donate" onClick={() => setSelected(null)} style={{
-                  flex: 1, padding: "13px", background: B.gold, color: "#fff", borderRadius: 12,
-                  textDecoration: "none", textAlign: "center", fontWeight: 800, fontSize: 15,
-                }}>Fund This Project</Link>
+                <Link
+                  to={`/donate?projectId=${proj.id}&title=${encodeURIComponent(proj.title)}&goal=${proj.goal}&location=${encodeURIComponent(proj.location)}`}
+                  onClick={() => setSelected(null)}
+                  style={{ flex: 1, padding: "13px", background: B.gold, color: "#fff", borderRadius: 12, textDecoration: "none", textAlign: "center", fontWeight: 800, fontSize: 15 }}>
+                  ❤️ Sponsor This Project
+                </Link>
                 <button onClick={() => setSelected(null)} style={{
                   padding: "13px 24px", background: B.bg, border: `1px solid ${B.border}`,
                   borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14, color: B.text,
