@@ -78,17 +78,19 @@ function ShareStoryBanner() {
       padding: "64px clamp(24px, 7vw, 96px)",
       marginTop: 80,
     }}>
-      {/* Photo — full brightness, vignette handles darkness */}
+      {/* Solid brand navy base — fills the "side bars" */}
+      <div style={{ position: "absolute", inset: 0, background: "#0D1F3C" }} />
+      {/* Photo centered, full visible */}
       <div style={{
         position: "absolute", inset: 0,
         backgroundImage: `url("/story-bg.jpg")`,
         backgroundSize: "contain", backgroundPosition: "center center",
-        backgroundRepeat: "no-repeat", backgroundColor: "#000",
+        backgroundRepeat: "no-repeat",
       }} />
-      {/* Vignette: dark left where text sits, lighter right */}
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,15,40,0.88) 0%, rgba(0,15,40,0.60) 55%, rgba(0,15,40,0.30) 100%)" }} />
-      {/* Bottom edge fade */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 80, background: "linear-gradient(to top, rgba(0,10,30,0.5) 0%, transparent 100%)" }} />
+      {/* Left panel overlay — dark navy so text is always readable */}
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(13,31,60,0.97) 0%, rgba(13,31,60,0.92) 22%, rgba(13,31,60,0.30) 42%, transparent 58%, rgba(13,31,60,0.30) 72%, rgba(13,31,60,0.92) 88%, rgba(13,31,60,0.97) 100%)" }} />
+      {/* Subtle top & bottom fade */}
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(13,31,60,0.4) 0%, transparent 30%, transparent 70%, rgba(13,31,60,0.4) 100%)" }} />
 
       {/* Text */}
       <div style={{ position: "relative", zIndex: 1, color: "#fff", maxWidth: 600 }}>
