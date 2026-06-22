@@ -488,7 +488,7 @@ export default function Home() {
       </section>
 
       {/* ── Children Photo Section — just above footer ── */}
-      <section style={{ position:"relative", overflow:"hidden" }}>
+      <section style={{ position:"relative", overflow:"hidden", marginBottom:-80 }}>
         <div style={{
           display:"grid",
           gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
@@ -554,6 +554,9 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Gradient border strip — matches footer accent line */}
+        <div style={{ height:4, background:`linear-gradient(90deg, ${C.primary}, ${C.secondary}, ${C.gold})` }} />
       </section>
 
     </div>
