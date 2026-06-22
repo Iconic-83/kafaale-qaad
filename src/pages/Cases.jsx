@@ -137,13 +137,9 @@ function CaseCard({ c, P, vis = {} }) {
             <div style={{ background: C.bg, borderRadius: 10, height: 7, overflow: "hidden" }}>
               <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 10, transition: "width 0.6s ease" }} />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 11, color: C.muted }}>
-              <span>${(c.totalRaised || 0).toLocaleString()} raised</span>
-              {full && <span style={{ color: C.secondary, fontWeight: 700 }}>🎉 Fully Funded</span>}
-              {!full && c.targetGoal > 0 && (
-                <span>${Math.max(0, c.targetGoal - (c.totalRaised || 0)).toLocaleString()} remaining</span>
-              )}
-            </div>
+            {full && (
+              <div style={{ marginTop: 5, fontSize: 11, color: C.secondary, fontWeight: 700 }}>🎉 Fully Funded</div>
+            )}
           </div>
         )}
 
