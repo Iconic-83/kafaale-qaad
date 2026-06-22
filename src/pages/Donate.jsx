@@ -194,21 +194,11 @@ export default function Donate() {
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: C.text }}>
 
       {/* Hero */}
-      <section style={{ position: "relative", overflow: "hidden", background: `linear-gradient(135deg, #C2185B 0%, ${C.primary} 60%, #1565C0 100%)`, color: "#fff", padding: "80px 24px 72px", textAlign: "center", minHeight: 380 }}>
-        {/* Illustration as blended background — mix-blend-mode removes white, keeps teal lines */}
-        <img src="/donate-hero-bg.jpg" alt="" aria-hidden="true" style={{
-          position: "absolute", right: "-40px", bottom: "-20px",
-          width: "420px", height: "420px", objectFit: "contain",
-          opacity: 0.13, mixBlendMode: "luminosity", pointerEvents: "none",
-          userSelect: "none",
-        }} />
-        {/* Second copy left side, mirrored */}
-        <img src="/donate-hero-bg.jpg" alt="" aria-hidden="true" style={{
-          position: "absolute", left: "-40px", bottom: "-20px",
-          width: "380px", height: "380px", objectFit: "contain",
-          opacity: 0.09, mixBlendMode: "luminosity", pointerEvents: "none",
-          transform: "scaleX(-1)", userSelect: "none",
-        }} />
+      <section style={{ position: "relative", overflow: "hidden", color: "#fff", padding: "80px 24px 72px", textAlign: "center", minHeight: 380 }}>
+        {/* Illustration as full background */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('/donate-hero-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center center" }} />
+        {/* Colour overlay — keeps illustration visible while making text readable */}
+        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, rgba(194,24,91,0.82) 0%, rgba(0,75,150,0.78) 60%, rgba(21,101,192,0.85) 100%)` }} />
 
         <div style={{ position: "relative", zIndex: 1, maxWidth: 680, margin: "0 auto" }}>
           <span style={{ display: "inline-block", background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.35)", borderRadius: 24, padding: "6px 20px", fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", marginBottom: 24, backdropFilter: "blur(8px)" }}>
