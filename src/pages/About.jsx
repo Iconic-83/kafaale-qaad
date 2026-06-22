@@ -96,13 +96,17 @@ export default function About() {
     <div style={{ color:C.text }}>
 
       {/* ── Hero ── */}
-      <section className="kf-hero-dots" style={{ background:`linear-gradient(145deg,${C.navy},${C.primary} 60%,${C.secondary})`, color:"#fff", padding:"92px 24px 72px", textAlign:"center" }}>
-        <div style={{ maxWidth:760, margin:"0 auto" }}>
-          <span className="kf-badge" style={{ background:"rgba(255,255,255,.14)", border:"1px solid rgba(255,255,255,.24)", color:"#fff" }}>{P.hero_badge}</span>
-          <h1 style={{ fontSize:"clamp(30px,5vw,52px)", fontWeight:900, margin:"20px 0 16px", lineHeight:1.1, letterSpacing:-1 }}>
+      <section style={{ position:"relative", overflow:"hidden", color:"#fff", padding:"92px 24px 72px", textAlign:"center" }}>
+        {/* Photo */}
+        <div style={{ position:"absolute", inset:0, backgroundImage:"url('/about-hero-bg.jpg')", backgroundSize:"cover", backgroundPosition:"center 35%", transform:"scale(1.03)" }} />
+        {/* Overlay — dark enough for text, preserves the warm silhouette tones */}
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom, rgba(0,20,55,0.72) 0%, rgba(0,38,81,0.62) 50%, rgba(0,20,55,0.80) 100%)" }} />
+        <div style={{ position:"relative", zIndex:1, maxWidth:760, margin:"0 auto" }}>
+          <span className="kf-badge" style={{ background:"rgba(255,255,255,.14)", border:"1px solid rgba(255,255,255,.28)", color:"#fff", backdropFilter:"blur(6px)" }}>{P.hero_badge}</span>
+          <h1 style={{ fontSize:"clamp(30px,5vw,52px)", fontWeight:900, margin:"20px 0 16px", lineHeight:1.1, letterSpacing:-1, textShadow:"0 2px 24px rgba(0,0,0,0.5)" }}>
             {P.hero_title} <span style={{ color:C.accent }}>{P.hero_title2}</span>
           </h1>
-          <p style={{ fontSize:17, opacity:0.84, lineHeight:1.8, maxWidth:580, margin:"0 auto" }}>{P.hero_sub}</p>
+          <p style={{ fontSize:17, opacity:0.88, lineHeight:1.8, maxWidth:580, margin:"0 auto", textShadow:"0 1px 8px rgba(0,0,0,0.4)" }}>{P.hero_sub}</p>
         </div>
       </section>
 
