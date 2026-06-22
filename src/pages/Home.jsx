@@ -362,22 +362,32 @@ export default function Home() {
         return (
           <section style={sec("#fff")}>
             <div style={wrap}>
-              {/* ── Header row ── */}
-              <div className="kf-reveal" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom: isMobile?28:44, flexWrap:"wrap", gap:12 }}>
-                <div>
-                  <span className="kf-badge" style={{ background:"#FEF3C7", color:"#92400E", marginBottom:10 }}>
-                    📰 Stories from the Field
-                  </span>
-                  <h2 style={{ fontSize:"clamp(24px,3vw,38px)", fontWeight:900, margin:"8px 0 8px", letterSpacing:-0.4, color:C.navy }}>
-                    Real Lives. Real Impact.
-                  </h2>
-                  <p style={{ fontSize:15, color:C.muted, margin:0, maxWidth:460 }}>
-                    Field-verified stories of lives changed by your support.
-                  </p>
+              {/* ── Stories hero banner ── */}
+              <div className="kf-reveal" style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", borderRadius:24, overflow:"hidden", marginBottom: isMobile?32:52, boxShadow:"0 8px 40px rgba(0,38,81,0.13)" }}>
+                {/* Left — photo */}
+                <div style={{ position:"relative", minHeight: isMobile?220:320, overflow:"hidden" }}>
+                  <img src="/cta-bg.jpg" alt="Impact stories"
+                    style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center 30%", display:"block", position:"absolute", inset:0 }} />
+                  <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, rgba(0,20,60,0.35) 0%, rgba(0,20,60,0.10) 100%)" }} />
                 </div>
-                <Link to="/stories" style={{ padding:"10px 22px", borderRadius:10, border:`1.5px solid ${C.border}`, color:C.primary, fontWeight:700, fontSize:13, textDecoration:"none", whiteSpace:"nowrap" }}>
-                  View All Stories →
-                </Link>
+                {/* Right — message */}
+                <div style={{ background:`linear-gradient(145deg, ${C.navy} 0%, ${C.primary} 100%)`, padding: isMobile?"32px 24px":"52px 44px", display:"flex", flexDirection:"column", justifyContent:"center", color:"#fff" }}>
+                  <span style={{ display:"inline-block", background:"rgba(224,171,33,0.2)", border:"1.5px solid rgba(224,171,33,0.55)", borderRadius:24, padding:"5px 18px", fontSize:11, fontWeight:800, letterSpacing:2, textTransform:"uppercase", marginBottom:20, color:"#F5C842", width:"fit-content" }}>Stories from the Field</span>
+                  <h2 style={{ fontSize:"clamp(22px,3vw,38px)", fontWeight:900, margin:"0 0 16px", lineHeight:1.1, letterSpacing:-1, textShadow:"0 2px 16px rgba(0,0,0,0.3)" }}>
+                    Real Lives.<br/>Real Impact.
+                  </h2>
+                  <p style={{ fontSize:15, color:"rgba(255,255,255,0.84)", lineHeight:1.85, margin:"0 0 28px", maxWidth:360 }}>
+                    Every story here is field-verified — a real person, a real crisis, a real outcome. Your support made each one possible. Read the proof.
+                  </p>
+                  <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+                    <Link to="/stories" style={{ padding:"12px 28px", borderRadius:50, background:"#E0AB21", color:"#fff", fontWeight:800, fontSize:14, textDecoration:"none", boxShadow:"0 6px 24px rgba(224,171,33,0.4)" }}>
+                      Read All Stories →
+                    </Link>
+                    <Link to="/donate" style={{ padding:"12px 28px", borderRadius:50, background:"rgba(255,255,255,0.12)", color:"#fff", fontWeight:700, fontSize:14, textDecoration:"none", border:"1px solid rgba(255,255,255,0.3)" }}>
+                      Make a Difference
+                    </Link>
+                  </div>
+                </div>
               </div>
 
               {/* ── UNICEF-style grid ── */}
