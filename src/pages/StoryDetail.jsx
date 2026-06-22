@@ -7,6 +7,22 @@ const C = {
   border:"#D8E4F0", text:"#0D1F3C",
 };
 
+const STORY_IMGS = {
+  "Medical":          "https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=800&q=80",
+  "Education":        "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=80",
+  "Food & Nutrition": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80",
+  "Food":             "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80",
+  "Shelter":          "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&q=80",
+  "Water":            "https://images.unsplash.com/photo-1541252260730-0412e8e2108e?w=800&q=80",
+  "Orphan":           "https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&q=80",
+  "Emergency":        "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800&q=80",
+  "Success Story":    "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&q=80",
+  "Press Release":    "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80",
+  "Partnership":      "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800&q=80",
+  "default":          "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&q=80",
+};
+const getStoryImg = s => s.afterImg || s.beforeImg || STORY_IMGS[s.category] || STORY_IMGS["default"];
+
 // All static stories — combined source of truth
 const STATIC_ALL = [
   {
@@ -201,13 +217,7 @@ export default function StoryDetail() {
 
       {/* ── Hero image / gradient ── */}
       <div style={{ position:"relative", width:"100%", maxHeight:520, overflow:"hidden", background:C.navy }}>
-        {story.afterImg
-          ? <img src={story.afterImg} alt={story.title} style={{ width:"100%", height:480, objectFit:"cover", display:"block", opacity:0.92 }} />
-          : <div style={{
-              height:360, background:`linear-gradient(145deg, ${col}30 0%, ${C.navy} 40%, ${col}20 100%)`,
-              display:"flex", alignItems:"center", justifyContent:"center", fontSize:120, opacity:0.7,
-            }}>{story.icon || "✨"}</div>
-        }
+        <img src={getStoryImg(story)} alt={story.title} style={{ width:"100%", height:480, objectFit:"cover", display:"block" }} />
       </div>
 
       {/* ── Article body ── */}
