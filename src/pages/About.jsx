@@ -213,16 +213,18 @@ export default function About() {
       </section>
 
       {/* ── Impact Numbers (replaces Roadmap) ── */}
-      <section style={{ padding:"56px 24px", background:`linear-gradient(135deg, ${C.navy} 0%, #0f3460 60%, ${C.secondary}99 100%)`, color:"#fff" }}>
-        <div style={{ maxWidth:1000, margin:"0 auto", textAlign:"center" }}>
+      <section style={{ position:"relative", overflow:"hidden", padding:"56px 24px", color:"#fff" }}>
+        <div style={{ position:"absolute", inset:0, backgroundImage:"url('/impact-bg.jpg')", backgroundSize:"cover", backgroundPosition:"center center" }} />
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg, rgba(0,22,60,0.82) 0%, rgba(0,38,81,0.75) 60%, rgba(0,40,20,0.78) 100%)" }} />
+        <div style={{ position:"relative", zIndex:1, maxWidth:1000, margin:"0 auto", textAlign:"center" }}>
           <span className="kf-badge" style={{ background:"rgba(255,255,255,0.12)", border:"1px solid rgba(255,255,255,0.22)", color:"#fff", marginBottom:18 }}>OUR IMPACT</span>
-          <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 12px", letterSpacing:-0.5 }}>Aid That Moves at the Speed of Need</h2>
-          <p style={{ fontSize:16, opacity:0.75, maxWidth:520, margin:"0 auto 56px", lineHeight:1.7 }}>Every number below represents a real person whose situation was verified, funded, and delivered with full transparency.</p>
+          <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 12px", letterSpacing:-0.5, textShadow:"0 2px 16px rgba(0,0,0,0.5)" }}>Aid That Moves at the Speed of Need</h2>
+          <p style={{ fontSize:16, opacity:0.82, maxWidth:520, margin:"0 auto 56px", lineHeight:1.7 }}>Every number below represents a real person whose situation was verified, funded, and delivered with full transparency.</p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:2 }}>
             {IMPACT_STATS.filter(s => showAidStat || s.label !== "Aid Distributed").map((s, i) => (
               <div key={i} style={{
                 padding:"36px 24px", textAlign:"center",
-                borderRight: i < IMPACT_STATS.length-1 ? "1px solid rgba(255,255,255,0.12)" : "none",
+                borderRight: i < IMPACT_STATS.length-1 ? "1px solid rgba(255,255,255,0.15)" : "none",
               }}>
                 <div style={{ fontSize:"clamp(36px,5vw,56px)", fontWeight:900, lineHeight:1, color:s.color === C.accent ? C.accent : "#fff", letterSpacing:-2 }}>{s.val}</div>
                 <div style={{ fontSize:13, opacity:0.7, marginTop:8, fontWeight:600, textTransform:"uppercase", letterSpacing:1 }}>{s.label}</div>
