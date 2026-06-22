@@ -4863,7 +4863,8 @@ const SITE_INFO_DEFAULTS = {
   linkedin:   "https://linkedin.com/company/kafaaleqaad",
   heroTitle:  "Transforming Compassion Into Verified Impact",
   heroSub:    "Every donation reaches a verified beneficiary — tracked from field to delivery.",
-  showStats:  true,
+  showStats:   true,
+  showAidStat: true,
 };
 
 const loadPageVis   = () => { try { return { ...Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true])), ...JSON.parse(localStorage.getItem("kf_page_settings")||"{}") }; } catch { return Object.fromEntries(Object.keys(PAGE_DEFAULTS).map(k=>[k,true])); } };
@@ -5176,6 +5177,30 @@ const SiteSettingsPanel = ({ showToast, currentUser, defaultTab }) => {
               }}>
                 <span style={{
                   position: "absolute", top: 3, left: siteInfo.showStats !== false ? 26 : 3,
+                  width: 22, height: 22, borderRadius: "50%", background: "#fff",
+                  transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                }} />
+              </button>
+            </div>
+          </div>
+
+          {/* Aid Distributed stat toggle */}
+          <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: "18px 20px", marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.navy }}>$1.2M Aid Distributed Stat</div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>Show / hide the "$1.2M Aid Distributed" card on the Home and About pages</div>
+              </div>
+              <button onClick={() => {
+                if (!isSuperAdmin) return;
+                setSiteInfo(v => ({ ...v, showAidStat: v.showAidStat === false ? true : false }));
+              }} style={{
+                width: 52, height: 28, borderRadius: 99, border: "none", cursor: isSuperAdmin ? "pointer" : "default",
+                background: siteInfo.showAidStat !== false ? C.secondary : "#D1D5DB",
+                position: "relative", transition: "background .2s", flexShrink: 0,
+              }}>
+                <span style={{
+                  position: "absolute", top: 3, left: siteInfo.showAidStat !== false ? 26 : 3,
                   width: 22, height: 22, borderRadius: "50%", background: "#fff",
                   transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
                 }} />

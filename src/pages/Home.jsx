@@ -98,6 +98,10 @@ export default function Home() {
     try { const s = JSON.parse(localStorage.getItem("kf_site_settings") || "{}"); return s.showStats !== false; }
     catch { return true; }
   });
+  const [showAidStat] = useState(() => {
+    try { const s = JSON.parse(localStorage.getItem("kf_site_settings") || "{}"); return s.showAidStat !== false; }
+    catch { return true; }
+  });
 
   /* ─── Shared style atoms ──────────────────────────────────────────────── */
   const pad  = isMobile ? "0 20px" : "0 32px";
@@ -211,7 +215,7 @@ export default function Home() {
         <section style={{ background:"#fff", borderBottom:`1px solid ${C.border}` }}>
           <div style={{ maxWidth:1280, margin:"0 auto", padding: isMobile?"0 20px":"0 32px",
             display:"grid", gridTemplateColumns: isMobile?"repeat(2,1fr)":"repeat(4,1fr)" }}>
-            {STATS.map((s, i) => (
+            {STATS.filter(s => showAidStat || s.label !== P.stat_aid).map((s, i) => (
               <div key={i} style={{
                 padding: isMobile?"28px 16px":"40px 28px", textAlign:"center",
                 borderRight: (!isMobile && i<3) ? `1px solid ${C.border}` : "none",

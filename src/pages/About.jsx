@@ -42,6 +42,10 @@ export default function About() {
 
   const [team, setTeam] = useState(getTeam);
   const [teamVisible, setTeamVisible] = useState(getTeamVisible);
+  const [showAidStat] = useState(() => {
+    try { const s = JSON.parse(localStorage.getItem("kf_site_settings") || "{}"); return s.showAidStat !== false; }
+    catch { return true; }
+  });
 
   useEffect(() => {
     const fn = () => { setTeam(getTeam()); setTeamVisible(getTeamVisible()); };
@@ -211,7 +215,7 @@ export default function About() {
           <h2 style={{ fontSize:"clamp(26px,3.5vw,42px)", fontWeight:900, margin:"0 0 12px", letterSpacing:-0.5 }}>Aid That Moves at the Speed of Need</h2>
           <p style={{ fontSize:16, opacity:0.75, maxWidth:520, margin:"0 auto 56px", lineHeight:1.7 }}>Every number below represents a real person whose situation was verified, funded, and delivered with full transparency.</p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:2 }}>
-            {IMPACT_STATS.map((s, i) => (
+            {IMPACT_STATS.filter(s => showAidStat || s.label !== "Aid Distributed").map((s, i) => (
               <div key={i} style={{
                 padding:"36px 24px", textAlign:"center",
                 borderRight: i < IMPACT_STATS.length-1 ? "1px solid rgba(255,255,255,0.12)" : "none",
