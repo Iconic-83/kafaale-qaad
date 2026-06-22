@@ -194,19 +194,25 @@ export default function Donate() {
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: C.text }}>
 
       {/* Hero */}
-      <section style={{ background: `linear-gradient(135deg, #EC4899 0%, ${C.primary} 100%)`, color: "#fff", padding: "72px 24px 52px", textAlign: "center" }}>
-        <div style={{ maxWidth: 660, margin: "0 auto" }}>
-          <div style={{ fontSize: 52, marginBottom: 16 }}>❤️</div>
-          <h1 style={{ fontSize: "clamp(26px, 4vw, 46px)", fontWeight: 900, margin: "0 0 14px" }}>Sponsor a Verified Case</h1>
-          <p style={{ fontSize: 16, opacity: 0.88, lineHeight: 1.7 }}>
-            Every case shown here has been field-investigated and verified by our team.
-            Your donation is tracked end-to-end — from payment to proof of delivery.
-          </p>
-          {!user && (
-            <div style={{ marginTop: 20, background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: "12px 20px", fontSize: 14, display: "inline-block" }}>
-              💡 <Link to="/login" style={{ color: "#FCD34D", fontWeight: 700 }}>Sign in</Link> to track your donations in your personal dashboard
-            </div>
-          )}
+      <section style={{ overflow: "hidden", minHeight: 340 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 340 }}>
+          {/* Left — gradient + text */}
+          <div style={{ background: `linear-gradient(135deg, #EC4899 0%, ${C.primary} 100%)`, color: "#fff", padding: "64px 48px 56px 32px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <span style={{ display: "inline-block", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.28)", borderRadius: 20, padding: "5px 16px", fontSize: 11, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 20, backdropFilter: "blur(6px)", width: "fit-content" }}>Sponsor a Family</span>
+            <h1 style={{ fontSize: "clamp(26px, 3.5vw, 44px)", fontWeight: 900, margin: "0 0 16px", lineHeight: 1.1, letterSpacing: -1, textShadow: "0 2px 16px rgba(0,0,0,0.2)" }}>Sponsor a Verified Case</h1>
+            <p style={{ fontSize: 16, opacity: 0.9, lineHeight: 1.8, margin: "0 0 20px", maxWidth: 420 }}>
+              Every case has been field-investigated and verified by our team. Your donation is tracked end-to-end — from payment to proof of delivery.
+            </p>
+            {!user && (
+              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: "10px 18px", fontSize: 13, display: "inline-block", backdropFilter: "blur(6px)", width: "fit-content" }}>
+                💡 <Link to="/login" style={{ color: "#FCD34D", fontWeight: 700 }}>Sign in</Link> to track your donations
+              </div>
+            )}
+          </div>
+          {/* Right — white panel with illustration */}
+          <div style={{ background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: "32px" }}>
+            <img src="/donate-hero-bg.jpg" alt="Sponsor a family" style={{ width: "100%", maxWidth: 340, height: "auto", objectFit: "contain", display: "block" }} />
+          </div>
         </div>
       </section>
 
