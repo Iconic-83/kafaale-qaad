@@ -196,7 +196,7 @@ export default function Donate() {
       {/* Hero */}
       <section style={{ position: "relative", overflow: "hidden", color: "#fff", padding: "80px 24px 72px", textAlign: "center", minHeight: 380 }}>
         {/* Illustration as full background */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('/donate-hero-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center center" }} />
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('/donate-hero-bg.jpg')", backgroundSize: "70%", backgroundPosition: "center center", backgroundRepeat: "no-repeat" }} />
         {/* Colour overlay — keeps illustration visible while making text readable */}
         <div style={{ position: "absolute", inset: 0, background: `linear-gradient(135deg, rgba(194,24,91,0.82) 0%, rgba(0,75,150,0.78) 60%, rgba(21,101,192,0.85) 100%)` }} />
 
