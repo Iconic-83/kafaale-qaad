@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { cases as casesApi } from "../api/client";
 import { useLang } from "../context/LanguageContext.jsx";
@@ -29,6 +29,56 @@ function getCaseImg(c) {
   } catch {}
   return CAT_IMG[c.category] || CAT_IMG.other;
 }
+function DropSelect({ value, onChange, options, icon }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const chosen = options.find(o => o.value === value) || options[0];
+  useEffect(() => {
+    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  return (
+    <div ref={ref} style={{ position:"relative", userSelect:"none" }}>
+      <button onClick={() => setOpen(p => !p)} style={{
+        display:"flex", alignItems:"center", gap:7, padding:"10px 14px",
+        border:`1.5px solid ${open ? C.primary : C.border}`, borderRadius:8,
+        background:"#fff", cursor:"pointer", fontSize:14, whiteSpace:"nowrap",
+        color: C.text, minWidth:130, outline:"none", boxShadow: open ? `0 0 0 3px ${C.primary}22` : "none"
+      }}>
+        {icon && <span>{icon}</span>}
+        <span style={{ flex:1, textAlign:"left" }}>{chosen.label}</span>
+        <span style={{ fontSize:10, opacity:0.5, marginLeft:4 }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{
+          position:"absolute", top:"calc(100% + 4px)", left:0, minWidth:"100%",
+          background:"#fff", border:`1.5px solid ${C.border}`, borderRadius:10,
+          boxShadow:"0 8px 32px rgba(0,0,0,0.13)", zIndex:9999, overflow:"hidden"
+        }}>
+          {options.map(o => (
+            <div key={o.value} onClick={() => { onChange(o.value); setOpen(false); }}
+              style={{
+                padding:"10px 16px", cursor:"pointer", fontSize:14,
+                background: o.value === value ? C.primary+"0f" : "transparent",
+                color: o.value === value ? C.primary : C.text,
+                fontWeight: o.value === value ? 700 : 400,
+                display:"flex", alignItems:"center", gap:8,
+                borderLeft: o.value === value ? `3px solid ${C.primary}` : "3px solid transparent",
+              }}
+              onMouseEnter={e => { if (o.value !== value) e.currentTarget.style.background = C.bg; }}
+              onMouseLeave={e => { if (o.value !== value) e.currentTarget.style.background = "transparent"; }}
+            >
+              {o.icon && <span>{o.icon}</span>}
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const STATUS_LABEL = {
   waiting_for_sponsor: "🤝 Open for Sponsorship", sponsored: "❤️ Sponsored", delivering: "📦 Aid in Delivery",
   proof_uploaded: "📸 Proof Uploaded", completed: "🏁 Completed",
@@ -196,16 +246,19 @@ export default function Cases() {
               style={{ flex: 1, minWidth: 0, padding: "10px 16px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14 }} />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {vis.showCategoryFilter && (
-                <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-                  style={{ flex: 1, minWidth: 110, padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14 }}>
-                  {cats.map(c => <option key={c} value={c}>{CAT_ICON[c] || "🌍"} {c === "all" ? P.cat_all : c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
-                </select>
+                <DropSelect
+                  value={catFilter}
+                  onChange={setCatFilter}
+                  icon={CAT_ICON[catFilter] || "🌍"}
+                  options={cats.map(c => ({ value: c, label: c === "all" ? P.cat_all : c.charAt(0).toUpperCase()+c.slice(1), icon: CAT_ICON[c] || "🌍" }))}
+                />
               )}
               {vis.showUrgencyFilter && (
-                <select value={urgFilter} onChange={e => setUrgFilter(e.target.value)}
-                  style={{ flex: 1, minWidth: 100, padding: "10px 14px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14 }}>
-                  {urgs.map(u => <option key={u} value={u}>{u === "all" ? P.urg_all : u.charAt(0).toUpperCase()+u.slice(1)}</option>)}
-                </select>
+                <DropSelect
+                  value={urgFilter}
+                  onChange={setUrgFilter}
+                  options={urgs.map(u => ({ value: u, label: u === "all" ? P.urg_all : u.charAt(0).toUpperCase()+u.slice(1) }))}
+                />
               )}
               {vis.showTableView && (
                 <div style={{ display: "flex", gap: 4 }}>
