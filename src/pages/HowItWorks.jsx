@@ -125,12 +125,20 @@ export default function HowItWorks() {
   return (
     <div style={{ color:C.text }}>
 
-      {/* ── Hero ── */}
-      <section style={{ background:`linear-gradient(135deg,${C.primary} 0%,${C.secondary} 100%)`, color:"#fff", padding:"80px 24px 60px", textAlign:"center" }}>
-        <div style={{ maxWidth:760, margin:"0 auto" }}>
-          <span style={{ background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.25)", borderRadius:20, padding:"6px 18px", fontSize:13, fontWeight:700 }}>{P.hero_badge}</span>
-          <h1 style={{ fontSize:"clamp(32px,5vw,52px)", fontWeight:900, margin:"20px 0 16px" }}>{P.hero_title}</h1>
-          <p style={{ fontSize:18, opacity:0.85, lineHeight:1.7 }}>{P.hero_sub}</p>
+      {/* ── Hero — split layout: text left, illustration right ── */}
+      <section style={{ background:`linear-gradient(135deg,${C.primary} 0%,${C.secondary} 100%)`, color:"#fff", overflow:"hidden", minHeight:360 }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", alignItems:"center", minHeight:360 }}>
+          {/* Left: text */}
+          <div style={{ padding:"80px 48px 60px 32px" }}>
+            <span style={{ display:"inline-block", background:"rgba(255,255,255,.15)", border:"1px solid rgba(255,255,255,.28)", borderRadius:20, padding:"6px 18px", fontSize:12, fontWeight:800, letterSpacing:1.5, textTransform:"uppercase", marginBottom:24, backdropFilter:"blur(6px)" }}>{P.hero_badge}</span>
+            <h1 style={{ fontSize:"clamp(28px,3.8vw,48px)", fontWeight:900, margin:"0 0 18px", lineHeight:1.1, letterSpacing:-1, textShadow:"0 2px 16px rgba(0,0,0,0.3)" }}>{P.hero_title}</h1>
+            <p style={{ fontSize:17, opacity:0.88, lineHeight:1.8, maxWidth:460, margin:0 }}>{P.hero_sub}</p>
+          </div>
+          {/* Right: illustration — white card that bleeds to the edge */}
+          <div style={{ position:"relative", height:"100%", minHeight:360, background:"rgba(255,255,255,0.96)", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
+            <img src="/howitworks-bg.jpg" alt="workflow illustration"
+              style={{ width:"100%", maxWidth:420, height:"auto", objectFit:"contain", display:"block" }} />
+          </div>
         </div>
       </section>
 
