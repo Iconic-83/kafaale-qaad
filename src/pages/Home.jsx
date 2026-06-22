@@ -458,6 +458,52 @@ export default function Home() {
               </div>
             ))}
           </div>
+
+          {/* ── Our Mission — sits right below the cases ── */}
+          <div style={{
+            marginTop: isMobile ? 40 : 52,
+            borderRadius: 20,
+            overflow: "hidden",
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+            boxShadow: "0 4px 32px rgba(0,38,81,0.13)",
+          }}>
+            {/* Left: dark message */}
+            <div style={{
+              background: `linear-gradient(135deg, ${C.navy} 0%, #0f3460 60%, ${C.secondary}99 100%)`,
+              padding: isMobile ? "40px 28px" : "48px 48px",
+              display: "flex", flexDirection: "column", justifyContent: "center", color: "#fff",
+            }}>
+              <span style={{
+                display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: 2,
+                textTransform: "uppercase", color: C.gold, marginBottom: 16,
+                background: "rgba(224,171,33,0.12)", border: "1px solid rgba(224,171,33,0.3)",
+                borderRadius: 6, padding: "4px 12px", width: "fit-content",
+              }}>Our Mission in Action</span>
+              <h3 style={{ fontSize: isMobile ? 22 : "clamp(22px,2.5vw,32px)", fontWeight: 900, lineHeight: 1.25, margin: "0 0 16px", letterSpacing: -0.4 }}>
+                Every Child Deserves<br/>
+                <span style={{ color: C.gold }}>a Meal, Safety,</span><br/>
+                and a Future.
+              </h3>
+              <p style={{ fontSize: 14, lineHeight: 1.8, opacity: 0.82, margin: "0 0 14px", maxWidth: 360 }}>
+                Behind every number in our system is a real child — hungry, hopeful, and waiting.
+                With your support, we make sure they never have to share from an empty bowl.
+              </p>
+              <p style={{ fontSize: 12, lineHeight: 1.8, opacity: 0.6, margin: "0 0 28px", fontStyle: "italic", borderLeft: "3px solid rgba(224,171,33,0.5)", paddingLeft: 12 }}>
+                "Whoever saves a soul, it is as if he has saved all mankind." — Quran 5:32
+              </p>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <Link to="/donate" style={{ padding: "11px 26px", borderRadius: 10, fontWeight: 800, fontSize: 13, background: `linear-gradient(135deg,${C.secondary},#3A6214)`, color: "#fff", textDecoration: "none", boxShadow: `0 4px 16px rgba(75,125,25,0.4)` }}>Donate Now →</Link>
+                <Link to="/cases" style={{ padding: "11px 26px", borderRadius: 10, fontWeight: 700, fontSize: 13, background: "rgba(255,255,255,0.1)", border: "1.5px solid rgba(255,255,255,0.25)", color: "#fff", textDecoration: "none" }}>See Their Stories →</Link>
+              </div>
+            </div>
+            {/* Right: children photo */}
+            <div style={{ position: "relative", minHeight: isMobile ? 240 : 360, overflow: "hidden" }}>
+              <img src="/children-sharing.jpg" alt="Children sharing a meal" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, transparent 60%, rgba(0,38,81,0.15))" }} />
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -487,77 +533,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Children Photo Section — just above footer ── */}
-      <section style={{ position:"relative", overflow:"hidden", marginBottom:-80 }}>
-        <div style={{
-          display:"grid",
-          gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-          minHeight: isMobile ? "auto" : 520,
-        }}>
-          {/* Image side */}
-          <div style={{ position:"relative", minHeight: isMobile ? 280 : "auto", overflow:"hidden" }}>
-            <img
-              src="/children-sharing.jpg"
-              alt="Children sharing a meal together"
-              style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center", display:"block" }}
-            />
-            <div style={{ position:"absolute", inset:0, background:"linear-gradient(to right, transparent 60%, rgba(0,38,81,0.12))" }} />
-          </div>
-
-          {/* Message side */}
-          <div style={{
-            background:`linear-gradient(135deg, ${C.navy} 0%, #0f3460 60%, ${C.secondary}99 100%)`,
-            display:"flex", flexDirection:"column", justifyContent:"center",
-            padding: isMobile ? "48px 28px" : "64px 56px",
-            color:"#fff",
-          }}>
-            <span style={{
-              display:"inline-block", fontSize:11, fontWeight:800, letterSpacing:2,
-              textTransform:"uppercase", color:C.gold, marginBottom:20,
-              background:"rgba(224,171,33,0.12)", border:"1px solid rgba(224,171,33,0.3)",
-              borderRadius:6, padding:"4px 12px", width:"fit-content",
-            }}>Our Mission in Action</span>
-
-            <h2 style={{
-              fontSize: isMobile ? 28 : "clamp(28px,3vw,42px)",
-              fontWeight:900, lineHeight:1.2, margin:"0 0 20px", letterSpacing:-0.5,
-            }}>
-              Every Child Deserves<br/>
-              <span style={{ color:C.gold }}>a Meal, Safety,</span><br/>
-              and a Future.
-            </h2>
-
-            <p style={{ fontSize:16, lineHeight:1.8, opacity:0.85, margin:"0 0 16px", maxWidth:420 }}>
-              Behind every number in our system is a real child — hungry, hopeful, and waiting.
-              These children share what little they have. With your support, we make sure they never have to.
-            </p>
-
-            <p style={{
-              fontSize:13, lineHeight:1.8, opacity:0.65, margin:"0 0 36px",
-              fontStyle:"italic", borderLeft:"3px solid rgba(224,171,33,0.5)", paddingLeft:14,
-            }}>
-              "Whoever saves a soul, it is as if he has saved all mankind." — Quran 5:32
-            </p>
-
-            <div style={{ display:"flex", gap:14, flexWrap:"wrap" }}>
-              <Link to="/donate" style={{
-                padding:"13px 32px", borderRadius:12, fontWeight:800, fontSize:14,
-                background:`linear-gradient(135deg,${C.secondary},#3A6214)`,
-                color:"#fff", textDecoration:"none",
-                boxShadow:`0 4px 20px rgba(75,125,25,0.4)`,
-              }}>Donate Now →</Link>
-              <Link to="/cases" style={{
-                padding:"13px 32px", borderRadius:12, fontWeight:700, fontSize:14,
-                background:"rgba(255,255,255,0.1)", border:"1.5px solid rgba(255,255,255,0.25)",
-                color:"#fff", textDecoration:"none",
-              }}>See Their Stories →</Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Gradient border strip — matches footer accent line */}
-        <div style={{ height:4, background:`linear-gradient(90deg, ${C.primary}, ${C.secondary}, ${C.gold})` }} />
-      </section>
 
     </div>
   );

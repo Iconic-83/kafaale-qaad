@@ -76,6 +76,7 @@ function ShareStoryBanner() {
       display: "flex", alignItems: "center", justifyContent: "space-between",
       flexWrap: "wrap", gap: 24,
       padding: "52px clamp(20px, 6vw, 80px)",
+      marginTop: 80,
     }}>
       {/* Photo bg */}
       <div style={{
