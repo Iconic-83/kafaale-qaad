@@ -82,8 +82,8 @@ function ShareStoryBanner() {
       <div style={{
         position: "absolute", inset: 0,
         backgroundImage: `url("/story-bg.jpg")`,
-        backgroundSize: "cover", backgroundPosition: "center 35%",
-        transform: "scale(1.04)",
+        backgroundSize: "contain", backgroundPosition: "center center",
+        backgroundRepeat: "no-repeat", backgroundColor: "#000",
       }} />
       {/* Vignette: dark left where text sits, lighter right */}
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,15,40,0.88) 0%, rgba(0,15,40,0.60) 55%, rgba(0,15,40,0.30) 100%)" }} />
