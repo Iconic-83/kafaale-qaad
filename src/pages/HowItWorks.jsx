@@ -134,10 +134,11 @@ export default function HowItWorks() {
             <h1 style={{ fontSize:"clamp(28px,3.8vw,48px)", fontWeight:900, margin:"0 0 18px", lineHeight:1.1, letterSpacing:-1, textShadow:"0 2px 16px rgba(0,0,0,0.3)" }}>{P.hero_title}</h1>
             <p style={{ fontSize:17, opacity:0.88, lineHeight:1.8, maxWidth:460, margin:0 }}>{P.hero_sub}</p>
           </div>
-          {/* Right: illustration — white card that bleeds to the edge */}
-          <div style={{ position:"relative", height:"100%", minHeight:360, background:"rgba(255,255,255,0.96)", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
-            <img src="/howitworks-bg.jpg" alt="workflow illustration"
-              style={{ width:"100%", maxWidth:420, height:"auto", objectFit:"contain", display:"block" }} />
+          {/* Right: photo — full bleed, cover fit */}
+          <div style={{ position:"relative", height:"100%", minHeight:400, overflow:"hidden" }}>
+            <img src="/howitworks-bg.jpg" alt="A hand holding a child's hand"
+              style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center center", display:"block", position:"absolute", inset:0 }} />
+            <div style={{ position:"absolute", inset:0, background:"linear-gradient(to left, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.28) 100%)" }} />
           </div>
         </div>
       </section>
