@@ -253,15 +253,6 @@ export default function HowItWorks() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
-      <section style={{ background:`linear-gradient(135deg,${C.primary} 0%,${C.secondary} 100%)`, padding:"60px 24px", textAlign:"center", color:"#fff" }}>
-        <h2 style={{ fontSize:32, fontWeight:900, margin:"0 0 16px" }}>{P.cta_title}</h2>
-        <p style={{ fontSize:17, opacity:0.85, marginBottom:32 }}>{P.cta_sub}</p>
-        <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap" }}>
-          <Link to="/dashboard" style={{ padding:"14px 32px", background:C.accent, color:"#fff", borderRadius:12, textDecoration:"none", fontWeight:800, fontSize:15 }}>{P.cta_open}</Link>
-          <Link to="/cases"     style={{ padding:"14px 32px", background:"rgba(255,255,255,.15)", color:"#fff", border:"2px solid rgba(255,255,255,.4)", borderRadius:12, textDecoration:"none", fontWeight:700, fontSize:15 }}>{P.cta_browse}</Link>
-        </div>
-      </section>
     </div>
   );
 }
