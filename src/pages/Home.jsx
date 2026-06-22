@@ -523,9 +523,8 @@ export default function Home() {
       {/* ══════════════════════════ CTA BANNER — real photo background ═════ */}
       <section style={{ position:"relative", overflow:"hidden", minHeight: isMobile?300:380, display:"flex", alignItems:"center" }}>
         {/* Real photo bg */}
-        <div style={{ position:"absolute", inset:0, backgroundImage:"url('/cta-bg.jpg')", backgroundSize:"cover", backgroundPosition:"center 30%" }} />
-        <div style={{ position:"absolute", inset:0, background:`linear-gradient(135deg, rgba(0,38,81,0.82) 0%, rgba(0,75,150,0.72) 50%, rgba(75,125,25,0.65) 100%)` }} />
-        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px)", backgroundSize:"36px 36px" }} />
+        <div style={{ position:"absolute", inset:0, backgroundImage:"url('/cta-bg.jpg')", backgroundSize:"cover", backgroundPosition:"center center" }} />
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom, rgba(0,20,50,0.55) 0%, rgba(0,20,50,0.45) 100%)" }} />
 
         <div style={{ position:"relative", zIndex:2, width:"100%", padding: isMobile?"44px 20px":"56px 32px", textAlign:"center", color:"#fff" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
