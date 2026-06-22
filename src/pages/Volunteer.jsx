@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import FixedSelect from "../components/FixedSelect.jsx";
 
 const C = { navy:"#002651", primary:"#004B96", secondary:"#4B7D19", accent:"#E0AB21", muted:"#5A6E8A", bg:"#F4F7FC", border:"#D8E4F0", text:"#0D1F3C", danger:"#C0392B" };
@@ -100,6 +100,7 @@ export default function Volunteer() {
   const [form, setForm]           = useState(BLANK_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors]       = useState({});
+  const formRef = useRef(null);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]:v }));
 
@@ -109,8 +110,14 @@ export default function Volunteer() {
     setShowForm(true);
     setSubmitted(false);
     setErrors({});
-    window.scrollTo({ top: 400, behavior:"smooth" });
   };
+
+  // Scroll to form whenever it becomes visible
+  useEffect(() => {
+    if (showForm && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showForm, selected]);
 
   const validate = () => {
     const e = {};
@@ -254,7 +261,7 @@ export default function Volunteer() {
 
       {/* ── Application form ── */}
       {showForm && selected && (
-        <section style={{ padding:"64px 24px 80px", background:"#fff", borderTop:`4px solid ${selected.color}` }}>
+        <section ref={formRef} style={{ padding:"64px 24px 80px", background:"#fff", borderTop:`4px solid ${selected.color}` }}>
           <div style={{ maxWidth:680, margin:"0 auto" }}>
             {submitted ? (
               <div style={{ textAlign:"center", padding:"48px 24px" }}>
