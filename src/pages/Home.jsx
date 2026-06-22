@@ -229,6 +229,23 @@ export default function Home() {
         </section>
       )}
 
+      {/* ══════════════════ TRUST BADGE STRIP ══════════════════ */}
+      <section style={{ background:C.bg, borderBottom:`1px solid ${C.border}`, padding: isMobile?"16px 20px":"14px 32px" }}>
+        <div style={{ maxWidth:1280, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"center", gap: isMobile?10:20, flexWrap:"wrap" }}>
+          {[
+            { icon:"✅", bg:"#D1FAE5", color:"#065F46", label:"100% Field Verified" },
+            { icon:"📍", bg:"#DBEAFE", color:"#1D4ED8", label:"GPS-Tracked Delivery" },
+            { icon:"🔒", bg:"#EDE9FE", color:"#5B21B6", label:"Encrypted Payments" },
+            { icon:"📊", bg:"#FEF3C7", color:"#92400E", label:"Full Audit Trail" },
+            { icon:"🤝", bg:"#FCE7F3", color:"#9D174D", label:"No Hidden Fees" },
+          ].map((b, i) => (
+            <div key={i} className="kf-trust-badge">
+              <span className="icon" style={{ background:b.bg, color:b.color }}>{b.icon}</span>
+              {b.label}
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* ══════════════════════════ STORIES FROM THE FIELD ════════════════════ */}
       {(() => {
@@ -348,9 +365,8 @@ export default function Home() {
         return (
           <section style={sec("#fff")}>
             <div style={wrap}>
-
               {/* ── Header row ── */}
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom: isMobile?28:44, flexWrap:"wrap", gap:12 }}>
+              <div className="kf-reveal" style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom: isMobile?28:44, flexWrap:"wrap", gap:12 }}>
                 <div>
                   <span className="kf-badge" style={{ background:"#FEF3C7", color:"#92400E", marginBottom:10 }}>
                     📰 Stories from the Field
@@ -369,7 +385,7 @@ export default function Home() {
 
               {/* ── UNICEF-style grid ── */}
               {/* Row 1: 1 featured (wide) + 2 regular */}
-              <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":`2fr 1fr 1fr`, gap:20, marginBottom:20 }}>
+              <div className="kf-reveal-stagger" style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":`2fr 1fr 1fr`, gap:20, marginBottom:20 }}>
                 <StoryCard st={stories[0]} featured={true} />
                 {stories[1] && <StoryCard st={stories[1]} />}
                 {stories[2] && <StoryCard st={stories[2]} />}
@@ -390,7 +406,7 @@ export default function Home() {
       {/* ══════════════════════════ FEATURED CASES ══════════════════════════ */}
       <section style={sec(C.bg)}>
         <div style={wrap}>
-          <div style={{ display:"flex", flexDirection: isMobile?"column":"row", justifyContent:"space-between", alignItems: isMobile?"flex-start":"flex-end", gap:16, marginBottom: isMobile?32:48 }}>
+          <div className="kf-reveal" style={{ display:"flex", flexDirection: isMobile?"column":"row", justifyContent:"space-between", alignItems: isMobile?"flex-start":"flex-end", gap:16, marginBottom: isMobile?32:48 }}>
             <div>
               <span className="kf-badge" style={{ background:"#FDF2F8", color:"#9D174D" }}>{P.cases_badge}</span>
               <hr className="kf-rule" />
@@ -402,7 +418,7 @@ export default function Home() {
               {P.cases_viewall} →
             </Link>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(3,1fr)", gap: isMobile?16:24 }}>
+          <div className="kf-reveal-stagger" style={{ display:"grid", gridTemplateColumns: isMobile?"1fr": isTablet?"1fr 1fr":"repeat(3,1fr)", gap: isMobile?16:24 }}>
             {featuredCases.map((c, idx) => (
               <div key={c.id || idx} className="kf-card" style={{
                 background:"#fff", borderRadius:20, overflow:"hidden",
@@ -460,7 +476,7 @@ export default function Home() {
           </div>
 
           {/* ── Our Mission — sits right below the cases ── */}
-          <div style={{
+          <div className="kf-reveal" style={{
             marginTop: isMobile ? 40 : 52,
             borderRadius: 20,
             overflow: "hidden",

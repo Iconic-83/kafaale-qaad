@@ -31,10 +31,10 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/assets/brand/kafaala-qaad-hope-icon-512.png" />
 
-    <!-- Inter — modern editorial font across the entire platform -->
+    <!-- Fonts: Lexend (headings, accessibility-designed) + Source Sans 3 (body) + Inter (UI) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Source+Sans+3:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
     <style>
       /* ── Kafaala Qaad HOPE — Brand CSS Variables ── */
@@ -64,10 +64,20 @@
       html { scroll-behavior: smooth; }
       body {
         margin: 0; padding: 0;
-        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        font-family: 'Source Sans 3', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
         background: var(--kf-bg);
         color: var(--kf-text);
         overflow-x: hidden;
+        font-size: 16px;
+        line-height: 1.7;
+      }
+
+      /* ── Lexend for all headings — designed for readability ── */
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'Lexend', 'Inter', system-ui, sans-serif;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
       }
       #root, html, body { max-width: 100vw; overflow-x: hidden; }
 
@@ -281,10 +291,92 @@
         pointer-events: none;
       }
       .kf-shine:hover::after { left: 130%; }
+
+      /* ── Scroll-reveal animations (Intersection Observer) ── */
+      .kf-reveal {
+        opacity: 0;
+        transform: translateY(32px);
+        transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1), transform 0.65s cubic-bezier(0.22,1,0.36,1);
+      }
+      .kf-reveal.kf-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .kf-reveal-left {
+        opacity: 0;
+        transform: translateX(-32px);
+        transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1), transform 0.65s cubic-bezier(0.22,1,0.36,1);
+      }
+      .kf-reveal-left.kf-visible { opacity: 1; transform: translateX(0); }
+      .kf-reveal-right {
+        opacity: 0;
+        transform: translateX(32px);
+        transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1), transform 0.65s cubic-bezier(0.22,1,0.36,1);
+      }
+      .kf-reveal-right.kf-visible { opacity: 1; transform: translateX(0); }
+      /* Staggered children */
+      .kf-reveal-stagger > * {
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 0.55s cubic-bezier(0.22,1,0.36,1), transform 0.55s cubic-bezier(0.22,1,0.36,1);
+      }
+      .kf-reveal-stagger.kf-visible > *:nth-child(1) { opacity:1; transform:translateY(0); transition-delay:0ms; }
+      .kf-reveal-stagger.kf-visible > *:nth-child(2) { opacity:1; transform:translateY(0); transition-delay:80ms; }
+      .kf-reveal-stagger.kf-visible > *:nth-child(3) { opacity:1; transform:translateY(0); transition-delay:160ms; }
+      .kf-reveal-stagger.kf-visible > *:nth-child(4) { opacity:1; transform:translateY(0); transition-delay:240ms; }
+      .kf-reveal-stagger.kf-visible > *:nth-child(5) { opacity:1; transform:translateY(0); transition-delay:320ms; }
+      @media (prefers-reduced-motion: reduce) {
+        .kf-reveal, .kf-reveal-left, .kf-reveal-right, .kf-reveal-stagger > * {
+          opacity: 1 !important; transform: none !important; transition: none !important;
+        }
+      }
+
+      /* ── Trust badge strip ── */
+      .kf-trust-badge {
+        display: inline-flex; align-items: center; gap: 7px;
+        padding: 8px 16px; border-radius: 100px;
+        font-size: 12px; font-weight: 700;
+        background: rgba(255,255,255,0.9);
+        border: 1.5px solid rgba(0,75,150,0.12);
+        color: var(--kf-navy);
+        box-shadow: 0 2px 12px rgba(0,38,81,0.07);
+        transition: transform 0.2s, box-shadow 0.2s;
+        white-space: nowrap;
+      }
+      .kf-trust-badge:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,38,81,0.12); }
+      .kf-trust-badge .icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
     </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Scroll-reveal — watches .kf-reveal, .kf-reveal-left, .kf-reveal-right, .kf-reveal-stagger
+      (function() {
+        const sel = '.kf-reveal, .kf-reveal-left, .kf-reveal-right, .kf-reveal-stagger';
+        function observe() {
+          const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('kf-visible'); io.unobserve(e.target); } });
+          }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+          document.querySelectorAll(sel).forEach(el => io.observe(el));
+        }
+        // Re-run after React mounts (DOM changes)
+        if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', observe); }
+        else { observe(); }
+        // MutationObserver to catch React renders
+        const mo = new MutationObserver(() => {
+          document.querySelectorAll(sel + ':not([class*="kf-visible"])').forEach(el => {
+            if (!el._kfObserved) {
+              el._kfObserved = true;
+              const io = new IntersectionObserver((entries) => {
+                entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('kf-visible'); io.unobserve(e.target); } });
+              }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+              io.observe(el);
+            }
+          });
+        });
+        mo.observe(document.body || document.documentElement, { childList: true, subtree: true });
+      })();
+    </script>
   </body>
 </html>
