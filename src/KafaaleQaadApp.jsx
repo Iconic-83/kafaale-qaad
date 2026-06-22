@@ -5552,6 +5552,15 @@ const CommunityStoriesPanel = ({ showToast }) => {
     showToast("Story unpublished");
   };
 
+  const toggleFeaturePub = (pub) => {
+    const newPub = published.map(p => p.id === pub.id ? { ...p, featured: !p.featured } : p);
+    localStorage.setItem(PUB_KEY, JSON.stringify(newPub));
+    setPublished(newPub);
+    window.dispatchEvent(new Event("storage"));
+    const isNow = newPub.find(p => p.id === pub.id)?.featured;
+    showToast(isNow ? "⭐ Story is now featured on the Stories page" : "Story removed from featured");
+  };
+
   const rowStyle = { background:"#fff", borderRadius:12, padding:"14px 18px", border:`1px solid ${C.border}`, marginBottom:10 };
   const TABS = [
     { id:"pending",   label:`⏳ Pending Review (${pending.length})`  },
@@ -5589,10 +5598,11 @@ const CommunityStoriesPanel = ({ showToast }) => {
       )}
 
       {shown.map(sub => (
-        <div key={sub.id} style={rowStyle}>
+        <div key={sub.id} style={{ ...rowStyle, border: sub.featured ? "1.5px solid #FCD34D" : `1px solid ${C.border}`, background: sub.featured ? "#FFFEF5" : "#fff" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, flexWrap:"wrap" }}>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:"flex", gap:8, marginBottom:6, flexWrap:"wrap" }}>
+                {sub.featured && <span style={{ background:"#FEF9C3", color:"#92400E", borderRadius:6, padding:"2px 10px", fontSize:11, fontWeight:800 }}>⭐ Featured</span>}
                 <span style={{ background:C.primary+"15", color:C.primary, borderRadius:6, padding:"2px 10px", fontSize:11, fontWeight:800 }}>{sub.category}</span>
                 {sub.location && <span style={{ fontSize:11, color:C.muted }}>📍 {sub.location}</span>}
                 <span style={{ fontSize:11, color:C.muted }}>👤 {sub.authorName}</span>
@@ -5618,9 +5628,14 @@ const CommunityStoriesPanel = ({ showToast }) => {
                 </>
               )}
               {tab === "published" && (
-                <button onClick={() => unpublish(sub)} style={{ padding:"7px 14px", borderRadius:8, border:"none", background:"#FEE2E2", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C0392B" }}>
-                  Unpublish
-                </button>
+                <>
+                  <button onClick={() => toggleFeaturePub(sub)} style={{ padding:"7px 14px", borderRadius:8, border: sub.featured ? "1.5px solid #FCD34D" : `1px solid ${C.border}`, background: sub.featured ? "#FEF9C3" : "#fff", cursor:"pointer", fontSize:12, fontWeight:700, color: sub.featured ? "#92400E" : C.muted }}>
+                    {sub.featured ? "⭐ Featured" : "☆ Feature"}
+                  </button>
+                  <button onClick={() => unpublish(sub)} style={{ padding:"7px 14px", borderRadius:8, border:"none", background:"#FEE2E2", cursor:"pointer", fontSize:12, fontWeight:700, color:"#C0392B" }}>
+                    Unpublish
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -5675,7 +5690,14 @@ const ImpactStoriesPanel = ({ showToast }) => {
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
-  const save = (list) => { setStories(list); localStorage.setItem(STORIES_KEY, JSON.stringify(list)); };
+  const save = (list) => { setStories(list); localStorage.setItem(STORIES_KEY, JSON.stringify(list)); window.dispatchEvent(new Event("storage")); };
+
+  const toggleFeature = (id) => {
+    const updated = stories.map(s => s.id === id ? { ...s, featured: !s.featured } : s);
+    save(updated);
+    const isNowFeatured = updated.find(s => s.id === id)?.featured;
+    showToast(isNowFeatured ? "⭐ Story is now featured on the Stories page" : "Story removed from featured", isNowFeatured ? "success" : "info");
+  };
 
   const handleImg = (side, file) => {
     if (!file) return;
@@ -5803,13 +5825,17 @@ const ImpactStoriesPanel = ({ showToast }) => {
         {stories.map(s => (
           <div key={s.id} style={{ background:"#fff", border:`1px solid ${COLORS.border}`, borderRadius:16, overflow:"hidden", boxShadow:"0 2px 10px #0002" }}>
             {/* Header */}
-            <div style={{ background:`linear-gradient(135deg,${COLORS.primary}14,${COLORS.secondary}12)`, padding:"14px 18px", borderBottom:`1px solid ${COLORS.border}` }}>
+            <div style={{ background: s.featured ? "linear-gradient(135deg,#FEF9C3,#FEF3C7)" : `linear-gradient(135deg,${COLORS.primary}14,${COLORS.secondary}12)`, padding:"14px 18px", borderBottom:`1px solid ${s.featured ? "#FCD34D" : COLORS.border}` }}>
+              {s.featured && <div style={{ fontSize:10, fontWeight:800, color:"#92400E", letterSpacing:1.5, textTransform:"uppercase", marginBottom:6 }}>⭐ Featured Story</div>}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                 <div>
                   <div style={{ fontSize:11, fontWeight:700, color:COLORS.muted, textTransform:"uppercase", letterSpacing:1 }}>{s.category}{s.location ? ` · ${s.location}` : ""}</div>
                   <div style={{ fontSize:16, fontWeight:800, color:COLORS.text, marginTop:3 }}>{s.title}</div>
                 </div>
-                <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                <div style={{ display:"flex", gap:6, flexShrink:0, flexWrap:"wrap", justifyContent:"flex-end" }}>
+                  <button onClick={() => toggleFeature(s.id)} style={{ padding:"5px 12px", fontSize:12, background: s.featured ? "#FEF9C3" : COLORS.bg, color: s.featured ? "#92400E" : COLORS.muted, border: s.featured ? "1.5px solid #FCD34D" : `1px solid ${COLORS.border}`, borderRadius:7, cursor:"pointer", fontWeight:700 }}>
+                    {s.featured ? "⭐ Featured" : "☆ Feature"}
+                  </button>
                   <button onClick={() => handleEdit(s)} style={{ padding:"5px 12px", fontSize:12, background:COLORS.primary+"15", color:COLORS.primary, border:"none", borderRadius:7, cursor:"pointer", fontWeight:700 }}>Edit</button>
                   <button onClick={() => handleDelete(s.id)} style={{ padding:"5px 12px", fontSize:12, background:"#FEE2E2", color:"#DC2626", border:"none", borderRadius:7, cursor:"pointer", fontWeight:700 }}>Delete</button>
                 </div>

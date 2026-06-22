@@ -253,37 +253,51 @@ const fmt = (d) => {
   catch { return d; }
 };
 
+const PUB_KEY = "kf_published_stories";
+
+const parseAdminStories = () => {
+  try {
+    return JSON.parse(localStorage.getItem(STORIES_KEY) || "[]").map(s => ({
+      ...s,
+      source:   "admin",
+      date:     s.createdAt?.split("T")[0] || new Date().toISOString().split("T")[0],
+      excerpt:  [s.beforeDesc, s.afterDesc].filter(Boolean).join(" → ").slice(0, 160) + "…",
+      tags:     [s.category?.toLowerCase().replace(/\s+/g,"-")].filter(Boolean),
+      featured: Boolean(s.featured), // respect admin-set flag
+    }));
+  } catch { return []; }
+};
+
+const parsePubStories = () => {
+  try {
+    return JSON.parse(localStorage.getItem(PUB_KEY) || "[]").map(s => ({
+      ...s,
+      source:   "community",
+      date:     s.publishedAt?.split("T")[0] || s.submittedAt?.split("T")[0] || new Date().toISOString().split("T")[0],
+      excerpt:  (s.afterDesc || s.beforeDesc || s.what || "").slice(0, 160) + "…",
+      tags:     [s.category?.toLowerCase().replace(/\s+/g,"-")].filter(Boolean),
+      featured: Boolean(s.featured), // respect admin-set flag
+    }));
+  } catch { return []; }
+};
+
 export default function Stories() {
   const { lang } = useLang();
   const { isMobile, isTablet } = useResponsive();
 
-  const [adminStories, setAdminStories] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(STORIES_KEY) || "[]").map(s => ({
-        ...s, date: s.createdAt?.split("T")[0] || new Date().toISOString().split("T")[0],
-        excerpt: [s.beforeDesc, s.afterDesc].filter(Boolean).join(" → ").slice(0, 160) + "…",
-        tags: [s.category?.toLowerCase().replace(/\s+/g,"-")].filter(Boolean),
-        featured: false,
-      }));
-    } catch { return []; }
-  });
+  const [adminStories, setAdminStories] = useState(parseAdminStories);
+  const [pubStories,   setPubStories]   = useState(parsePubStories);
 
   useEffect(() => {
     const sync = () => {
-      try {
-        setAdminStories(JSON.parse(localStorage.getItem(STORIES_KEY) || "[]").map(s => ({
-          ...s, date: s.createdAt?.split("T")[0] || new Date().toISOString().split("T")[0],
-          excerpt: [s.beforeDesc, s.afterDesc].filter(Boolean).join(" → ").slice(0, 160) + "…",
-          tags: [s.category?.toLowerCase().replace(/\s+/g,"-")].filter(Boolean),
-          featured: false,
-        })));
-      } catch {}
+      setAdminStories(parseAdminStories());
+      setPubStories(parsePubStories());
     };
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
   }, []);
 
-  const allStories = [...adminStories, ...STATIC_STORIES];
+  const allStories = [...adminStories, ...pubStories, ...STATIC_STORIES];
   const CATEGORIES = ["All", ...Array.from(new Set(allStories.map(s => s.category)))];
   const [activeCat, setActiveCat] = useState("All");
   const [search, setSearch] = useState("");
