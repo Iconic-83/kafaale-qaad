@@ -81,7 +81,7 @@ function ShareStoryBanner() {
       {/* Photo bg */}
       <div style={{
         position: "absolute", inset: 0,
-        backgroundImage: `url("https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1400&q=80")`,
+        backgroundImage: `url("/story-bg.jpg")`,
         backgroundSize: "cover", backgroundPosition: "center 30%",
         filter: "brightness(0.28)",
       }} />
