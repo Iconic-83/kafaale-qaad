@@ -194,25 +194,46 @@ export default function Donate() {
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: C.text }}>
 
       {/* Hero */}
-      <section style={{ overflow: "hidden", minHeight: 340 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: 340 }}>
-          {/* Left — gradient + text */}
-          <div style={{ background: `linear-gradient(135deg, #EC4899 0%, ${C.primary} 100%)`, color: "#fff", padding: "64px 48px 56px 32px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <span style={{ display: "inline-block", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.28)", borderRadius: 20, padding: "5px 16px", fontSize: 11, fontWeight: 800, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 20, backdropFilter: "blur(6px)", width: "fit-content" }}>Sponsor a Family</span>
-            <h1 style={{ fontSize: "clamp(26px, 3.5vw, 44px)", fontWeight: 900, margin: "0 0 16px", lineHeight: 1.1, letterSpacing: -1, textShadow: "0 2px 16px rgba(0,0,0,0.2)" }}>Sponsor a Verified Case</h1>
-            <p style={{ fontSize: 16, opacity: 0.9, lineHeight: 1.8, margin: "0 0 20px", maxWidth: 420 }}>
-              Every case has been field-investigated and verified by our team. Your donation is tracked end-to-end — from payment to proof of delivery.
-            </p>
-            {!user && (
-              <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: "10px 18px", fontSize: 13, display: "inline-block", backdropFilter: "blur(6px)", width: "fit-content" }}>
-                💡 <Link to="/login" style={{ color: "#FCD34D", fontWeight: 700 }}>Sign in</Link> to track your donations
-              </div>
-            )}
+      <section style={{ position: "relative", overflow: "hidden", background: `linear-gradient(135deg, #C2185B 0%, ${C.primary} 60%, #1565C0 100%)`, color: "#fff", padding: "80px 24px 72px", textAlign: "center", minHeight: 380 }}>
+        {/* Illustration as blended background — mix-blend-mode removes white, keeps teal lines */}
+        <img src="/donate-hero-bg.jpg" alt="" aria-hidden="true" style={{
+          position: "absolute", right: "-40px", bottom: "-20px",
+          width: "420px", height: "420px", objectFit: "contain",
+          opacity: 0.13, mixBlendMode: "luminosity", pointerEvents: "none",
+          userSelect: "none",
+        }} />
+        {/* Second copy left side, mirrored */}
+        <img src="/donate-hero-bg.jpg" alt="" aria-hidden="true" style={{
+          position: "absolute", left: "-40px", bottom: "-20px",
+          width: "380px", height: "380px", objectFit: "contain",
+          opacity: 0.09, mixBlendMode: "luminosity", pointerEvents: "none",
+          transform: "scaleX(-1)", userSelect: "none",
+        }} />
+
+        <div style={{ position: "relative", zIndex: 1, maxWidth: 680, margin: "0 auto" }}>
+          <span style={{ display: "inline-block", background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.35)", borderRadius: 24, padding: "6px 20px", fontSize: 11, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", marginBottom: 24, backdropFilter: "blur(8px)" }}>
+            100% Field-Verified
+          </span>
+
+          <h1 style={{ fontSize: "clamp(28px, 4.5vw, 52px)", fontWeight: 900, margin: "0 0 20px", lineHeight: 1.08, letterSpacing: -1.5, textShadow: "0 2px 24px rgba(0,0,0,0.3)" }}>
+            Your Gift Reaches a Real Family — Guaranteed
+          </h1>
+
+          <p style={{ fontSize: 17, opacity: 0.9, lineHeight: 1.8, maxWidth: 540, margin: "0 auto 28px" }}>
+            Every case is personally investigated by our field team before it reaches you. Your donation is GPS-tracked from the moment you give — and you receive proof of delivery.
+          </p>
+
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 }}>
+            {["Field Verified", "GPS Tracked", "Proof of Delivery", "No Hidden Fees"].map(t => (
+              <span key={t} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 99, padding: "5px 14px", fontSize: 12, fontWeight: 700, backdropFilter: "blur(6px)" }}>✓ {t}</span>
+            ))}
           </div>
-          {/* Right — white panel with illustration */}
-          <div style={{ background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", padding: "32px" }}>
-            <img src="/donate-hero-bg.jpg" alt="Sponsor a family" style={{ width: "100%", maxWidth: 340, height: "auto", objectFit: "contain", display: "block" }} />
-          </div>
+
+          {!user && (
+            <div style={{ background: "rgba(255,255,255,0.12)", borderRadius: 14, padding: "11px 20px", fontSize: 13, display: "inline-block", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.2)" }}>
+              💡 <Link to="/login" style={{ color: "#FCD34D", fontWeight: 800 }}>Sign in</Link> to track your donations and receive delivery reports
+            </div>
+          )}
         </div>
       </section>
 
