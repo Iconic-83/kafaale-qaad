@@ -18,12 +18,16 @@ class ErrorBoundary extends Component {
     return this.props.children;
   }
 }
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from 'react-router-dom';
 import { useEffect } from 'react';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  const navType = useNavigationType(); // 'PUSH' | 'REPLACE' | 'POP'
+  useEffect(() => {
+    // Only scroll to top on forward navigation — back/forward (POP) keeps position
+    if (navType !== 'POP') window.scrollTo(0, 0);
+  }, [pathname, navType]);
   return null;
 }
 import Navbar       from './components/Navbar.jsx';

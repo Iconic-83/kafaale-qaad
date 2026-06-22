@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import FixedSelect from "../components/FixedSelect.jsx";
 import { useNavigate } from "react-router-dom";
 import { programs as programsApi, projects as projectsApi } from "../api/client.js";
 import { useLang } from "../context/LanguageContext.jsx";
@@ -319,12 +320,11 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
         {/* Payment method */}
         <div style={{ marginBottom: 20 }}>
           <label style={{ fontSize: 13, fontWeight: 700, display: "block", marginBottom: 8 }}>Payment Method</label>
-          <select value={method} onChange={e => setMethod(e.target.value)}
-            style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, background: "#fff", boxSizing: "border-box" }}>
+          <FixedSelect value={method} onChange={e => setMethod(e.target.value)} style={{ width:"100%", borderRadius:10, fontSize:14 }}>
             <option value="mobile_money">📱 Mobile Money (EVC / Zaad / Sahal)</option>
             <option value="bank_transfer">🏦 Bank Transfer</option>
             <option value="card">💳 Debit / Credit Card</option>
-          </select>
+          </FixedSelect>
         </div>
 
         {/* Commitment length */}

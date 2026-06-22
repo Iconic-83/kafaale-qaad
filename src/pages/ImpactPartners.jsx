@@ -1,4 +1,5 @@
 import { useState } from "react";
+import FixedSelect from "../components/FixedSelect.jsx";
 import { Link } from "react-router-dom";
 
 const C = { navy:"#002651", primary:"#004B96", secondary:"#4B7D19", accent:"#E0AB21", muted:"#5A6E8A", bg:"#F4F7FC", border:"#D8E4F0", text:"#0D1F3C", danger:"#C0392B" };
@@ -119,11 +120,10 @@ export default function ImpactPartners() {
       <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>
         {label} <span style={{color:C.danger}}>*</span>
       </label>
-      <select value={form[key]} onChange={e=>set(key,e.target.value)}
-        style={{ width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${errors[key]?C.danger:C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box", background:"#fff" }}>
+      <FixedSelect value={form[key]} onChange={e=>set(key,e.target.value)} style={{ width:"100%", borderRadius:10, fontSize:14, border:`1.5px solid ${errors[key]?C.danger:C.border}` }}>
         <option value="">Select…</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
+      </FixedSelect>
       {errors[key] && <div style={{ fontSize:11, color:C.danger, marginTop:4 }}>⚠ {errors[key]}</div>}
     </div>
   );

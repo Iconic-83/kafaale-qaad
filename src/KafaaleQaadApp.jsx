@@ -1528,32 +1528,29 @@ const ExportModal = ({ cases, onClose }) => {
         {(rangeType === "year" || rangeType === "quarter") && (
           <div style={{ flex: 1, minWidth: 120 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, marginBottom: 6 }}>Year</div>
-            <select value={selYear} onChange={e => setSelYear(e.target.value)}
-              style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14, background: "#fff" }}>
+            <Select value={selYear} onChange={e => setSelYear(e.target.value)} wrapStyle={{ marginBottom: 0 }}>
               {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
+            </Select>
           </div>
         )}
         {rangeType === "quarter" && (
           <div style={{ flex: 1, minWidth: 120 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, marginBottom: 6 }}>Quarter</div>
-            <select value={selQuarter} onChange={e => setSelQuarter(e.target.value)}
-              style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14, background: "#fff" }}>
+            <Select value={selQuarter} onChange={e => setSelQuarter(e.target.value)} wrapStyle={{ marginBottom: 0 }}>
               {["Q1 (Jan–Mar)","Q2 (Apr–Jun)","Q3 (Jul–Sep)","Q4 (Oct–Dec)"].map((q, i) => <option key={i} value={`Q${i+1}`}>{q}</option>)}
-            </select>
+            </Select>
           </div>
         )}
         {rangeType === "months" && (
           <div style={{ flex: 1, minWidth: 160 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, marginBottom: 6 }}>Period</div>
-            <select value={selMonths} onChange={e => setSelMonths(e.target.value)}
-              style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${COLORS.border}`, fontSize: 14, background: "#fff" }}>
+            <Select value={selMonths} onChange={e => setSelMonths(e.target.value)} wrapStyle={{ marginBottom: 0 }}>
               <option value="1">Last 1 month</option>
               <option value="2">Last 2 months</option>
               <option value="3">Last 3 months</option>
               <option value="6">Last 6 months</option>
               <option value="12">Last 12 months</option>
-            </select>
+            </Select>
           </div>
         )}
         {rangeType === "custom" && (
@@ -4050,32 +4047,29 @@ const VerificationDashboard = ({ cases, agents, donations = [], onViewCase, onAs
                 ))}
                 <div>
                   <label style={{ fontSize:12, fontWeight:700, color:COLORS.muted, display:"block", marginBottom:5 }}>Gender</label>
-                  <select value={childForm.gender||"male"} onChange={e => setChildForm(f=>({...f,gender:e.target.value}))}
-                    style={{ width:"100%", padding:"10px 14px", border:`1.5px solid ${COLORS.border}`, borderRadius:10, fontSize:14, background:"#fff", boxSizing:"border-box" }}>
+                  <Select value={childForm.gender||"male"} onChange={e => setChildForm(f=>({...f,gender:e.target.value}))} wrapStyle={{ marginBottom:0 }}>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label style={{ fontSize:12, fontWeight:700, color:COLORS.muted, display:"block", marginBottom:5 }}>Program Type</label>
-                  <select value={childForm.programType||"child_sponsorship"} onChange={e => setChildForm(f=>({...f,programType:e.target.value}))}
-                    style={{ width:"100%", padding:"10px 14px", border:`1.5px solid ${COLORS.border}`, borderRadius:10, fontSize:14, background:"#fff", boxSizing:"border-box" }}>
+                  <Select value={childForm.programType||"child_sponsorship"} onChange={e => setChildForm(f=>({...f,programType:e.target.value}))} wrapStyle={{ marginBottom:0 }}>
                     <option value="child_sponsorship">👶 Child Sponsorship</option>
                     <option value="education">🎓 Education Support</option>
                     <option value="medical">🩺 Medical Support</option>
                     <option value="family_care">🏠 Family Care</option>
                     <option value="nutrition">🍎 Nutrition Program</option>
                     <option value="emergency_relief">🚨 Emergency Relief</option>
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label style={{ fontSize:12, fontWeight:700, color:COLORS.muted, display:"block", marginBottom:5 }}>Status</label>
-                  <select value={childForm.status||"seeking_sponsor"} onChange={e => setChildForm(f=>({...f,status:e.target.value}))}
-                    style={{ width:"100%", padding:"10px 14px", border:`1.5px solid ${COLORS.border}`, borderRadius:10, fontSize:14, background:"#fff", boxSizing:"border-box" }}>
+                  <Select value={childForm.status||"seeking_sponsor"} onChange={e => setChildForm(f=>({...f,status:e.target.value}))} wrapStyle={{ marginBottom:0 }}>
                     <option value="seeking_sponsor">Seeking Sponsor</option>
                     <option value="sponsored">Sponsored</option>
                     <option value="pending_verification">Pending Verification</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
               <div style={{ marginTop:14 }}>
@@ -4794,13 +4788,11 @@ const UsersTab = ({ users, isSuperAdmin, onDeleteUser, onChangeRole }) => {
                 <td style={{ padding: "10px 16px", fontSize: 13 }}>{u.phone || "—"}</td>
                 <td style={{ padding: "10px 16px" }}>
                   {isSuperAdmin && isEditing ? (
-                    <select value={u.role} disabled={isSaving}
+                    <Select value={u.role} disabled={isSaving}
                       onChange={e => { handleRoleChange(u, e.target.value); setEditingId(null); }}
-                      onKeyDown={e => e.key === "Escape" && setEditingId(null)}
-                      autoFocus
-                      style={{ padding: "4px 8px", borderRadius: 8, border: `1.5px solid ${COLORS.primary}`, fontSize: 12, fontWeight: 700, cursor: "pointer", background: "#fff", outline: "none" }}>
+                      wrapStyle={{ marginBottom:0 }}>
                       {ALL_ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                    </select>
+                    </Select>
                   ) : (
                     <span onClick={() => isSuperAdmin && setEditingId(u.id)}
                       title={isSuperAdmin ? "Click to change role" : ""}
@@ -5407,17 +5399,15 @@ const SiteSettingsPanel = ({ showToast, currentUser, defaultTab }) => {
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                     <div>
                       <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Type</label>
-                      <select value={updateForm.type} onChange={e=>setUpdateForm(f=>({...f,type:e.target.value}))}
-                        style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }}>
+                      <Select value={updateForm.type} onChange={e=>setUpdateForm(f=>({...f,type:e.target.value}))} wrapStyle={{ marginBottom:0 }}>
                         {UPDATE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                      </Select>
                     </div>
                     <div>
                       <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Severity</label>
-                      <select value={updateForm.severity} onChange={e=>setUpdateForm(f=>({...f,severity:e.target.value}))}
-                        style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box" }}>
+                      <Select value={updateForm.severity} onChange={e=>setUpdateForm(f=>({...f,severity:e.target.value}))} wrapStyle={{ marginBottom:0 }}>
                         {["critical","high","medium","low","info"].map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                      </Select>
                     </div>
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
@@ -5751,7 +5741,7 @@ const ImpactStoriesPanel = ({ showToast }) => {
           <div style={{ display:"grid", gridTemplateColumns: isMobile?"1fr":"1fr 1fr", gap:16 }}>
             <F label="Story Title" required><input style={inp} value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Displaced family finds shelter" /></F>
             <F label="Category" required>
-              <select style={inp} value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+              <Select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} wrapStyle={{ marginBottom:0 }}>
                 <option value="">Select category…</option>
                 <option value="Emergency & Shelter">Emergency & Shelter</option>
                 <option value="Medical">Medical</option>
@@ -5760,7 +5750,7 @@ const ImpactStoriesPanel = ({ showToast }) => {
                 <option value="Orphan Support">Orphan Support</option>
                 <option value="Family Reunification">Family Reunification</option>
                 <option value="Livelihood">Livelihood</option>
-              </select>
+              </Select>
             </F>
             <F label="Location / District"><input style={inp} value={form.location} onChange={e=>setForm(f=>({...f,location:e.target.value}))} placeholder="e.g. Mogadishu, Baidoa…" /></F>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
@@ -6051,14 +6041,14 @@ const BulkImportPanel = ({ showToast, currentUser }) => {
               </div>
               <div>
                 <label style={{ display:"block", fontSize:12, fontWeight:700, color:COLORS.muted, marginBottom:6, textTransform:"uppercase" }}>Program Type *</label>
-                <select value={programType} onChange={e=>setProgramType(e.target.value)} style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1px solid ${COLORS.border}`, fontSize:14, boxSizing:"border-box" }}>
+                <Select value={programType} onChange={e=>setProgramType(e.target.value)} wrapStyle={{ marginBottom:0 }}>
                   <option value="child_sponsorship">Child Sponsorship</option>
                   <option value="education">Education</option>
                   <option value="medical">Medical Support</option>
                   <option value="family_care">Family Care</option>
                   <option value="nutrition">Nutrition</option>
                   <option value="emergency_relief">Emergency Relief</option>
-                </select>
+                </Select>
               </div>
             </div>
           )}
@@ -6307,10 +6297,10 @@ const HistoryPanel = ({ showToast }) => {
               </div>
               <div>
                 <label style={{ fontSize:12, fontWeight:700, color:COLORS.muted, display:"block", marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Category</label>
-                <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} style={{ width:"100%", padding:"10px 13px", borderRadius:9, border:`1.5px solid ${COLORS.border}`, fontSize:14, boxSizing:"border-box", background:"#fff" }}>
+                <Select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} wrapStyle={{ marginBottom:0 }}>
                   <option value="">Select…</option>
                   {["Case Delivery","Aid Program","Medical Mission","Education Drive","Emergency Response","Community Event","Partnership","Milestone"].map(o=><option key={o}>{o}</option>)}
-                </select>
+                </Select>
               </div>
             </div>
             <div>
@@ -8753,11 +8743,10 @@ export default function KafaaleQaadApp() {
               placeholder="🔍 Search…"
               style={{ flex: 1, padding: "7px 12px", borderRadius: 10, border: "none", background: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 13, outline: "none", minWidth: 0 }} />
             {!isMobile && (
-              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                style={{ padding: "7px 8px", borderRadius: 10, border: "none", background: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 11, outline: "none", maxWidth: 110 }}>
+              <Select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} wrapStyle={{ marginBottom:0 }}>
                 <option value="All">All</option>
                 {Object.keys(STATUS_MAP).map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              </Select>
             )}
           </div>
 

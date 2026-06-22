@@ -1,4 +1,5 @@
 import { useState } from "react";
+import FixedSelect from "../components/FixedSelect.jsx";
 import { useNavigate } from "react-router-dom";
 import { useLang } from "../context/LanguageContext.jsx";
 import { PT } from "../translations.js";
@@ -177,15 +178,15 @@ export default function Contact() {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }}>
                     <div>
                       <label style={{ fontSize: 12, fontWeight: 700, display: "block", marginBottom: 6 }}>{P.lbl_gender}</label>
-                      <select value={form.gender} onChange={e => set("gender", e.target.value)} style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, outline: "none", background: "#fff", boxSizing: "border-box" }}>
+                      <FixedSelect value={form.gender} onChange={e => set("gender", e.target.value)} style={{ width: "100%", borderRadius: 10, fontSize: 14 }}>
                         <option>{P.gender_female}</option><option>{P.gender_male}</option><option>{P.gender_other}</option>
-                      </select>
+                      </FixedSelect>
                     </div>
                     <div>
                       <label style={{ fontSize: 12, fontWeight: 700, display: "block", marginBottom: 6 }}>{P.lbl_urgency}</label>
-                      <select value={form.urgency} onChange={e => set("urgency", e.target.value)} style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 14, outline: "none", background: "#fff", boxSizing: "border-box" }}>
+                      <FixedSelect value={form.urgency} onChange={e => set("urgency", e.target.value)} style={{ width: "100%", borderRadius: 10, fontSize: 14 }}>
                         <option>Low</option><option>Medium</option><option>High</option><option>Critical</option>
-                      </select>
+                      </FixedSelect>
                     </div>
                   </div>
                   <div style={{ marginTop: 16 }}>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import FixedSelect from "../components/FixedSelect.jsx";
 import { Link } from "react-router-dom";
 import { useLang } from "../context/LanguageContext.jsx";
 import { useResponsive } from "../hooks/useResponsive.js";
@@ -125,9 +126,9 @@ function StorySubmitSection({ isMobile }) {
               {/* Category */}
               <div>
                 <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:6, textTransform:"uppercase", letterSpacing:0.5 }}>Category *</label>
-                <select value={form.category} onChange={e=>set("category",e.target.value)} style={inp()}>
+                <FixedSelect value={form.category} onChange={e=>set("category",e.target.value)} style={{ width:"100%", borderRadius:10, fontSize:14 }}>
                   {CATS.map(c => <option key={c}>{c}</option>)}
-                </select>
+                </FixedSelect>
               </div>
             </div>
 

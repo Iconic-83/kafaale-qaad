@@ -1,4 +1,5 @@
 import { useState } from "react";
+import FixedSelect from "../components/FixedSelect.jsx";
 
 const C = { navy:"#002651", primary:"#004B96", secondary:"#4B7D19", accent:"#E0AB21", muted:"#5A6E8A", bg:"#F4F7FC", border:"#D8E4F0", text:"#0D1F3C", danger:"#C0392B" };
 
@@ -292,11 +293,10 @@ export default function Volunteer() {
 
                   <div>
                     <label style={{ display:"block", fontSize:12, fontWeight:700, color:C.muted, marginBottom:5, textTransform:"uppercase", letterSpacing:.5 }}>Availability</label>
-                    <select value={form.availability} onChange={e=>set("availability",e.target.value)}
-                      style={{ width:"100%", padding:"11px 14px", borderRadius:10, border:`1.5px solid ${C.border}`, fontSize:14, fontFamily:"inherit", boxSizing:"border-box", background:"#fff" }}>
+                    <FixedSelect value={form.availability} onChange={e=>set("availability",e.target.value)} style={{ width:"100%", borderRadius:10, fontSize:14 }}>
                       <option value="">Select…</option>
                       {["Part-time (5–10 hrs/week)","Full-time (30–40 hrs/week)","Weekends only","Flexible / project-based","On-call"].map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    </FixedSelect>
                   </div>
 
                   {inp("experience", "Relevant Experience (optional)", "textarea", `Describe any relevant experience for the ${selected.title} role…`)}

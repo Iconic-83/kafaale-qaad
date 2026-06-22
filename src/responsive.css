@@ -423,8 +423,8 @@ body, .kf-modal-inner, .kf-table-wrap, [class*="kf-"] {
   -ms-user-select: none;
   user-select: none;
 }
-/* Allow text selection only inside input/textarea fields */
-input, textarea, [contenteditable] {
+/* Allow text selection/interaction inside form controls */
+input, textarea, select, [contenteditable] {
   -webkit-user-select: text;
   user-select: text;
 }
