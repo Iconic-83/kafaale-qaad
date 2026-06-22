@@ -105,23 +105,35 @@ export default function Projects() {
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", color: B.text }}>
 
       {/* Hero */}
-      <div style={{ background: `linear-gradient(135deg, ${B.navy} 0%, ${B.blue} 60%, ${B.green} 100%)`, padding: "72px 24px 56px", textAlign: "center", color: "#fff" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🏗️</div>
-        <h1 style={{ fontSize: "clamp(26px, 5vw, 44px)", fontWeight: 900, margin: "0 0 16px" }}>Community Projects</h1>
-        <p style={{ fontSize: 18, opacity: 0.85, maxWidth: 580, margin: "0 auto 32px", lineHeight: 1.7 }}>
-          Infrastructure that lifts entire communities — water, schools, clinics, and more. Every project is verified, tracked, and publicly reported.
-        </p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
-          {[
-            { n: PROJECTS.length,     label: "Total Projects" },
-            { n: PROJECTS.filter(p=>p.status==="completed").length, label: "Completed" },
-            { n: PROJECTS.reduce((s,p)=>s+p.beneficiaries,0).toLocaleString(), label: "Beneficiaries" },
-          ].map(({ n, label }) => (
-            <div key={label} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 32, fontWeight: 900 }}>{n}</div>
-              <div style={{ fontSize: 13, opacity: 0.7 }}>{label}</div>
-            </div>
-          ))}
+      <div style={{ position: "relative", padding: "72px 24px 56px", textAlign: "center", color: "#fff", overflow: "hidden" }}>
+        {/* Background photo */}
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: "url('/community-bg.jpg')",
+          backgroundSize: "cover", backgroundPosition: "center 30%",
+        }} />
+        {/* Dark overlay so text stays readable */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,22,60,0.72) 0%, rgba(0,38,81,0.78) 60%, rgba(0,60,20,0.72) 100%)" }} />
+
+        {/* Content */}
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🏗️</div>
+          <h1 style={{ fontSize: "clamp(26px, 5vw, 44px)", fontWeight: 900, margin: "0 0 16px" }}>Community Projects</h1>
+          <p style={{ fontSize: 18, opacity: 0.88, maxWidth: 580, margin: "0 auto 32px", lineHeight: 1.7 }}>
+            Infrastructure that lifts entire communities — water, schools, clinics, and more. Every project is verified, tracked, and publicly reported.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 32, flexWrap: "wrap" }}>
+            {[
+              { n: PROJECTS.length,     label: "Total Projects" },
+              { n: PROJECTS.filter(p=>p.status==="completed").length, label: "Completed" },
+              { n: PROJECTS.reduce((s,p)=>s+p.beneficiaries,0).toLocaleString(), label: "Beneficiaries" },
+            ].map(({ n, label }) => (
+              <div key={label} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 32, fontWeight: 900 }}>{n}</div>
+                <div style={{ fontSize: 13, opacity: 0.7 }}>{label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
