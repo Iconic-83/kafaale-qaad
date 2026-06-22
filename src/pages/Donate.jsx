@@ -1,36 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useResponsive } from "../hooks/useResponsive.js";
-import { cases as casesApi, donations, admin as adminApi } from "../api/client.js";
-
-const C = {
-  navy:      "#002651",
-  primary:   "#004B96",
-  secondary: "#4B7D19",
-  accent:    "#E0AB21",
-  gold:      "#E0AB21",
-  green:     "#4B7D19",
-  blue:      "#004B96",
-  danger:    "#C0392B",
-  muted:     "#5A6E8A",
-  bg:        "#F4F7FC",
-  border:    "#D8E4F0",
-  text:      "#0D1F3C",
-};
-
-const URGENCY_COLOR = {
-  critical: "#7C3AED",
-  high:     "#C0392B",
-  medium:   "#F59E0B",
-  low:      "#10B981",
-};
-const URGENCY_LABEL = {
-  critical: "🚨 Critical",
-  high:     "🔴 High",
-  medium:   "🟡 Medium",
-  low:      "🟢 Low",
-};
+import { cases as casesApi, donations } from "../api/client.js";
+import { C, URGENCY_COLOR, URGENCY_LABEL } from "../theme.js";
 
 const METHOD_MAP = {
   mobile_money:  "📱 Mobile Money (EVC/Zaad/Sahal)",
@@ -45,9 +18,10 @@ export default function Donate() {
   const [searchParams] = useSearchParams();
   const preselectedId = searchParams.get("caseId");
   const { isMobile, isTablet } = useResponsive();
+  const formRef = useRef(null);
 
   const [readyCases,    setReadyCases]    = useState([]);
-  const [pipelineCount, setPipelineCount] = useState(0); // cases not yet ready
+  const [pipelineCount, setPipelineCount] = useState(0);
   const [loading,       setLoading]       = useState(true);
   const [selectedCase,  setSelectedCase]  = useState(null);
   const [amount,        setAmount]        = useState("");
@@ -60,11 +34,30 @@ export default function Donate() {
   const [done,          setDone]          = useState(false);
   const [doneDetails,   setDoneDetails]   = useState(null);
 
-  // Load real cases from API
+  // Scroll to form whenever a case becomes selected
+  useEffect(() => {
+    if (selectedCase && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedCase]);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
+        // When arriving via ?caseId= (sponsor button), fetch that case directly first
+        // so the donor never has to re-select — it arrives pre-chosen.
+        if (preselectedId) {
+          try {
+            const detail = await casesApi.get(preselectedId);
+            const c = detail.case || detail;
+            setSelectedCase(c);
+            setAmount(String(c.targetGoal || ""));
+          } catch {
+            // Case not found — still load the list so they can pick another
+          }
+        }
+
         const data = await casesApi.list({ limit: 50 });
         const all = data?.cases || [];
         const sponsorable = all.filter(c =>
@@ -73,23 +66,12 @@ export default function Donate() {
         setReadyCases(sponsorable);
         setPipelineCount(Math.max(0, all.length - sponsorable.length));
 
-        // Auto-select case from ?caseId= URL param
-        if (preselectedId) {
+        // Hydrate from list if direct-fetch above did not work
+        if (preselectedId && !selectedCase) {
           const found = all.find(c => c.id === preselectedId);
           if (found) {
-            const remain = Math.max(0, (found.targetGoal || 0) - (found.totalRaised || 0));
             setSelectedCase(found);
-            setAmount(remain > 0 ? String(remain) : String(found.targetGoal || ""));
-          } else {
-            // Fetch directly in case it's not in the first page
-            try {
-              const detail = await casesApi.get(preselectedId);
-              const c = detail.case || detail;
-              const remain = Math.max(0, (c.targetGoal || 0) - (c.totalRaised || 0));
-              setSelectedCase(c);
-              setAmount(remain > 0 ? String(remain) : String(c.targetGoal || ""));
-              if (!sponsorable.find(x => x.id === c.id)) setReadyCases(prev => [c, ...prev]);
-            } catch {}
+            setAmount(String(found.targetGoal || ""));
           }
         }
       } catch (e) {
@@ -100,15 +82,12 @@ export default function Donate() {
       }
     };
     load();
-  }, [preselectedId]);
+  }, [preselectedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pickCase = (c) => {
     setSelectedCase(c);
     setError("");
-    const goal   = c.targetGoal   || 0;
-    const raised = c.totalRaised  || 0;
-    const remain = Math.max(0, goal - raised);
-    setAmount(remain > 0 ? String(remain) : String(goal || ""));
+    setAmount(String(c.targetGoal || ""));
   };
 
   const handleSubmit = async (e) => {
@@ -362,7 +341,7 @@ export default function Donate() {
           </div>
 
           {/* ── Right: Donation form ── */}
-          <div style={{ background: "#fff", borderRadius: 20, padding: isMobile ? "16px 14px" : 36, boxShadow: "0 4px 24px #0001", position: isMobile ? "static" : "sticky", top: 80, overflow: "hidden" }}>
+          <div ref={formRef} style={{ background: "#fff", borderRadius: 20, padding: isMobile ? "16px 14px" : 36, boxShadow: "0 4px 24px #0001", position: isMobile ? "static" : "sticky", top: 80, overflow: "hidden" }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 16px" }}>Sponsorship Details</h2>
 
             {/* Selected case summary */}
@@ -372,23 +351,22 @@ export default function Donate() {
                   {isMobile ? (selectedCase.publicTitle?.slice(0, 40) + (selectedCase.publicTitle?.length > 40 ? "…" : "")) : selectedCase.publicTitle}
                 </div>
                 <div style={{ fontSize: 11, opacity: 0.8 }}>📍 {selectedCase.publicCity || "Somalia"}</div>
-                {(selectedCase.targetGoal || 0) > 0 && (
-                  <div style={{ marginTop: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, opacity: 0.85, marginBottom: 5, flexWrap: "wrap", gap: 4 }}>
-                      <span>Raised: <strong>${(selectedCase.totalRaised || 0).toLocaleString()}</strong></span>
-                      <span>Goal: <strong>${selectedCase.targetGoal.toLocaleString()}</strong></span>
+                {(selectedCase.targetGoal || 0) > 0 && (() => {
+                  const g = selectedCase.targetGoal;
+                  const r = selectedCase.totalRaised || 0;
+                  const p = Math.min(100, Math.round((r / g) * 100));
+                  return (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, opacity: 0.85, marginBottom: 5 }}>
+                        <span><strong>{p}%</strong> funded</span>
+                        <span>Goal: <strong>${g.toLocaleString()}</strong></span>
+                      </div>
+                      <div style={{ background: "rgba(255,255,255,0.25)", borderRadius: 20, height: 7, overflow: "hidden" }}>
+                        <div style={{ background: "#FCD34D", borderRadius: 20, height: "100%", width: `${p}%` }} />
+                      </div>
                     </div>
-                    <div style={{ background: "rgba(255,255,255,0.25)", borderRadius: 20, height: 7, overflow: "hidden" }}>
-                      <div style={{ background: "#FCD34D", borderRadius: 20, height: "100%",
-                        width: `${Math.min(100, Math.round(((selectedCase.totalRaised||0)/selectedCase.targetGoal)*100))}%` }} />
-                    </div>
-                    <div style={{ marginTop: 5, fontSize: 12 }}>
-                      <strong style={{ color: "#FCD34D" }}>
-                        ${Math.max(0, selectedCase.targetGoal - (selectedCase.totalRaised||0)).toLocaleString()} still needed
-                      </strong>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             ) : (
               <div style={{ background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 12, padding: 14, marginBottom: 24, fontSize: 13, color: "#92400E" }}>
@@ -399,16 +377,12 @@ export default function Donate() {
             <form onSubmit={handleSubmit}>
               {/* Quick tier buttons */}
               {selectedCase && (() => {
-                const goal   = selectedCase.targetGoal  || 0;
-                const raised = selectedCase.totalRaised || 0;
-                const remain = Math.max(0, goal - raised);
-                const tiers  = remain > 0
-                  ? [
-                      { label: `Full — $${remain.toLocaleString()}`,            val: remain,                  desc: "Cover entire remaining need" },
-                      { label: `Half — $${Math.round(remain/2).toLocaleString()}`, val: Math.round(remain/2), desc: "Cover half of what's needed" },
-                      { label: `Quick — $${Math.min(50,Math.round(remain/4)||50).toLocaleString()}`, val: Math.min(50,Math.round(remain/4)||50), desc: "Any help counts" },
-                    ]
-                  : [];
+                const goal  = selectedCase.targetGoal || 0;
+                const tiers = goal > 0 ? [
+                  { label: `Full — $${goal.toLocaleString()}`,                     val: goal,                  desc: "Sponsor the full goal" },
+                  { label: `Half — $${Math.round(goal/2).toLocaleString()}`,        val: Math.round(goal/2),    desc: "Sponsor half the goal" },
+                  { label: `Quick — $${Math.min(50,Math.round(goal/4)||50).toLocaleString()}`, val: Math.min(50,Math.round(goal/4)||50), desc: "Any help counts" },
+                ] : [];
                 return tiers.length > 0 ? (
                   <div style={{ marginBottom: 20 }}>
                     <label style={{ fontSize: 13, fontWeight: 700, display: "block", marginBottom: 10 }}>Quick amounts</label>
@@ -435,7 +409,7 @@ export default function Donate() {
                 <div style={{ position: "relative" }}>
                   <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, fontWeight: 700, color: C.muted }}>$</span>
                   <input type="number" value={amount} onChange={e => setAmount(e.target.value)} min="1"
-                    placeholder={selectedCase ? String(Math.max(0,(selectedCase.targetGoal||0)-(selectedCase.totalRaised||0))) : "Enter amount"}
+                    placeholder={selectedCase ? String(selectedCase.targetGoal || "") : "Enter amount"}
                     style={{ width: "100%", padding: "13px 14px 13px 34px", border: `1.5px solid ${C.border}`, borderRadius: 12, fontSize: 18, fontWeight: 700, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
                 </div>
               </div>

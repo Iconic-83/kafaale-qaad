@@ -1,27 +1,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-
-const C = {
-  navy:"#002651", primary:"#004B96", secondary:"#4B7D19",
-  gold:"#E0AB21", muted:"#5A6E8A", bg:"#F4F7FC",
-  border:"#D8E4F0", text:"#0D1F3C",
-};
-
-const STORY_IMGS = {
-  "Medical":          "https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=800&q=80",
-  "Education":        "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=80",
-  "Food & Nutrition": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80",
-  "Food":             "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&q=80",
-  "Shelter":          "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&q=80",
-  "Water":            "https://images.unsplash.com/photo-1541252260730-0412e8e2108e?w=800&q=80",
-  "Orphan":           "https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&q=80",
-  "Emergency":        "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=800&q=80",
-  "Success Story":    "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&q=80",
-  "Press Release":    "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80",
-  "Partnership":      "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=800&q=80",
-  "default":          "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&q=80",
-};
-const getStoryImg = s => s.afterImg || s.beforeImg || STORY_IMGS[s.category] || STORY_IMGS["default"];
+import { C } from "../theme.js";
+import { getStoryImg } from "../utils/storyImages.js";
 
 // All static stories — combined source of truth
 const STATIC_ALL = [

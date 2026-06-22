@@ -30,30 +30,41 @@ function ScrollToTop() {
   }, [pathname, navType]);
   return null;
 }
+import { lazy, Suspense } from 'react';
 import Navbar       from './components/Navbar.jsx';
 import Footer       from './components/Footer.jsx';
 import AiAssistant  from './components/AiAssistant.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { LanguageProvider } from './context/LanguageContext.jsx';
-import Home         from './pages/Home.jsx';
-import About        from './pages/About.jsx';
-import HowItWorks   from './pages/HowItWorks.jsx';
-import Cases        from './pages/Cases.jsx';
-import CaseDetail   from './pages/CaseDetail.jsx';
-import Donate       from './pages/Donate.jsx';
-import Contact        from './pages/Contact.jsx';
-import ImpactPartners from './pages/ImpactPartners.jsx';
-import Programs       from './pages/Programs.jsx';
-import Stories        from './pages/Stories.jsx';
-import StoryDetail    from './pages/StoryDetail.jsx';
-import Volunteer      from './pages/Volunteer.jsx';
-import FAQ            from './pages/FAQ.jsx';
-import Transparency   from './pages/Transparency.jsx';
-import Projects       from './pages/Projects.jsx';
-import Updates        from './pages/Updates.jsx';
-import MediaFeed      from './pages/MediaFeed.jsx';
-import Login          from './pages/Login.jsx';
-import Dashboard    from './KafaaleQaadApp.jsx';
+// Eager — always needed on first load
+import Home  from './pages/Home.jsx';
+import Login from './pages/Login.jsx';
+// Lazy — code-split to reduce initial bundle
+const About         = lazy(() => import('./pages/About.jsx'));
+const HowItWorks    = lazy(() => import('./pages/HowItWorks.jsx'));
+const Cases         = lazy(() => import('./pages/Cases.jsx'));
+const CaseDetail    = lazy(() => import('./pages/CaseDetail.jsx'));
+const Donate        = lazy(() => import('./pages/Donate.jsx'));
+const Contact       = lazy(() => import('./pages/Contact.jsx'));
+const ImpactPartners= lazy(() => import('./pages/ImpactPartners.jsx'));
+const Programs      = lazy(() => import('./pages/Programs.jsx'));
+const Stories       = lazy(() => import('./pages/Stories.jsx'));
+const StoryDetail   = lazy(() => import('./pages/StoryDetail.jsx'));
+const Volunteer     = lazy(() => import('./pages/Volunteer.jsx'));
+const FAQ           = lazy(() => import('./pages/FAQ.jsx'));
+const Transparency  = lazy(() => import('./pages/Transparency.jsx'));
+const Projects      = lazy(() => import('./pages/Projects.jsx'));
+const Updates       = lazy(() => import('./pages/Updates.jsx'));
+const MediaFeed     = lazy(() => import('./pages/MediaFeed.jsx'));
+const Dashboard     = lazy(() => import('./KafaaleQaadApp.jsx'));
+
+function PageLoader() {
+  return (
+    <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ textAlign: "center", color: "#5A6E8A", fontSize: 14 }}>Loading…</div>
+    </div>
+  );
+}
 
 function NotFound() {
   return (
@@ -165,29 +176,31 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <ScrollToTop />
-        <Routes>
-          <Route path="/"              element={<Layout><Home /></Layout>} />
-          <Route path="/about"         element={<Layout><PageGate pageKey="about"><About /></PageGate></Layout>} />
-          <Route path="/how-it-works"  element={<Layout><PageGate pageKey="howItWorks"><HowItWorks /></PageGate></Layout>} />
-          <Route path="/cases"         element={<Layout><PageGate pageKey="cases"><Cases /></PageGate></Layout>} />
-          <Route path="/cases/:id"     element={<Layout><CaseDetail /></Layout>} />
-          <Route path="/donate"        element={<Layout><PageGate pageKey="donate"><Donate /></PageGate></Layout>} />
-          <Route path="/contact"       element={<Layout><PageGate pageKey="contact"><Contact /></PageGate></Layout>} />
-          <Route path="/partners"      element={<Layout><PageGate pageKey="partners"><ImpactPartners /></PageGate></Layout>} />
-          <Route path="/programs"      element={<Layout><PageGate pageKey="programs"><Programs /></PageGate></Layout>} />
-          <Route path="/projects"      element={<Layout><PageGate pageKey="projects"><Projects /></PageGate></Layout>} />
-          <Route path="/stories"       element={<Layout><PageGate pageKey="stories"><Stories /></PageGate></Layout>} />
-          <Route path="/stories/:id"   element={<Layout><PageGate pageKey="stories"><StoryDetail /></PageGate></Layout>} />
-          <Route path="/volunteer"     element={<Layout><PageGate pageKey="volunteer"><Volunteer /></PageGate></Layout>} />
-          <Route path="/faq"           element={<Layout><PageGate pageKey="faq"><FAQ /></PageGate></Layout>} />
-          <Route path="/transparency"  element={<Layout><PageGate pageKey="transparency"><Transparency /></PageGate></Layout>} />
-          <Route path="/updates"       element={<Layout><PageGate pageKey="updates"><Updates /></PageGate></Layout>} />
-          <Route path="/media"         element={<Layout><MediaFeed /></Layout>} />
-          <Route path="/login"         element={<Login />} />
-          <Route path="/dashboard"     element={<Dashboard />} />
-          <Route path="/dashboard/*"   element={<Dashboard />} />
-          <Route path="*"              element={<Layout><NotFound /></Layout>} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/"              element={<Layout><Home /></Layout>} />
+            <Route path="/about"         element={<Layout><PageGate pageKey="about"><About /></PageGate></Layout>} />
+            <Route path="/how-it-works"  element={<Layout><PageGate pageKey="howItWorks"><HowItWorks /></PageGate></Layout>} />
+            <Route path="/cases"         element={<Layout><PageGate pageKey="cases"><Cases /></PageGate></Layout>} />
+            <Route path="/cases/:id"     element={<Layout><CaseDetail /></Layout>} />
+            <Route path="/donate"        element={<Layout><PageGate pageKey="donate"><Donate /></PageGate></Layout>} />
+            <Route path="/contact"       element={<Layout><PageGate pageKey="contact"><Contact /></PageGate></Layout>} />
+            <Route path="/partners"      element={<Layout><PageGate pageKey="partners"><ImpactPartners /></PageGate></Layout>} />
+            <Route path="/programs"      element={<Layout><PageGate pageKey="programs"><Programs /></PageGate></Layout>} />
+            <Route path="/projects"      element={<Layout><PageGate pageKey="projects"><Projects /></PageGate></Layout>} />
+            <Route path="/stories"       element={<Layout><PageGate pageKey="stories"><Stories /></PageGate></Layout>} />
+            <Route path="/stories/:id"   element={<Layout><PageGate pageKey="stories"><StoryDetail /></PageGate></Layout>} />
+            <Route path="/volunteer"     element={<Layout><PageGate pageKey="volunteer"><Volunteer /></PageGate></Layout>} />
+            <Route path="/faq"           element={<Layout><PageGate pageKey="faq"><FAQ /></PageGate></Layout>} />
+            <Route path="/transparency"  element={<Layout><PageGate pageKey="transparency"><Transparency /></PageGate></Layout>} />
+            <Route path="/updates"       element={<Layout><PageGate pageKey="updates"><Updates /></PageGate></Layout>} />
+            <Route path="/media"         element={<Layout><MediaFeed /></Layout>} />
+            <Route path="/login"         element={<Login />} />
+            <Route path="/dashboard"     element={<Dashboard />} />
+            <Route path="/dashboard/*"   element={<Dashboard />} />
+            <Route path="*"              element={<Layout><NotFound /></Layout>} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
     </LanguageProvider>

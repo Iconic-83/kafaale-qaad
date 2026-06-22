@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { cases as casesApi } from "../api/client";
 import { useLang } from "../context/LanguageContext.jsx";
 import { PT } from "../translations.js";
 import { useResponsive } from "../hooks/useResponsive.js";
+import FixedSelect from "../components/FixedSelect.jsx";
+import { C, URGENCY_COLOR } from "../theme.js";
 
-const C = { navy: "#002651", primary: "#004B96", secondary: "#4B7D19", accent: "#E0AB21", danger: "#C0392B", muted: "#5A6E8A", bg: "#F4F7FC", border: "#D8E4F0", text: "#0D1F3C", gold: "#E0AB21", green: "#4B7D19", blue: "#004B96" };
-const URGENCY_COLOR = { low: "#10B981", medium: "#F59E0B", high: "#C0392B", critical: "#7C3AED" };
 const CAT_IMG = {
   food:      "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=600&q=75",
   medical:   "https://images.unsplash.com/photo-1584744982491-665216d95f8b?w=600&q=75",
@@ -28,55 +28,6 @@ function getCaseImg(c) {
     }
   } catch {}
   return CAT_IMG[c.category] || CAT_IMG.other;
-}
-function DropSelect({ value, onChange, options, icon }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const chosen = options.find(o => o.value === value) || options[0];
-  useEffect(() => {
-    const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
-  return (
-    <div ref={ref} style={{ position:"relative", userSelect:"none" }}>
-      <button onClick={() => setOpen(p => !p)} style={{
-        display:"flex", alignItems:"center", gap:7, padding:"10px 14px",
-        border:`1.5px solid ${open ? C.primary : C.border}`, borderRadius:8,
-        background:"#fff", cursor:"pointer", fontSize:14, whiteSpace:"nowrap",
-        color: C.text, minWidth:130, outline:"none", boxShadow: open ? `0 0 0 3px ${C.primary}22` : "none"
-      }}>
-        {icon && <span>{icon}</span>}
-        <span style={{ flex:1, textAlign:"left" }}>{chosen.label}</span>
-        <span style={{ fontSize:10, opacity:0.5, marginLeft:4 }}>{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div style={{
-          position:"absolute", top:"calc(100% + 4px)", left:0, minWidth:"100%",
-          background:"#fff", border:`1.5px solid ${C.border}`, borderRadius:10,
-          boxShadow:"0 8px 32px rgba(0,0,0,0.13)", zIndex:9999, overflow:"hidden"
-        }}>
-          {options.map(o => (
-            <div key={o.value} onClick={() => { onChange(o.value); setOpen(false); }}
-              style={{
-                padding:"10px 16px", cursor:"pointer", fontSize:14,
-                background: o.value === value ? C.primary+"0f" : "transparent",
-                color: o.value === value ? C.primary : C.text,
-                fontWeight: o.value === value ? 700 : 400,
-                display:"flex", alignItems:"center", gap:8,
-                borderLeft: o.value === value ? `3px solid ${C.primary}` : "3px solid transparent",
-              }}
-              onMouseEnter={e => { if (o.value !== value) e.currentTarget.style.background = C.bg; }}
-              onMouseLeave={e => { if (o.value !== value) e.currentTarget.style.background = "transparent"; }}
-            >
-              {o.icon && <span>{o.icon}</span>}
-              {o.label}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 const STATUS_LABEL = {
@@ -242,19 +193,20 @@ export default function Cases() {
               style={{ flex: 1, minWidth: 0, padding: "10px 16px", border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14 }} />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {vis.showCategoryFilter && (
-                <DropSelect
-                  value={catFilter}
-                  onChange={setCatFilter}
-                  icon={CAT_ICON[catFilter] || "🌍"}
-                  options={cats.map(c => ({ value: c, label: c === "all" ? P.cat_all : c.charAt(0).toUpperCase()+c.slice(1), icon: CAT_ICON[c] || "🌍" }))}
-                />
+                <FixedSelect value={catFilter} onChange={e => setCatFilter(e.target.value)}
+                  style={{ padding:"10px 14px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14 }}>
+                  {cats.map(c => (
+                    <option key={c} value={c}>{(CAT_ICON[c] || "🌍") + " " + (c === "all" ? P.cat_all : c.charAt(0).toUpperCase()+c.slice(1))}</option>
+                  ))}
+                </FixedSelect>
               )}
               {vis.showUrgencyFilter && (
-                <DropSelect
-                  value={urgFilter}
-                  onChange={setUrgFilter}
-                  options={urgs.map(u => ({ value: u, label: u === "all" ? P.urg_all : u.charAt(0).toUpperCase()+u.slice(1) }))}
-                />
+                <FixedSelect value={urgFilter} onChange={e => setUrgFilter(e.target.value)}
+                  style={{ padding:"10px 14px", border:`1.5px solid ${C.border}`, borderRadius:8, fontSize:14 }}>
+                  {urgs.map(u => (
+                    <option key={u} value={u}>{u === "all" ? P.urg_all : u.charAt(0).toUpperCase()+u.slice(1)}</option>
+                  ))}
+                </FixedSelect>
               )}
               {vis.showTableView && (
                 <div style={{ display: "flex", gap: 4 }}>

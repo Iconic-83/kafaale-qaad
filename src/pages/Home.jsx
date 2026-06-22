@@ -4,17 +4,9 @@ import { useLang } from "../context/LanguageContext.jsx";
 import { PT } from "../translations.js";
 import { useResponsive } from "../hooks/useResponsive.js";
 import { cases as casesApi } from "../api/client.js";
+import { C, URGENCY_COLOR, URGENCY_BG } from "../theme.js";
 
-const C = {
-  navy: "#002651", primary: "#004B96", secondary: "#4B7D19",
-  accent: "#E0AB21", gold: "#E0AB21", green: "#4B7D19", blue: "#004B96",
-  danger: "#C0392B", muted: "#5A6E8A", bg: "#F4F7FC",
-  border: "#D8E4F0", text: "#0D1F3C",
-};
-
-const URGENCY_COLOR = { Low: "#10B981", Medium: "#F59E0B", High: "#C0392B", Critical: "#7C3AED" };
-const URGENCY_BG    = { Low: "#D1FAE5", Medium: "#FEF3C7", High: "#FEE2E2", Critical: "#EDE9FE" };
-const URGENCY_RANK  = { critical: 4, high: 3, medium: 2, low: 1 };
+const URGENCY_RANK = { critical: 4, high: 3, medium: 2, low: 1 };
 
 // Static projects/programs shown when API returns none
 const FEATURED_PROJECTS = [
@@ -448,12 +440,12 @@ export default function Home() {
                   {c.img ? (
                     <img src={c.img} alt="" loading="lazy" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
                   ) : (
-                    <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg,${URGENCY_COLOR[c.urgency]}22,${URGENCY_COLOR[c.urgency]}44)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:56 }}>
-                      {{ High:"🏥", Critical:"🚨", Medium:"📚", Low:"🏠" }[c.urgency] || "❤️"}
+                    <div style={{ width:"100%", height:"100%", background:`linear-gradient(135deg,${URGENCY_COLOR[c.urgency?.toLowerCase()]}22,${URGENCY_COLOR[c.urgency?.toLowerCase()]}44)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:56 }}>
+                      {{ high:"🏥", critical:"🚨", medium:"📚", low:"🏠" }[c.urgency?.toLowerCase()] || "❤️"}
                     </div>
                   )}
                   <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.52) 100%)" }} />
-                  <span style={{ position:"absolute", top:10, left:10, background:URGENCY_COLOR[c.urgency], color:"#fff", padding:"3px 10px", borderRadius:20, fontSize:10, fontWeight:800 }}>{c.urgency}</span>
+                  <span style={{ position:"absolute", top:10, left:10, background:URGENCY_COLOR[c.urgency?.toLowerCase()], color:"#fff", padding:"3px 10px", borderRadius:20, fontSize:10, fontWeight:800 }}>{c.urgency}</span>
                   <span style={{ position:"absolute", top:10, right:10, background: c.kind==="project" ? "rgba(0,75,150,0.82)" : "rgba(6,95,70,0.75)", backdropFilter:"blur(4px)", color:"#fff", padding:"3px 10px", borderRadius:20, fontSize:10, fontWeight:700 }}>{c.kind==="project" ? "🏗 Project" : "✓ Case"}</span>
                   <div style={{ position:"absolute", bottom:10, left:14, color:"rgba(255,255,255,0.8)", fontSize:12 }}>📍 {c.location}</div>
                 </div>
@@ -474,7 +466,7 @@ export default function Home() {
                       )}
                     </div>
                     <div className="kf-prog-track">
-                      <div className="kf-prog-fill" style={{ width:`${Math.min(c.funded,100)}%`, background:`linear-gradient(90deg, ${URGENCY_COLOR[c.urgency]}90, ${URGENCY_COLOR[c.urgency]})` }} />
+                      <div className="kf-prog-fill" style={{ width:`${Math.min(c.funded,100)}%`, background:`linear-gradient(90deg, ${URGENCY_COLOR[c.urgency?.toLowerCase()]}90, ${URGENCY_COLOR[c.urgency?.toLowerCase()]})` }} />
                     </div>
                     {c.funded >= 100 && (
                       <div style={{ marginTop:4, fontSize:11, color:C.green, fontWeight:700 }}>🎉 Fully Funded</div>
