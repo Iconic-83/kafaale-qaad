@@ -384,28 +384,37 @@ export default function ImpactPartners() {
         </section>
       )}
 
-      {/* ── Why Partner With Us ── */}
+      {/* ── Partner Value Proposition — split layout ── */}
       {tab === "partners" && (
-        <section style={{ padding:"64px 24px", background:"#fff" }}>
-          <div style={{ maxWidth:1200, margin:"0 auto" }}>
-            <div style={{ textAlign:"center", marginBottom:44 }}>
-              <h2 style={{ fontSize:"clamp(24px,3.5vw,40px)", fontWeight:900, margin:"0 0 10px", letterSpacing:-0.5 }}>Why Partner With Kafaale Qaad?</h2>
+        <section style={{ background:"#001A40", overflow:"hidden" }}>
+          <div style={{ maxWidth:1200, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", minHeight:460, alignItems:"center" }}>
+            {/* Left — message */}
+            <div style={{ padding:"72px 56px 72px 32px", color:"#fff" }}>
+              <span style={{ display:"inline-block", background:"rgba(0,200,255,0.15)", border:"1.5px solid rgba(0,200,255,0.4)", borderRadius:24, padding:"6px 20px", fontSize:11, fontWeight:800, letterSpacing:2, textTransform:"uppercase", marginBottom:24, color:"#00D4FF" }}>Global Impact Network</span>
+              <h2 style={{ fontSize:"clamp(26px,3.5vw,44px)", fontWeight:900, margin:"0 0 20px", lineHeight:1.1, letterSpacing:-1, textShadow:"0 2px 20px rgba(0,0,0,0.4)" }}>
+                Connect to a Network That Delivers — Every Time
+              </h2>
+              <p style={{ fontSize:16, color:"rgba(255,255,255,0.82)", lineHeight:1.85, margin:"0 0 32px", maxWidth:440 }}>
+                When you partner with Kafaale Qaad, your organisation gains instant access to 14 verified regions, a fully auditable pipeline, and GPS-confirmed proof of every delivery. Your impact is real, measurable, and publicly recognised.
+              </p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, maxWidth:440 }}>
+                {[
+                  { label:"Verified Pipeline",     desc:"Multi-layer case verification before funds release" },
+                  { label:"GPS Proof of Delivery", desc:"Every delivery confirmed with coordinates & photos" },
+                  { label:"Co-Branded Impact",     desc:"Your logo on every case you sponsor" },
+                  { label:"Full Audit Access",     desc:"Immutable records available on request" },
+                ].map((f,i) => (
+                  <div key={i} style={{ background:"rgba(255,255,255,0.06)", border:"1px solid rgba(0,200,255,0.2)", borderRadius:12, padding:"14px 16px" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:"#00D4FF", marginBottom:4 }}>{f.label}</div>
+                    <div style={{ fontSize:12, color:"rgba(255,255,255,0.65)", lineHeight:1.5 }}>{f.desc}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))", gap:20 }}>
-              {[
-                { icon:"🔍", color:"#3B82F6", title:"Verified Pipeline", desc:"All cases you support are multi-layer verified before any funds are released." },
-                { icon:"📍", color:"#10B981", title:"GPS Proof of Delivery", desc:"Every aid delivery is tracked with GPS coordinates and photographic evidence." },
-                { icon:"📊", color:"#F59E0B", title:"Real-Time Reporting", desc:"Live dashboards show exactly how your funds are being used and impact generated." },
-                { icon:"🤝", color:"#8B5CF6", title:"Co-Branded Impact", desc:"Your logo and branding appears on all cases you sponsor, boosting visibility." },
-                { icon:"🔐", color:"#C0392B", title:"Fully Auditable", desc:"Immutable audit logs and financial records available on request." },
-                { icon:"🌍", color:"#06B6D4", title:"Regional Reach", desc:"Access to 14 regions across Somalia and East Africa through our field network." },
-              ].map((f, i) => (
-                <div key={i} style={{ background:C.bg, borderRadius:16, padding:"24px 20px", border:`1px solid ${C.border}`, textAlign:"center" }}>
-                  <div style={{ width:56, height:56, borderRadius:14, background:`linear-gradient(135deg,${f.color}20,${f.color}40)`, margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26 }}>{f.icon}</div>
-                  <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:6 }}>{f.title}</div>
-                  <div style={{ fontSize:12, color:C.muted, lineHeight:1.6 }}>{f.desc}</div>
-                </div>
-              ))}
+            {/* Right — glowing globe */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 24px" }}>
+              <img src="/partners-globe.jpg" alt="Global partner network"
+                style={{ width:"100%", maxWidth:460, height:"auto", objectFit:"contain", borderRadius:20, display:"block" }} />
             </div>
           </div>
         </section>
