@@ -111,7 +111,7 @@ export default function About() {
       </section>
 
       {/* ── Mission — centered with real photo ── */}
-      <section style={{ padding:"0", background:"#fff", overflow:"hidden" }}>
+      <section style={{ padding:"0", background:"#fff", overflow:"hidden", marginTop:64 }}>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", minHeight:480 }}>
           {/* Real photo side */}
           <div style={{ position:"relative", overflow:"hidden", minHeight:320 }}>
