@@ -75,11 +75,12 @@ export default function CaseDetail() {
     <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
       <div style={{ textAlign: "center", maxWidth: 440, padding: 24 }}>
         <div style={{ fontSize: 64, marginBottom: 16 }}>😔</div>
-        <h2 style={{ color: C.primary, marginBottom: 8 }}>{error || "Case not found"}</h2>
+        <h2 style={{ color: C.primary, marginBottom: 8 }}>Case not found or no longer available.</h2>
         <p style={{ color: C.muted, marginBottom: 24 }}>The case may have been archived or removed.</p>
-        <Link to="/cases" style={{ background: C.primary, color: "#fff", padding: "12px 28px", borderRadius: 12, textDecoration: "none", fontWeight: 700 }}>
-          ← Browse All Cases
-        </Link>
+        <div style={{ display:"flex", gap:12, justifyContent:"center", flexWrap:"wrap" }}>
+          <Link to="/projects" style={{ background: C.secondary, color: "#fff", padding: "12px 24px", borderRadius: 12, textDecoration: "none", fontWeight: 700 }}>Browse Projects</Link>
+          <Link to="/cases" style={{ background: C.primary, color: "#fff", padding: "12px 28px", borderRadius: 12, textDecoration: "none", fontWeight: 700 }}>← Browse All Cases</Link>
+        </div>
       </div>
     </div>
   );

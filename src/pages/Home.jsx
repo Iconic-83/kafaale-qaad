@@ -482,8 +482,18 @@ export default function Home() {
                   </div>
 
                   <div style={{ display:"flex", gap:10 }}>
-                    <Link to={c.id ? `/cases/${c.id}` : "/cases"} className="kf-btn kf-btn-outline" style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:700, textAlign:"center", border:`1.5px solid ${C.primary}` }}>{P.case_view}</Link>
-                    <Link to={c.id ? `/donate?caseId=${c.id}` : "/donate"} className="kf-btn kf-btn-gold" style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:800, textAlign:"center", border:"none" }}>{P.case_sponsor}</Link>
+                    <Link
+                      to={c.kind==="project" ? "/projects" : (c.id ? `/cases/${c.id}` : "/cases")}
+                      className="kf-btn kf-btn-outline"
+                      style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:700, textAlign:"center", border:`1.5px solid ${C.primary}` }}>
+                      {c.kind==="project" ? "View Project →" : P.case_view}
+                    </Link>
+                    <Link
+                      to={c.kind==="project" ? "/donate" : (c.id ? `/donate?caseId=${c.id}` : "/donate")}
+                      className="kf-btn kf-btn-gold"
+                      style={{ flex:1, padding:"10px 0", borderRadius:10, fontSize:13, fontWeight:800, textAlign:"center", border:"none" }}>
+                      {P.case_sponsor}
+                    </Link>
                   </div>
                 </div>
               </div>
