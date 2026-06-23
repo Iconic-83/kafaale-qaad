@@ -82,6 +82,7 @@ export default function ImpactPartners() {
   const [form, setForm]     = useState(BLANK);
   const [submitted, setSubmitted] = useState(false);
   const [showPartnerContract, setShowPartnerContract] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
   const [errors, setErrors] = useState({});
 
   const getAdminPartners = () => { try { return JSON.parse(localStorage.getItem(ADMIN_PARTNERS_KEY)||"[]"); } catch { return []; } };
@@ -537,7 +538,7 @@ export default function ImpactPartners() {
                           <input type="checkbox" checked={form.acceptsTerms} onChange={e=>set("acceptsTerms",e.target.checked)}
                             style={{ marginTop:3, width:18, height:18, cursor:"pointer" }} />
                           <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>
-                            I confirm that all information provided is accurate. I accept the <a href="#" style={{ color:C.primary, fontWeight:700 }}>Partner Terms & Conditions</a> and understand that Kafaale Qaad will review this application before granting access.
+                            I confirm that all information provided is accurate. I accept the <a href="#" onClick={e=>{e.preventDefault();setShowTerms(true);}} style={{ color:C.primary, fontWeight:700, textDecoration:"underline", cursor:"pointer" }}>Partner Terms & Conditions</a> and understand that Kafaale Qaad will review this application before granting access.
                           </div>
                         </label>
                         {errors.acceptsTerms && <div style={{ fontSize:11, color:C.danger, marginTop:6 }}>⚠ {errors.acceptsTerms}</div>}
@@ -715,35 +716,55 @@ export default function ImpactPartners() {
               </div>
             )}
 
-            {/* Existing admin-created partners list */}
+            {/* Managed partners — card view matching public listing */}
             {adminPartners.filter(p => p.status !== "pending").length > 0 && (
               <div>
                 <h3 style={{ fontSize:18, fontWeight:800, marginBottom:18 }}>Managed Partners ({adminPartners.filter(p=>p.status!=="pending").length})</h3>
-                <div style={{ display:"grid", gap:14 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))", gap:22 }}>
                   {adminPartners.filter(p => p.status !== "pending").map(p => (
-                    <div key={p.id} style={{ background:"#fff", borderRadius:14, padding:"20px 24px", border:`1px solid ${C.border}`, boxShadow:"0 2px 8px rgba(0,0,0,.04)", display:"flex", alignItems:"center", gap:16 }}>
-                      <div style={{ width:52, height:52, borderRadius:12, background:`${p.color}20`, border:`1.5px solid ${p.color}40`, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", flexShrink:0 }}>
-                        {p.logoUrl ? <img src={p.logoUrl} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"contain" }} /> : <span style={{ fontSize:22, color:p.color }}>🤝</span>}
+                    <div key={p.id} style={{ background:"#fff", borderRadius:18, overflow:"hidden", border:`2px solid ${p.published ? C.secondary+"40" : C.border}`, boxShadow:"0 2px 12px rgba(0,0,0,.06)", display:"flex", flexDirection:"column" }}>
+                      {/* Card header — same as public */}
+                      <div style={{ background:`linear-gradient(135deg, ${p.color}18, ${p.color}08)`, padding:"24px 20px 18px" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                          <div style={{ width:56, height:56, borderRadius:14, background:`linear-gradient(135deg,${p.color}30,${p.color}60)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0, overflow:"hidden" }}>
+                            {p.logoUrl
+                              ? <img src={p.logoUrl} alt={p.name} style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                              : <span>🤝</span>}
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:15, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</div>
+                            <div style={{ fontSize:12, color:p.color, fontWeight:700, marginTop:2 }}>{p.type}</div>
+                            <div style={{ fontSize:11, color:C.muted, marginTop:1 }}>{p.country}</div>
+                          </div>
+                          <span style={{ background: p.published ? "#D1FAE5" : "#FEF3C7", color: p.published ? "#065F46" : "#92400E", borderRadius:20, padding:"3px 10px", fontSize:10, fontWeight:800, flexShrink:0 }}>
+                            {p.published ? "✓ Published" : "Draft"}
+                          </span>
+                        </div>
                       </div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:15, fontWeight:800, color:C.text }}>{p.name}</div>
-                        <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>{p.type} · {p.country}</div>
-                        {p.focusAreas.length > 0 && (
-                          <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:6 }}>
-                            {p.focusAreas.slice(0,3).map(f=><span key={f} style={{ background:p.color+"15", color:p.color, borderRadius:99, padding:"2px 8px", fontSize:10, fontWeight:700 }}>{f}</span>)}
+
+                      {/* Card body */}
+                      <div style={{ padding:"14px 20px 18px", flex:1 }}>
+                        {p.focusAreas?.length > 0 && (
+                          <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginBottom:10 }}>
+                            {p.focusAreas.slice(0,3).map(f=><span key={f} style={{ background:p.color+"15", color:p.color, borderRadius:20, padding:"3px 10px", fontSize:10, fontWeight:700 }}>{f}</span>)}
                             {p.focusAreas.length > 3 && <span style={{ fontSize:10, color:C.muted }}>+{p.focusAreas.length-3}</span>}
                           </div>
                         )}
+                        {p.description && (
+                          <div style={{ fontSize:12, color:C.muted, lineHeight:1.5, marginBottom:10, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>
+                            {p.description}
+                          </div>
+                        )}
+                        <div style={{ fontSize:12, color:C.muted, fontWeight:600 }}>{Number(p.cases)||0} cases supported</div>
                       </div>
-                      <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                        <span style={{ background: p.published ? "#D1FAE5" : "#FEF3C7", color: p.published ? "#065F46" : "#92400E", borderRadius:99, padding:"4px 12px", fontSize:11, fontWeight:800 }}>
-                          {p.published ? "Published" : "Draft"}
-                        </span>
-                        <button onClick={() => togglePublish(p.id)} style={{ padding:"7px 14px", borderRadius:8, border:`1.5px solid ${C.border}`, background:"#fff", fontWeight:700, fontSize:12, cursor:"pointer" }}>
+
+                      {/* Admin actions */}
+                      <div style={{ borderTop:`1px solid ${C.border}`, padding:"12px 16px", display:"flex", gap:8, flexWrap:"wrap" }}>
+                        <button onClick={() => togglePublish(p.id)} style={{ flex:1, padding:"8px 10px", borderRadius:9, border:`1.5px solid ${p.published ? C.danger : C.secondary}`, background: p.published ? "#FEF2F2" : "#ECFDF5", color: p.published ? C.danger : C.secondary, fontWeight:700, fontSize:12, cursor:"pointer" }}>
                           {p.published ? "Unpublish" : "Publish"}
                         </button>
-                        <button onClick={() => startEdit(p)} style={{ padding:"7px 14px", borderRadius:8, border:`1.5px solid ${C.primary}`, background:"#fff", color:C.primary, fontWeight:700, fontSize:12, cursor:"pointer" }}>Edit</button>
-                        <button onClick={() => deletePartner(p.id)} style={{ padding:"7px 14px", borderRadius:8, border:`1.5px solid ${C.danger}`, background:"#fff", color:C.danger, fontWeight:700, fontSize:12, cursor:"pointer" }}>Delete</button>
+                        <button onClick={() => startEdit(p)} style={{ flex:1, padding:"8px 10px", borderRadius:9, border:`1.5px solid ${C.primary}`, background:"#EFF6FF", color:C.primary, fontWeight:700, fontSize:12, cursor:"pointer" }}>Edit</button>
+                        <button onClick={() => deletePartner(p.id)} style={{ padding:"8px 12px", borderRadius:9, border:`1.5px solid ${C.danger}`, background:"#fff", color:C.danger, fontWeight:700, fontSize:12, cursor:"pointer" }}>✕</button>
                       </div>
                     </div>
                   ))}
@@ -788,6 +809,97 @@ export default function ImpactPartners() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* ── Partner Terms & Conditions Modal ── */}
+      {showTerms && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={() => setShowTerms(false)}>
+          <div style={{ background:"#fff", borderRadius:20, maxWidth:720, width:"100%", maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }} onClick={e=>e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{ background:`linear-gradient(135deg, ${C.navy}, ${C.primary})`, color:"#fff", padding:"28px 32px", borderRadius:"20px 20px 0 0", position:"sticky", top:0, zIndex:1 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontSize:11, fontWeight:800, letterSpacing:2, textTransform:"uppercase", opacity:0.7, marginBottom:4 }}>Kafaale Qaad HOPE Society</div>
+                  <div style={{ fontSize:22, fontWeight:900 }}>Partner Terms & Conditions</div>
+                  <div style={{ fontSize:12, opacity:0.7, marginTop:4 }}>Effective Date: January 1, 2025 · Version 2.1</div>
+                </div>
+                <button onClick={()=>setShowTerms(false)} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:10, width:40, height:40, cursor:"pointer", fontSize:20, color:"#fff" }}>×</button>
+              </div>
+            </div>
+
+            <div style={{ padding:"32px" }}>
+              {[
+                {
+                  title:"1. Definitions",
+                  body:`"Kafaale Qaad" refers to Kafaale Qaad HOPE Society, a registered humanitarian organisation based in Mogadishu, Somalia. "Partner" refers to any organisation accepted into the Kafaale Qaad partner network. "Platform" refers to the Kafaale Qaad digital platform and case management system. "Beneficiary" refers to individuals or families receiving aid through the Platform.`
+                },
+                {
+                  title:"2. Eligibility & Admission",
+                  body:`2.1 Applicants must be a registered legal entity (NGO, foundation, government body, or recognised institution) in their country of operation.\n2.2 Partners must not appear on any international sanctions lists (UN, EU, OFAC).\n2.3 Kafaale Qaad reserves the right to approve, reject, or conditionally accept any application without providing reasons.\n2.4 Approval is not guaranteed and is subject to due-diligence verification including field visits and document checks.`
+                },
+                {
+                  title:"3. Partner Obligations",
+                  body:`3.1 Partners must conduct all humanitarian activities in accordance with the Core Humanitarian Standard (CHS) and Do No Harm principles.\n3.2 Partners must submit monthly delivery reports including GPS-confirmed delivery photographs within 7 days of each aid delivery.\n3.3 Partners must maintain accurate beneficiary records and make them available to Kafaale Qaad upon request with 48 hours notice.\n3.4 Partners must not use Kafaale Qaad funds for administrative overhead exceeding 10% of any disbursement.\n3.5 Partners must report any security incident, fraud suspicion, or programme disruption to Kafaale Qaad within 24 hours.\n3.6 Partners must not sub-grant funds to third parties without prior written approval from Kafaale Qaad.`
+                },
+                {
+                  title:"4. Financial & Accountability Standards",
+                  body:`4.1 All funds received through the Platform must be used exclusively for the approved case or programme they were designated for.\n4.2 Partners must maintain a separate bank account or fund ledger for Kafaale Qaad disbursements.\n4.3 Partners consent to independent financial audits by Kafaale Qaad or a third-party auditor, with 14 days notice.\n4.4 Unexpended funds at programme closure must be returned within 30 days or reallocated with written approval.\n4.5 Partners must issue official receipts for all aid deliveries and provide copies to Kafaale Qaad.`
+                },
+                {
+                  title:"5. Data Protection & Beneficiary Privacy",
+                  body:`5.1 Partners must comply with applicable data protection laws in their jurisdiction.\n5.2 Beneficiary personal information (names, photos, medical data) must not be shared with any third party, media, or social media without explicit written consent from the beneficiary or their legal guardian.\n5.3 Partners must implement reasonable security measures to protect beneficiary data from unauthorised access.\n5.4 Data breaches affecting beneficiary information must be reported to Kafaale Qaad within 72 hours.`
+                },
+                {
+                  title:"6. Branding & Communications",
+                  body:`6.1 Partners may use the "Kafaale Qaad Verified Partner" badge in communications related to joint programmes only.\n6.2 Partners must not misrepresent their relationship with Kafaale Qaad or imply endorsement beyond the scope of the partnership.\n6.3 All public communications referencing joint activities require review and approval from Kafaale Qaad's communications team with 5 business days lead time.\n6.4 Kafaale Qaad may feature the Partner's name, logo, and impact statistics on the Platform and in public reports.`
+                },
+                {
+                  title:"7. Suspension & Termination",
+                  body:`7.1 Kafaale Qaad may immediately suspend a partner account if there is evidence of fraud, fund misuse, beneficiary harm, or violation of these Terms.\n7.2 Either party may terminate the partnership with 60 days written notice.\n7.3 Upon termination, the Partner must: (a) complete or properly hand over all active cases, (b) submit a final financial report, (c) return all unexpended funds, and (d) cease use of Kafaale Qaad branding.\n7.4 Termination does not affect obligations arising from activities conducted during the partnership period.`
+                },
+                {
+                  title:"8. Conflict of Interest",
+                  body:`8.1 Partners must disclose any real or potential conflict of interest that may affect programme delivery, including family relationships with beneficiaries, financial interests in suppliers, or political affiliations that could compromise neutrality.\n8.2 Undisclosed conflicts of interest are grounds for immediate termination.`
+                },
+                {
+                  title:"9. Dispute Resolution",
+                  body:`9.1 Disputes shall first be addressed through good-faith negotiation within 30 days of written notice.\n9.2 If unresolved, disputes shall be referred to mediation under the rules of the Somali National Mediation Centre.\n9.3 If mediation fails, disputes shall be submitted to binding arbitration in Mogadishu, Somalia, under Somali law.\n9.4 Nothing in this clause prevents either party from seeking urgent injunctive relief from a competent court.`
+                },
+                {
+                  title:"10. Governing Law",
+                  body:`These Terms are governed by the laws of the Federal Republic of Somalia and internationally recognised principles of humanitarian law. Partners operating outside Somalia also agree to comply with all applicable local laws in their jurisdiction.`
+                },
+                {
+                  title:"11. Amendments",
+                  body:`Kafaale Qaad reserves the right to amend these Terms at any time. Partners will be notified of material changes via email at least 30 days before they take effect. Continued participation after the effective date constitutes acceptance of the amended Terms.`
+                },
+                {
+                  title:"12. Contact",
+                  body:`For questions regarding these Terms, contact: legal@kafaale.so · Kafaale Qaad HOPE Society, Mogadishu, Somalia.`
+                },
+              ].map(({ title, body }) => (
+                <div key={title} style={{ marginBottom:24, paddingBottom:24, borderBottom:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:14, fontWeight:800, color:C.navy, marginBottom:10 }}>{title}</div>
+                  <div style={{ fontSize:13, color:"#374151", lineHeight:1.85, whiteSpace:"pre-line" }}>{body}</div>
+                </div>
+              ))}
+
+              <div style={{ background:"#EFF6FF", borderRadius:12, padding:"16px 20px", marginTop:8 }}>
+                <div style={{ fontSize:12, color:C.primary, fontWeight:700, marginBottom:4 }}>Acceptance</div>
+                <div style={{ fontSize:12, color:C.muted, lineHeight:1.7 }}>
+                  By submitting a partnership application and ticking the acceptance checkbox, you confirm that you have read, understood, and agree to be bound by these Partner Terms & Conditions on behalf of your organisation.
+                </div>
+              </div>
+
+              <div style={{ display:"flex", justifyContent:"center", marginTop:24 }}>
+                <button onClick={()=>setShowTerms(false)} style={{ padding:"13px 40px", background:C.primary, color:"#fff", border:"none", borderRadius:12, cursor:"pointer", fontWeight:800, fontSize:15 }}>
+                  I Have Read the Terms
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

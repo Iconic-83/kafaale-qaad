@@ -5,6 +5,7 @@ import { useAuth } from "./context/AuthContext.jsx";
 import { useLang } from "./context/LanguageContext.jsx";
 import { cases as casesApi, admin as adminApi, field as fieldApi, notifications as notifsApi, donations, impact, programs as programsApi, projects as projectsApi, settings as settingsApi } from "./api/client.js";
 import Logo from "./components/Logo.jsx";
+import { openPrintWindow } from "./utils/printDoc.js";
 import "./responsive.css";
 
 // ─── Responsive hook ──────────────────────────────────────────────────────────
@@ -2569,29 +2570,8 @@ const CaseFullReportModal = ({ caseId, onClose }) => {
       @media print { body { padding: 0; } body::after { position: fixed; } }
     `;
 
-    // Build a Blob URL — more reliable than document.write across browsers
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Kafaale Case Report — ${caseId}</title><style>${printStyles}</style></head><body>${el.innerHTML}</body></html>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const url  = URL.createObjectURL(blob);
-
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;";
-    document.body.appendChild(iframe);
-
-    const cleanup = () => {
-      try { document.body.removeChild(iframe); } catch {}
-      URL.revokeObjectURL(url);
-    };
-
-    iframe.onload = () => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      // cleanup after print dialog closes (onafterprint) or after 5s fallback
-      iframe.contentWindow.onafterprint = cleanup;
-      setTimeout(cleanup, 5000);
-    };
-
-    iframe.src = url;
+    openPrintWindow(html, `Case Report ${caseId}`);
   };
 
   if (loading) return (
@@ -3503,19 +3483,7 @@ const PublicUserDashboard = ({ cases, currentUser, onReport, onViewCase, onSpons
               <b>Reference:</b> ${invoiceNo}</div></div>
               <div class="footer">${IS.footerMsg}</div>
               </body></html>`;
-              const blob = new Blob([html], { type: "text/html" });
-              const url = URL.createObjectURL(blob);
-              const iframe = document.createElement("iframe");
-              iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;";
-              document.body.appendChild(iframe);
-              iframe.onload = () => {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-                const cleanup = () => { document.body.removeChild(iframe); URL.revokeObjectURL(url); };
-                iframe.contentWindow.onafterprint = cleanup;
-                setTimeout(cleanup, 10000);
-              };
-              iframe.src = url;
+              openPrintWindow(html, `Invoice ${invoiceNo}`);
             };
             const ifield = (key, label, wide) => (
               <div style={{ marginBottom:10, gridColumn: wide ? "1 / -1" : undefined }}>
@@ -4603,7 +4571,13 @@ const DonorDashboard = ({ cases, currentUser, onViewCase, onSponsor }) => {
           </div>
           <div className="no-print" style={{ display: "flex", gap: 10 }}>
             <Btn variant="ghost" onClick={() => setCertDonation(null)} style={{ flex: 1 }}>Close</Btn>
-            <Btn variant="primary" onClick={() => window.print()} style={{ flex: 2 }}>🖨️ Print / Save as PDF</Btn>
+            <Btn variant="primary" onClick={() => {
+              const el = document.getElementById("impact-cert");
+              if (!el) return;
+              const styles = `*{box-sizing:border-box}body{font-family:'Segoe UI',sans-serif;margin:0;padding:32px;background:#fff}`;
+              const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Impact Certificate</title><style>${styles}</style></head><body>${el.outerHTML}</body></html>`;
+              openPrintWindow(html, "Impact Certificate");
+            }} style={{ flex: 2 }}>🖨️ Print / Save as PDF</Btn>
           </div>
         </Modal>
       )}

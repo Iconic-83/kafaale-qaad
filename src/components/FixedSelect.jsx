@@ -26,6 +26,7 @@ export default function FixedSelect({ value, onChange, children, disabled, style
     const arr = Array.isArray(nodes) ? nodes : [nodes];
     arr.forEach(child => {
       if (!child) return;
+      if (Array.isArray(child)) { parseChildren(child); return; }
       if (child.type === "optgroup") parseChildren(child.props.children);
       else if (child.type === "option") flatOptions.push({ value: child.props.value, label: child.props.children });
     });

@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { openPrintWindow } from "../utils/printDoc.js";
 
 const C = {
   navy: "#002651", primary: "#004B96", secondary: "#4B7D19",
@@ -178,7 +179,109 @@ export default function ContractModal({ type, data, onClose, onAccept }) {
     onAccept && onAccept(contractRef);
   };
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const termsHtml = contractBody(type, data, contractRef, date);
+
+    const sections = {
+      child_sponsorship: "Child & Family Sponsorship Agreement",
+      project_funding:   "Community Project Funding Agreement",
+      partner_agreement: "Impact Partner Agreement",
+      case_sponsorship:  "Emergency Case Sponsorship Agreement",
+    };
+
+    const rows = (obj) => Object.entries(obj || {})
+      .filter(([,v]) => v !== undefined && v !== null && v !== "")
+      .map(([k,v]) => `<tr><td class="lbl">${k.replace(/_/g," ")}</td><td>${v}</td></tr>`)
+      .join("");
+
+    const detailRows = {
+      child_sponsorship: rows({ "Beneficiary ID": data.beneficiaryId, "Program": data.programType, "Location": data.location, "Monthly Amount": `$${data.amount}/month`, "Duration": `${data.months} months`, "Total Commitment": `$${(parseFloat(data.amount||0)*parseInt(data.months||1)).toLocaleString()}`, "Payment Method": data.paymentMethod }),
+      project_funding:   rows({ "Project": data.projectTitle, "Location": data.location, "Beneficiaries": data.populationSize ? data.populationSize.toLocaleString()+" people" : "", "Amount": `$${parseFloat(data.amount||0).toLocaleString()}`, "Funding Type": data.isFullFunding ? "Full Project Funding" : "Partial Contribution" }),
+      partner_agreement: rows({ "Organisation": data.orgName, "Type": data.orgType, "Country": data.country, "Contact": `${data.contactName} · ${data.contactEmail}`, "Focus Areas": (data.focusAreas||[]).join(", "), "Regions": data.operatingRegions, "Duration": "12 months (renewable)" }),
+      case_sponsorship:  rows({ "Case ID": data.caseId, "Case Title": data.caseTitle, "Category": data.category, "Location": data.location, "Amount": `$${parseFloat(data.amount||0).toLocaleString()}` }),
+    };
+
+    const terms = {
+      child_sponsorship: `1. Kafaale Qaad will allocate the sponsored beneficiary exclusively to this sponsor for the stated duration and provide monthly progress reports.\n2. The Sponsor commits to monthly payments on schedule and will give 30 days notice before termination.\n3. Early termination: 30 days written notice required. Pre-paid amounts for remaining months refunded within 14 business days.\n4. Kafaale Qaad may reassign the beneficiary if sponsor fails to pay for 2 consecutive months after notice.\n5. Governed by the laws of the Federal Republic of Somalia.`,
+      project_funding:   `1. Kafaale Qaad will deploy this contribution exclusively to the named project and provide a completion report with GPS data.\n2. Funds are non-refundable once disbursed for project activities.\n3. Reporting: progress updates at milestones + final impact report within 30 days of completion.\n4. Governed by the laws of the Federal Republic of Somalia.`,
+      partner_agreement: `1. The Partner will operate within Kafaale Qaad's verified aid framework, submit to field verification visits, and share monthly delivery reports.\n2. Kafaale Qaad will co-brand the partner's contributions and provide donor-matched case referrals.\n3. Both parties agree not to disclose beneficiary data to third parties without written consent.\n4. Either party may terminate with 60 days written notice. Active cases must be completed before termination.\n5. Governed by the laws of the Federal Republic of Somalia.`,
+      case_sponsorship:  `1. Kafaale Qaad guarantees 100% of funds go to the named case and provides GPS-confirmed delivery proof within 14 days.\n2. The Donor authorises Kafaale Qaad to publish anonymised impact data related to this case.\n3. If a case cannot be fulfilled, donor will be offered an alternative or full refund within 14 business days.\n4. Governed by the laws of the Federal Republic of Somalia.`,
+    };
+
+    const html = `<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>${sections[type] || "Agreement"} — ${contractRef}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a202c; padding: 48px; max-width: 820px; margin: 0 auto; }
+  .header { background: linear-gradient(135deg, #002651, #004B96); color: #fff; border-radius: 12px; padding: 28px 32px; margin-bottom: 28px; }
+  .org-label { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; opacity: .7; margin-bottom: 6px; }
+  .title { font-size: 22px; font-weight: 900; }
+  .meta { display: flex; gap: 24px; margin-top: 14px; font-size: 12px; opacity: .75; }
+  .section { margin-bottom: 22px; }
+  .section-head { font-size: 10px; font-weight: 800; color: #004B96; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #D8E4F0; padding-bottom: 6px; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 7px 4px; font-size: 13px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  td.lbl { color: #5A6E8A; font-weight: 700; width: 180px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; padding-top: 9px; }
+  .terms { font-size: 12px; color: #374151; line-height: 1.9; white-space: pre-line; }
+  .sig-box { border: 2px solid #004B96; border-radius: 10px; padding: 20px 24px; margin-top: 24px; }
+  .sig-name { font-size: 20px; font-family: 'Georgia', serif; font-style: italic; color: #002651; border-bottom: 1.5px solid #D8E4F0; padding-bottom: 6px; margin: 10px 0 14px; }
+  .sig-row { display: flex; gap: 40px; font-size: 12px; color: #5A6E8A; margin-top: 8px; }
+  .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-35deg); font-size: 56px; font-weight: 900; color: rgba(0,75,150,0.06); white-space: nowrap; pointer-events: none; z-index: 9999; letter-spacing: 4px; }
+  .footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #9CA3AF; }
+  @media print { body { padding: 24px; } .no-print { display: none; } }
+</style>
+</head>
+<body>
+  <div class="watermark">KAFAALE QAAD</div>
+
+  <div class="header">
+    <div class="org-label">Kafaale Qaad HOPE Society</div>
+    <div class="title">${sections[type] || "Agreement"}</div>
+    <div class="meta">
+      <span>Ref: <strong>${contractRef}</strong></span>
+      <span>Date: <strong>${date}</strong></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Parties</div>
+    <table>
+      <tr><td class="lbl">Organisation</td><td>Kafaale Qaad HOPE Society · Mogadishu, Somalia</td></tr>
+      <tr><td class="lbl">${type === "partner_agreement" ? "Partner" : type === "child_sponsorship" ? "Sponsor" : "Contributor"}</td><td>${signerName}</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Details</div>
+    <table>${detailRows[type] || ""}</table>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Terms & Obligations</div>
+    <div class="terms">${(terms[type] || "").replace(/\n/g, "<br>")}</div>
+  </div>
+
+  <div class="sig-box">
+    <div class="section-head">Electronic Signature</div>
+    <div style="font-size:12px;color:#5A6E8A;margin-bottom:6px;">Signed by:</div>
+    <div class="sig-name">${signerName}</div>
+    <div class="sig-row">
+      <span>Date: ${date}</span>
+      <span>Reference: ${contractRef}</span>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:#9CA3AF;">By typing their name and accepting, the signer confirms they have read and agreed to all terms above.</div>
+  </div>
+
+  <div class="footer">
+    Kafaale Qaad HOPE Society · Mogadishu, Somalia · kafaale.so<br>
+    This document is legally binding once signed.
+  </div>
+</body></html>`;
+
+    openPrintWindow(html, sections[type] || "Agreement");
+  };
 
   if (signed) return (
     <div style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -204,14 +307,7 @@ export default function ContractModal({ type, data, onClose, onAccept }) {
 
   return (
     <>
-      <style>{`
-        @media print {
-          body > *:not(#kq-contract-print) { display: none !important; }
-          #kq-contract-print { display: block !important; position: static !important; padding: 40px !important; }
-        }
-      `}</style>
-
-      <div id="kq-contract-print" style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+      <div style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
         <div style={{ background: "#fff", borderRadius: 20, maxWidth: 680, width: "100%", maxHeight: "92vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} ref={printRef}>
 
           {/* Contract Header */}
