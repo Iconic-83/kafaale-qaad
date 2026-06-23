@@ -10,15 +10,6 @@ const C = {
   bg: "#F4F7FC", border: "#D8E4F0", text: "#0D1F3C", teal: "#0E7490",
 };
 
-const PROGRAM_ICONS = {
-  child_sponsorship: "👶",
-  education: "🎓",
-  medical: "🩺",
-  family_care: "🏠",
-  nutrition: "🍎",
-  emergency_relief: "🚨",
-};
-
 const PROGRAM_LABELS = {
   child_sponsorship: "Child Sponsorship",
   education: "Education Support",
@@ -28,26 +19,18 @@ const PROGRAM_LABELS = {
   emergency_relief: "Emergency Relief",
 };
 
-const PROJECT_ICONS = {
-  water: "💧",
-  school: "🏫",
-  health: "🏥",
-  agriculture: "🌱",
-  shelter: "🏠",
-  energy: "⚡",
-};
 
 const StatusBadge = ({ status }) => {
   const map = {
-    seeking_sponsor:  { bg: "#FEF3C7", color: "#92400E",  label: "🤝 Seeking Sponsor" },
-    sponsored:        { bg: "#D1FAE5", color: "#065F46",  label: "❤️ Under Sponsor" },
-    under_sponsor:    { bg: "#D1FAE5", color: "#065F46",  label: "❤️ Under Sponsor" },
+    seeking_sponsor:  { bg: "#FEF3C7", color: "#92400E",  label: "Seeking Sponsor" },
+    sponsored:        { bg: "#D1FAE5", color: "#065F46",  label: "Under Sponsor" },
+    under_sponsor:    { bg: "#D1FAE5", color: "#065F46",  label: "Under Sponsor" },
     verified:         { bg: "#DBEAFE", color: "#1E40AF",  label: "Verified" },
     pending_verification: { bg: "#F3F4F6", color: "#5A6E8A", label: "Pending" },
     seeking_funding:  { bg: "#FEF3C7", color: "#92400E",  label: "Seeking Funding" },
-    funded:           { bg: "#D1FAE5", color: "#065F46",  label: "✅ Funded" },
-    in_progress:      { bg: "#DBEAFE", color: "#1E40AF",  label: "🔨 In Progress" },
-    completed:        { bg: "#F0FDF4", color: "#166534",  label: "🏁 Completed" },
+    funded:           { bg: "#D1FAE5", color: "#065F46",  label: "Funded" },
+    in_progress:      { bg: "#DBEAFE", color: "#1E40AF",  label: "In Progress" },
+    completed:        { bg: "#F0FDF4", color: "#166534",  label: "Completed" },
   };
   const s = map[status] || { bg: "#F3F4F6", color: "#5A6E8A", label: status };
   return (
@@ -66,8 +49,8 @@ const BeneficiaryCard = ({ b, onSponsor }) => {
         {b.publicPhotoUrl ? (
           <img src={b.publicPhotoUrl} alt="Beneficiary" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "3px solid rgba(255,255,255,0.5)" }} />
         ) : (
-          <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto", border: "3px solid rgba(255,255,255,0.4)" }}>
-            {PROGRAM_ICONS[b.programType] || "👤"}
+          <div style={{ width: 72, height: 72, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: "#fff", margin: "0 auto", border: "3px solid rgba(255,255,255,0.4)" }}>
+            {(b.publicId || "?")[0].toUpperCase()}
           </div>
         )}
         <div style={{ marginTop: 10, color: "#fff" }}>
@@ -87,14 +70,14 @@ const BeneficiaryCard = ({ b, onSponsor }) => {
         {/* Program badge */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
           <span style={{ background: (b.program?.color || C.primary) + "15", color: b.program?.color || C.primary, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700 }}>
-            {b.program?.icon || PROGRAM_ICONS[b.programType]} {b.program?.name || PROGRAM_LABELS[b.programType]}
+            {b.program?.name || PROGRAM_LABELS[b.programType]}
           </span>
         </div>
 
         {/* Location */}
         {b.publicCity && (
           <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>
-            📍 {b.publicCity}{b.publicRegion ? `, ${b.publicRegion}` : ""}
+            {b.publicCity}{b.publicRegion ? `, ${b.publicRegion}` : ""}
           </div>
         )}
 
@@ -127,11 +110,11 @@ const BeneficiaryCard = ({ b, onSponsor }) => {
         {b.status === "seeking_sponsor" ? (
           <button onClick={() => onSponsor(b)}
             style={{ width: "100%", padding: "11px", background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`, color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800 }}>
-            ❤️ Sponsor This {b.programType === "child_sponsorship" ? "Child" : b.programType === "family_care" ? "Family" : "Program"}
+            Sponsor This {b.programType === "child_sponsorship" ? "Child" : b.programType === "family_care" ? "Family" : "Program"}
           </button>
         ) : (b.status === "under_sponsor" || b.status === "sponsored") ? (
           <div style={{ textAlign: "center", fontSize: 13, color: "#065F46", fontWeight: 700, padding: "8px 0", background: "#ECFDF5", borderRadius: 8 }}>
-            ❤️ This beneficiary is under sponsorship
+            This beneficiary is under sponsorship
           </div>
         ) : (
           <div style={{ textAlign: "center", fontSize: 13, color: C.muted, padding: "8px 0" }}>
@@ -153,9 +136,8 @@ const ProjectCard = ({ p, onContribute }) => {
       <div style={{ background: `linear-gradient(135deg, ${C.navy} 0%, ${C.teal} 100%)`, padding: "20px 24px", color: "#fff" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>{PROJECT_ICONS[p.category] || "🌍"}</div>
             <div style={{ fontSize: 16, fontWeight: 800 }}>{p.title}</div>
-            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>📍 {p.location}, {p.region}</div>
+            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>{p.location}, {p.region}</div>
           </div>
           <StatusBadge status={p.status} />
         </div>
@@ -165,7 +147,7 @@ const ProjectCard = ({ p, onContribute }) => {
         {/* Impact */}
         {p.populationSize && (
           <div style={{ background: "#F0FDF4", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "#065F46", fontWeight: 700 }}>
-            👥 Benefiting {p.populationSize.toLocaleString()} people
+            Benefiting {p.populationSize.toLocaleString()} people
           </div>
         )}
 
@@ -189,7 +171,7 @@ const ProjectCard = ({ p, onContribute }) => {
 
         {/* Category tag */}
         <div style={{ fontSize: 11, fontWeight: 700, color: C.teal, background: "#CFFAFE", borderRadius: 20, display: "inline-block", padding: "3px 10px", marginBottom: 12 }}>
-          {PROJECT_ICONS[p.category]} {p.category.charAt(0).toUpperCase() + p.category.slice(1)}
+          {p.category.charAt(0).toUpperCase() + p.category.slice(1)}
         </div>
       </div>
 
@@ -197,17 +179,17 @@ const ProjectCard = ({ p, onContribute }) => {
         {["seeking_funding","funded"].includes(p.status) && (
           <button onClick={() => onContribute(p)}
             style={{ width: "100%", padding: "11px", background: `linear-gradient(135deg, ${C.navy}, ${C.teal})`, color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800 }}>
-            💧 Fund This Project
+            Fund This Project
           </button>
         )}
         {p.status === "in_progress" && (
           <div style={{ textAlign: "center", fontSize: 13, color: C.teal, fontWeight: 700, padding: "8px 0" }}>
-            🔨 Project is underway
+            Project is underway
           </div>
         )}
         {p.status === "completed" && (
           <div style={{ textAlign: "center", fontSize: 13, color: C.secondary, fontWeight: 700, padding: "8px 0" }}>
-            🏁 Project Completed — Thank you!
+            Project Completed — Thank you!
           </div>
         )}
       </div>
@@ -255,7 +237,6 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
   if (done) return (
     <div style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
       <div style={{ background: "#fff", borderRadius: 20, padding: 40, maxWidth: 440, width: "100%", textAlign: "center" }} onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
         <h3 style={{ margin: "0 0 12px", color: C.secondary }}>Sponsorship Created!</h3>
         <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6 }}>
           Your monthly sponsorship of <strong>${parseFloat(amount)}/month</strong> has been set up.
@@ -272,7 +253,7 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
     <div style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
       <div style={{ background: "#fff", borderRadius: 20, padding: 28, maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>❤️ Sponsor a Future</h2>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Sponsor a Future</h2>
           <button onClick={onClose} style={{ background: "#F3F4F6", border: "none", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 20 }}>×</button>
         </div>
 
@@ -280,7 +261,7 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
         <div style={{ background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`, borderRadius: 14, padding: 16, color: "#fff", marginBottom: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>{beneficiary.publicId}</div>
           <div style={{ fontSize: 12, opacity: 0.8 }}>
-            {PROGRAM_ICONS[beneficiary.programType]} {PROGRAM_LABELS[beneficiary.programType]}
+            {PROGRAM_LABELS[beneficiary.programType]}
             {beneficiary.publicCity ? ` · ${beneficiary.publicCity}` : ""}
           </div>
           <div style={{ marginTop: 8, fontSize: 13, opacity: 0.9 }}>{beneficiary.publicNeedsDesc}</div>
@@ -321,9 +302,9 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
         <div style={{ marginBottom: 20 }}>
           <label style={{ fontSize: 13, fontWeight: 700, display: "block", marginBottom: 8 }}>Payment Method</label>
           <FixedSelect value={method} onChange={e => setMethod(e.target.value)} style={{ width:"100%", borderRadius:10, fontSize:14 }}>
-            <option value="mobile_money">📱 Mobile Money (EVC / Zaad / Sahal)</option>
-            <option value="bank_transfer">🏦 Bank Transfer</option>
-            <option value="card">💳 Debit / Credit Card</option>
+            <option value="mobile_money">Mobile Money (EVC / Zaad / Sahal)</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="card">Debit / Credit Card</option>
           </FixedSelect>
         </div>
 
@@ -342,11 +323,11 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
             style={{ width: "100%", padding: "9px 14px", border: `1.5px solid ${C.border}`, borderRadius: 10, fontSize: 13, boxSizing: "border-box" }} />
           {parseInt(commitmentMonths) >= 12 ? (
             <div style={{ marginTop: 8, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#065F46" }}>
-              ✅ <strong>12+ months:</strong> This child will be listed as <strong>Under Sponsor</strong> — their profile moves from "Seeking Sponsor" once confirmed.
+              <strong>12+ months:</strong> This child will be listed as <strong>Under Sponsor</strong> — their profile moves from "Seeking Sponsor" once confirmed.
             </div>
           ) : (
             <div style={{ marginTop: 8, background: "#FFFBEB", border: "1px solid #FCD34D", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#92400E" }}>
-              ⏳ <strong>Under 12 months:</strong> Child stays in "Seeking Sponsor" until a full 12-month contract is reached.
+              <strong>Under 12 months:</strong> Child stays in "Seeking Sponsor" until a full 12-month contract is reached.
             </div>
           )}
         </div>
@@ -356,13 +337,13 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
           <strong>What happens next:</strong> Admin confirms your pledge → Monthly aid is delivered → You receive a progress update every month with photos and reports.
         </div>
 
-        {error && <div style={{ background: "#FEF2F2", color: C.danger, borderRadius: 10, padding: "10px 14px", fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
+        {error && <div style={{ background: "#FEF2F2", color: C.danger, borderRadius: 10, padding: "10px 14px", fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, padding: "12px", background: "#F3F4F6", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: C.muted }}>Cancel</button>
           <button onClick={handleSubmit} disabled={loading}
             style={{ flex: 2, padding: "12px", background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`, color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800 }}>
-            {loading ? "Processing…" : `❤️ Sponsor $${parseFloat(amount || 0)}/month`}
+            {loading ? "Processing…" : `Sponsor $${parseFloat(amount || 0)}/month`}
           </button>
         </div>
       </div>
@@ -398,7 +379,6 @@ const ContributeModal = ({ project, onClose, onDone }) => {
   if (done) return (
     <div style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
       <div style={{ background: "#fff", borderRadius: 20, padding: 40, maxWidth: 440, width: "100%", textAlign: "center" }} onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
         <h3 style={{ margin: "0 0 12px", color: C.secondary }}>Thank You!</h3>
         <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6 }}>Your contribution of <strong>${parseFloat(amount)}</strong> to <strong>{project.title}</strong> has been received. You'll be notified as the project progresses.</p>
         <button onClick={onClose} style={{ marginTop: 20, padding: "12px 32px", background: C.secondary, color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>Close ✓</button>
@@ -410,12 +390,12 @@ const ContributeModal = ({ project, onClose, onDone }) => {
     <div style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
       <div style={{ background: "#fff", borderRadius: 20, padding: 28, maxWidth: 480, width: "100%" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>{PROJECT_ICONS[project.category]} Fund This Project</h2>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800 }}>Fund This Project</h2>
           <button onClick={onClose} style={{ background: "#F3F4F6", border: "none", borderRadius: 8, width: 36, height: 36, cursor: "pointer", fontSize: 20 }}>×</button>
         </div>
         <div style={{ background: `linear-gradient(135deg, ${C.navy}, ${C.teal})`, borderRadius: 14, padding: 16, color: "#fff", marginBottom: 20 }}>
           <div style={{ fontWeight: 800, marginBottom: 4 }}>{project.title}</div>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>📍 {project.location} · {project.populationSize ? `${project.populationSize.toLocaleString()} people` : ""}</div>
+          <div style={{ fontSize: 12, opacity: 0.75 }}>{project.location}{project.populationSize ? ` · ${project.populationSize.toLocaleString()} people` : ""}</div>
           <div style={{ marginTop: 8, fontSize: 15, fontWeight: 700 }}>${remaining.toLocaleString()} still needed</div>
         </div>
 
@@ -434,13 +414,13 @@ const ContributeModal = ({ project, onClose, onDone }) => {
             placeholder="Enter custom amount" />
         </div>
 
-        {error && <div style={{ background: "#FEF2F2", color: C.danger, borderRadius: 10, padding: "10px 14px", fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
+        {error && <div style={{ background: "#FEF2F2", color: C.danger, borderRadius: 10, padding: "10px 14px", fontSize: 13, marginBottom: 12 }}>{error}</div>}
 
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, padding: "12px", background: "#F3F4F6", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, color: C.muted }}>Cancel</button>
           <button onClick={handleSubmit} disabled={loading || !amount}
             style={{ flex: 2, padding: "12px", background: `linear-gradient(135deg, ${C.navy}, ${C.teal})`, color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 800 }}>
-            {loading ? "Processing…" : `💧 Contribute $${parseFloat(amount || 0).toLocaleString()}`}
+            {loading ? "Processing…" : `Contribute $${parseFloat(amount || 0).toLocaleString()}`}
           </button>
         </div>
       </div>
@@ -515,26 +495,25 @@ export default function Programs() {
 
   const PROGRAM_TYPE_FILTERS = [
     { value: "", label: "All Programs" },
-    { value: "child_sponsorship", label: "👶 Child Sponsorship" },
-    { value: "education", label: "🎓 Education" },
-    { value: "medical", label: "🩺 Medical" },
-    { value: "family_care", label: "🏠 Family Care" },
+    { value: "child_sponsorship", label: "Child Sponsorship" },
+    { value: "education", label: "Education" },
+    { value: "medical", label: "Medical" },
+    { value: "family_care", label: "Family Care" },
   ];
 
   const PROJECT_CAT_FILTERS = [
     { value: "", label: "All Categories" },
-    { value: "water", label: "💧 Water" },
-    { value: "school", label: "🏫 Education" },
-    { value: "health", label: "🏥 Health" },
-    { value: "agriculture", label: "🌱 Agriculture" },
-    { value: "shelter", label: "🏠 Shelter" },
-    { value: "energy", label: "⚡ Energy" },
+    { value: "water", label: "Water" },
+    { value: "school", label: "Education" },
+    { value: "health", label: "Health" },
+    { value: "agriculture", label: "Agriculture" },
+    { value: "shelter", label: "Shelter" },
+    { value: "energy", label: "Energy" },
   ];
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🌱</div>
         <div style={{ color: C.muted, fontSize: 14 }}>Loading programs…</div>
       </div>
     </div>
@@ -550,7 +529,7 @@ export default function Programs() {
           Humanitarian Programs
         </div>
         <h1 style={{ fontSize: isMobile ? 28 : 44, fontWeight: 900, margin: "0 0 16px", letterSpacing: -0.5 }}>
-          🌱 Sponsor a Future
+          Sponsor a Future
         </h1>
         <p style={{ fontSize: isMobile ? 14 : 17, opacity: 0.85, maxWidth: 600, margin: "0 auto 28px", lineHeight: 1.7 }}>
           Long-term humanitarian support for children, families, and communities. Monthly sponsorships create lasting change.
@@ -572,21 +551,15 @@ export default function Programs() {
           </div>
         )}
 
-        {/* Navigation back */}
-        <div style={{ marginTop: 24 }}>
-          <button onClick={() => navigate("/")} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff", borderRadius: 10, padding: "8px 18px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-            ← Back to Home
-          </button>
-        </div>
       </div>
 
       {/* Tabs */}
       <div style={{ background: "#fff", borderBottom: `1px solid ${C.border}`, position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", gap: 4, overflowX: "auto" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 24px", display: "flex", justifyContent: "center", gap: 4, overflowX: "auto" }}>
           {[
-            { id: "programs",     label: "🌱 Programs" },
-            { id: "sponsor",      label: `👶 Sponsor a Child/Family (${filteredBeneficiaries.length})` },
-            { id: "projects",     label: `🏗️ Community Projects (${filteredProjects.length})` },
+            { id: "programs",     label: "Programs" },
+            { id: "sponsor",      label: `Sponsor a Child/Family (${filteredBeneficiaries.length})` },
+            { id: "projects",     label: `Community Projects (${filteredProjects.length})` },
           ].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
               style={{ padding: "16px 20px", fontSize: 13, fontWeight: 700, border: "none", background: "none", cursor: "pointer", whiteSpace: "nowrap",
@@ -612,8 +585,7 @@ export default function Programs() {
 
             {/* Two Engines explanation */}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20, marginBottom: 40 }}>
-              <div style={{ background: "#FEF2F2", borderRadius: 18, padding: 24, border: "1px solid #FECACA" }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>🚨</div>
+              <div style={{ background: "#FEF2F2", borderRadius: 18, padding: 24, border: "1px solid #FECACA", textAlign: "center" }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: C.danger, marginBottom: 8 }}>Emergency Response</div>
                 <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: "0 0 16px" }}>
                   One-time emergency cases: Report → Verify → Sponsor → Deliver → Close
@@ -622,8 +594,7 @@ export default function Programs() {
                   View Emergency Cases →
                 </button>
               </div>
-              <div style={{ background: "#F0FDF4", borderRadius: 18, padding: 24, border: "1px solid #BBF7D0" }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>🌱</div>
+              <div style={{ background: "#F0FDF4", borderRadius: 18, padding: 24, border: "1px solid #BBF7D0", textAlign: "center" }}>
                 <div style={{ fontSize: 18, fontWeight: 800, color: C.secondary, marginBottom: 8 }}>Long-Term Programs</div>
                 <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: "0 0 16px" }}>
                   Continuous care: Enroll → Verify → Match Sponsor → Monthly Updates → Graduation
@@ -635,18 +606,16 @@ export default function Programs() {
             </div>
 
             {/* Program cards */}
-            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>Active Programs</h3>
+            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20, textAlign: "center" }}>Active Programs</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(260px, 100%), 1fr))", gap: 20, marginBottom: 48 }}>
               {programsList.length === 0 && (
                 <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 40, color: C.muted }}>
-                  <div style={{ fontSize: 40, marginBottom: 8 }}>🌱</div>
                   <div>Programs coming soon. Check back!</div>
                 </div>
               )}
               {programsList.map(p => (
                 <div key={p.id} style={{ background: "#fff", borderRadius: 18, padding: 24, boxShadow: "0 4px 20px rgba(0,0,0,0.07)", border: `1px solid ${C.border}`, borderLeft: `4px solid ${p.color || C.primary}` }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-                    <div style={{ fontSize: 36 }}>{p.icon || PROGRAM_ICONS[p.type]}</div>
                     <span style={{ background: (p.color || C.primary) + "15", color: p.color || C.primary, borderRadius: 20, padding: "4px 12px", fontSize: 11, fontWeight: 700 }}>
                       {(p._count?.beneficiaries || 0)} enrolled
                     </span>
@@ -662,17 +631,16 @@ export default function Programs() {
             </div>
 
             {/* What sponsors see */}
-            <div style={{ background: C.navy, borderRadius: 20, padding: isMobile ? 24 : 40, color: "#fff", marginBottom: 40 }}>
-              <h3 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 20px" }}>📊 The Sponsor Journey</h3>
+            <div style={{ background: C.navy, borderRadius: 20, padding: isMobile ? 24 : 40, color: "#fff", marginBottom: 40, textAlign: "center" }}>
+              <h3 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 20px" }}>The Sponsor Journey</h3>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20 }}>
                 {[
-                  { icon: "❤️", step: "Choose", desc: "Select a child, family, or program to sponsor" },
-                  { icon: "💳", step: "Commit", desc: "Set a monthly amount from $10 to full sponsorship" },
-                  { icon: "📸", step: "Receive Updates", desc: "Monthly photos, school attendance & progress reports" },
-                  { icon: "🏆", step: "See Impact", desc: "Watch your child graduate, recover, or thrive" },
+                  { step: "Choose", desc: "Select a child, family, or program to sponsor" },
+                  { step: "Commit", desc: "Set a monthly amount from $10 to full sponsorship" },
+                  { step: "Receive Updates", desc: "Monthly photos, school attendance & progress reports" },
+                  { step: "See Impact", desc: "Watch your child graduate, recover, or thrive" },
                 ].map((s, i) => (
                   <div key={i} style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>{s.icon}</div>
                     <div style={{ fontWeight: 800, marginBottom: 6 }}>{s.step}</div>
                     <div style={{ fontSize: 12, opacity: 0.75, lineHeight: 1.6 }}>{s.desc}</div>
                   </div>
@@ -685,9 +653,9 @@ export default function Programs() {
         {/* ── Sponsor Tab ── */}
         {activeTab === "sponsor" && (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>👶 Beneficiaries</h2>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 16px" }}>Beneficiaries</h2>
+              <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
                 {PROGRAM_TYPE_FILTERS.map(f => (
                   <button key={f.value} onClick={() => setFilterType(f.value)}
                     style={{ padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: `1.5px solid ${filterType === f.value ? C.primary : C.border}`, background: filterType === f.value ? C.primary : "#fff", color: filterType === f.value ? "#fff" : C.muted, cursor: "pointer" }}>
@@ -702,14 +670,13 @@ export default function Programs() {
               const seeking = filteredBeneficiaries.filter(b => b.status === "seeking_sponsor");
               return (
                 <div style={{ marginBottom: 48 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                    <span style={{ fontSize: 18, fontWeight: 800 }}>🤝 Seeking a Sponsor</span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}>
+                    <span style={{ fontSize: 18, fontWeight: 800 }}>Seeking a Sponsor</span>
                     <span style={{ background: "#FEF3C7", color: "#92400E", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 700 }}>{seeking.length} available</span>
                   </div>
                   {seeking.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "48px 24px", color: C.muted, background: "#FFFBEB", borderRadius: 16 }}>
-                      <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-                      <div style={{ fontSize: 16, fontWeight: 700 }}>All beneficiaries are currently sponsored!</div>
+                        <div style={{ fontSize: 16, fontWeight: 700 }}>All beneficiaries are currently sponsored!</div>
                       <div style={{ fontSize: 13, marginTop: 6 }}>Check back to support new arrivals.</div>
                     </div>
                   ) : (
@@ -727,8 +694,8 @@ export default function Programs() {
               if (underSponsor.length === 0) return null;
               return (
                 <div style={{ marginBottom: 48 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                    <span style={{ fontSize: 18, fontWeight: 800 }}>❤️ Under Sponsorship</span>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 16 }}>
+                    <span style={{ fontSize: 18, fontWeight: 800 }}>Under Sponsorship</span>
                     <span style={{ background: "#D1FAE5", color: "#065F46", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 700 }}>{underSponsor.length} supported</span>
                   </div>
                   <p style={{ fontSize: 13, color: C.muted, marginBottom: 16, lineHeight: 1.6 }}>
@@ -743,7 +710,6 @@ export default function Programs() {
 
             {filteredBeneficiaries.length === 0 && (
               <div style={{ textAlign: "center", padding: "60px 24px", color: C.muted }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>👶</div>
                 <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No beneficiaries available yet</div>
                 <div style={{ fontSize: 14 }}>Our team is enrolling new beneficiaries. Check back soon!</div>
               </div>
@@ -751,14 +717,13 @@ export default function Programs() {
 
             {/* Program sponsorship option */}
             <div style={{ marginTop: 48, background: `linear-gradient(135deg, ${C.primary}10, ${C.secondary}10)`, borderRadius: 20, padding: 32, border: `1px solid ${C.primary}30` }}>
-              <h3 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 12px" }}>🌍 Prefer to Support a Program?</h3>
-              <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7, margin: "0 0 20px" }}>
+              <h3 style={{ fontSize: 20, fontWeight: 800, margin: "0 0 12px", textAlign: "center" }}>Prefer to Support a Program?</h3>
+              <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.7, margin: "0 0 20px", textAlign: "center" }}>
                 Not ready to commit to one child? Sponsor an entire program. Your contribution is distributed across all eligible beneficiaries in that program.
               </p>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(160px, 100%), 1fr))", gap: 12 }}>
                 {programsList.map(p => (
                   <div key={p.id} style={{ background: "#fff", borderRadius: 12, padding: 16, border: `1px solid ${C.border}`, textAlign: "center" }}>
-                    <div style={{ fontSize: 28, marginBottom: 6 }}>{p.icon}</div>
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{p.name}</div>
                     <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{p._count?.beneficiaries || 0} beneficiaries</div>
                   </div>
@@ -771,9 +736,9 @@ export default function Programs() {
         {/* ── Community Projects Tab ── */}
         {activeTab === "projects" && (
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 800, margin: 0 }}>🏗️ Community Projects</h2>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 16px" }}>Community Projects</h2>
+              <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
                 {PROJECT_CAT_FILTERS.map(f => (
                   <button key={f.value} onClick={() => setFilterCat(f.value)}
                     style={{ padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 700, border: `1.5px solid ${filterCat === f.value ? C.teal : C.border}`, background: filterCat === f.value ? C.teal : "#fff", color: filterCat === f.value ? "#fff" : C.muted, cursor: "pointer" }}>
@@ -785,7 +750,6 @@ export default function Programs() {
 
             {filteredProjects.length === 0 ? (
               <div style={{ textAlign: "center", padding: "60px 24px", color: C.muted }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🏗️</div>
                 <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>No projects yet</div>
                 <div style={{ fontSize: 14 }}>Community projects are being assessed. Check back soon!</div>
               </div>

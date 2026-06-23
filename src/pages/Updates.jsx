@@ -84,11 +84,11 @@ export default function Updates() {
 
       {/* ── Hero ── */}
       <section style={{
-        background: `linear-gradient(135deg, ${C.navy} 0%, #1a3a6e 50%, #0f2d52 100%)`,
         padding: "80px 24px 64px", textAlign: "center", color: "#fff",
-        position: "relative", overflow: "hidden",
+        position: "relative", overflow: "hidden", background: "#0a1628",
       }}>
-        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)", backgroundSize:"36px 36px" }} />
+        <div style={{ position:"absolute", inset:0, backgroundImage:"url('/updates-hero-img0.png')", backgroundSize:"cover", backgroundPosition:"center" }} />
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(135deg, rgba(10,22,40,0.88) 0%, rgba(26,58,110,0.78) 55%, rgba(80,20,100,0.65) 100%)" }} />
         <div style={{ position:"relative", maxWidth:700, margin:"0 auto" }}>
           <span style={{ display:"inline-block", background:"rgba(224,171,33,0.18)", border:"1px solid rgba(224,171,33,0.4)", color:"#F4D04A", borderRadius:20, padding:"6px 18px", fontSize:12, fontWeight:800, letterSpacing:1, textTransform:"uppercase", marginBottom:20 }}>
             LIVE UPDATES
