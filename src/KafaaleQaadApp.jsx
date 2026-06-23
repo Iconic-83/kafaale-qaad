@@ -4812,7 +4812,6 @@ const PAGE_DEFAULTS = {
   stories:      { label: "Stories",        path: "/stories",      icon: "📰", group: "More" },
   volunteer:    { label: "Volunteer",      path: "/volunteer",    icon: "🤝", group: "More" },
   faq:          { label: "FAQ",            path: "/faq",          icon: "❓", group: "More" },
-  transparency: { label: "Transparency",   path: "/transparency", icon: "📊", group: "More" },
   updates:      { label: "Updates",        path: "/updates",      icon: "🚨", group: "More" },
   contact:      { label: "Contact",        path: "/contact",      icon: "📬", group: "Contact" },
 };

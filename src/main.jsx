@@ -52,7 +52,6 @@ const Stories       = lazy(() => import('./pages/Stories.jsx'));
 const StoryDetail   = lazy(() => import('./pages/StoryDetail.jsx'));
 const Volunteer     = lazy(() => import('./pages/Volunteer.jsx'));
 const FAQ           = lazy(() => import('./pages/FAQ.jsx'));
-const Transparency  = lazy(() => import('./pages/Transparency.jsx'));
 const Projects      = lazy(() => import('./pages/Projects.jsx'));
 const Updates       = lazy(() => import('./pages/Updates.jsx'));
 const MediaFeed     = lazy(() => import('./pages/MediaFeed.jsx'));
@@ -192,7 +191,6 @@ function App() {
             <Route path="/stories/:id"   element={<Layout><PageGate pageKey="stories"><StoryDetail /></PageGate></Layout>} />
             <Route path="/volunteer"     element={<Layout><PageGate pageKey="volunteer"><Volunteer /></PageGate></Layout>} />
             <Route path="/faq"           element={<Layout><PageGate pageKey="faq"><FAQ /></PageGate></Layout>} />
-            <Route path="/transparency"  element={<Layout><PageGate pageKey="transparency"><Transparency /></PageGate></Layout>} />
             <Route path="/updates"       element={<Layout><PageGate pageKey="updates"><Updates /></PageGate></Layout>} />
             <Route path="/media"         element={<Layout><MediaFeed /></Layout>} />
             <Route path="/login"         element={<Login />} />

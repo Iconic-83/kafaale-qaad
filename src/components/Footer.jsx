@@ -94,7 +94,6 @@ export default function Footer() {
               ["Partners",     "/partners",      show("partners")],
               ["Volunteer",    "/volunteer",     show("volunteer")],
               ["FAQ",          "/faq",           show("faq")   ],
-              ["Transparency", "/transparency",  show("transparency")],
               ["Updates",      "/updates",       show("updates")],
             ].filter(([,,vis]) => vis).map(([label, to]) => (
               <div key={to} style={{ marginBottom: 12 }}>

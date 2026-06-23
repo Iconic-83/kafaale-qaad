@@ -23,7 +23,6 @@ const ALL_PAGES = {
   stories:      true,
   volunteer:    true,
   faq:          true,
-  transparency: true,
   updates:      true,
   contact:      true,
 };
@@ -90,7 +89,6 @@ export default function Navbar() {
         show("stories")      && { to: "/stories",      label: "Stories",      icon: "📰", desc: "Impact & success stories" },
         show("volunteer")    && { to: "/volunteer",     label: "Volunteer",    icon: "🤝", desc: "Join our field team" },
         show("faq")          && { to: "/faq",           label: "FAQ",          icon: "❓", desc: "Frequently asked questions" },
-        show("transparency") && { to: "/transparency",  label: "Transparency", icon: "📊", desc: "Financial reports" },
         show("updates")      && { to: "/updates",        label: "Updates",      icon: "🚨", desc: "Field updates & emergency alerts" },
                                  { to: "/media",          label: "Media",        icon: "📱", desc: "Photos, videos & community posts" },
       ].filter(Boolean),
@@ -111,7 +109,6 @@ export default function Navbar() {
     show("stories")    && { to: "/stories",       label: "Stories"     },
     show("volunteer")  && { to: "/volunteer",     label: "Volunteer"   },
     show("faq")        && { to: "/faq",           label: "FAQ"         },
-    show("transparency")&& { to: "/transparency", label: "Transparency"},
     show("updates")    && { to: "/updates",       label: "Updates"     },
                           { to: "/media",         label: "Media"       },
     show("contact")    && { to: "/contact",       label: "Contact"     },
