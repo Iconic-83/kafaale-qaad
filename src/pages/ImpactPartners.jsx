@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import FixedSelect from "../components/FixedSelect.jsx";
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import ContractModal from "../components/ContractModal.jsx";
 
 const C = { navy:"#002651", primary:"#004B96", secondary:"#4B7D19", accent:"#E0AB21", muted:"#5A6E8A", bg:"#F4F7FC", border:"#D8E4F0", text:"#0D1F3C", danger:"#C0392B" };
 
@@ -80,6 +81,7 @@ export default function ImpactPartners() {
   const [step, setStep]     = useState(0);
   const [form, setForm]     = useState(BLANK);
   const [submitted, setSubmitted] = useState(false);
+  const [showPartnerContract, setShowPartnerContract] = useState(false);
   const [errors, setErrors] = useState({});
 
   const getAdminPartners = () => { try { return JSON.parse(localStorage.getItem(ADMIN_PARTNERS_KEY)||"[]"); } catch { return []; } };
@@ -359,7 +361,24 @@ export default function ImpactPartners() {
       {tab === "register" && (
         <section style={{ padding:"64px 24px 80px", background:C.bg }}>
           <div style={{ maxWidth:760, margin:"0 auto" }}>
-            {submitted ? (
+            {submitted && showPartnerContract && (
+              <ContractModal
+                type="partner_agreement"
+                data={{
+                  orgName: form.orgName,
+                  orgType: form.type,
+                  country: form.country,
+                  contactName: form.contactName,
+                  contactEmail: form.contactEmail,
+                  focusAreas: form.focusAreas,
+                  operatingRegions: form.operatingRegions,
+                }}
+                onClose={() => { setSubmitted(false); setStep(0); setForm(BLANK); setTab("partners"); setShowPartnerContract(false); }}
+                onAccept={() => {}}
+              />
+            )}
+
+            {submitted && !showPartnerContract ? (
               <div style={{ background:"#fff", borderRadius:22, padding:"56px 32px", textAlign:"center", boxShadow:"0 4px 24px rgba(0,0,0,0.08)" }}>
                 <div style={{ width:80, height:80, borderRadius:"50%", background:"#D1FAE5", margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:36 }}>✅</div>
                 <h2 style={{ fontSize:28, fontWeight:900, margin:"0 0 12px", color:C.secondary }}>Application Submitted!</h2>
@@ -371,9 +390,18 @@ export default function ImpactPartners() {
                   <div style={{ fontSize:13, color:C.text }}>{form.orgName} · {form.country}</div>
                   <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>Submitted {new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}</div>
                 </div>
-                <button onClick={() => { setSubmitted(false); setStep(0); setForm(BLANK); setTab("partners"); }} style={{ padding:"12px 28px", background:C.primary, color:"#fff", border:"none", borderRadius:12, cursor:"pointer", fontWeight:800, fontSize:14 }}>Back to Partners</button>
+                <div style={{ background:"#EFF6FF", border:`1px solid ${C.primary}30`, borderRadius:14, padding:"20px 24px", marginBottom:24, maxWidth:440, margin:"0 auto 24px" }}>
+                  <div style={{ fontSize:14, fontWeight:800, color:C.primary, marginBottom:6 }}>Sign Your Partner Agreement</div>
+                  <p style={{ fontSize:13, color:C.muted, margin:"0 0 14px", lineHeight:1.6 }}>
+                    As a long-term partner, a formal agreement is required. This documents your commitment and activates your partnership.
+                  </p>
+                  <button onClick={() => setShowPartnerContract(true)} style={{ width:"100%", padding:"12px", background:C.primary, color:"#fff", border:"none", borderRadius:10, cursor:"pointer", fontSize:14, fontWeight:800 }}>
+                    View & Sign Partner Agreement →
+                  </button>
+                </div>
+                <button onClick={() => { setSubmitted(false); setStep(0); setForm(BLANK); setTab("partners"); }} style={{ padding:"12px 28px", background:"#F3F4F6", color:C.muted, border:"none", borderRadius:12, cursor:"pointer", fontWeight:700, fontSize:14 }}>Skip for now</button>
               </div>
-            ) : (
+            ) : !submitted ? (
               <div>
                 <div style={{ textAlign:"center", marginBottom:36 }}>
                   <h2 style={{ fontSize:"clamp(24px,3.5vw,38px)", fontWeight:900, margin:"0 0 10px" }}>Partnership Registration</h2>
@@ -534,7 +562,7 @@ export default function ImpactPartners() {
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         </section>
       )}

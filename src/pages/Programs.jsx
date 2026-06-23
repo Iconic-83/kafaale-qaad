@@ -3,6 +3,7 @@ import FixedSelect from "../components/FixedSelect.jsx";
 import { useNavigate } from "react-router-dom";
 import { programs as programsApi, projects as projectsApi } from "../api/client.js";
 import { useLang } from "../context/LanguageContext.jsx";
+import ContractModal from "../components/ContractModal.jsx";
 
 const C = {
   navy: "#002651", primary: "#004B96", secondary: "#4B7D19",
@@ -204,6 +205,9 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [showContract, setShowContract] = useState(false);
+  const [sponsorName, setSponsorName] = useState("");
+  const [sponsorEmail, setSponsorEmail] = useState("");
 
   const TYPES = [
     { value: "full",      label: "Full Sponsor", desc: "You cover all needs" },
@@ -224,8 +228,8 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
     try {
       const months = Math.max(1, parseInt(commitmentMonths) || 1);
       await programsApi.createSponsorship({ beneficiaryId: beneficiary.id, type, monthlyAmount: amt, paymentMethod: method, commitmentMonths: months });
-      setDone(true);
       onDone && onDone();
+      setDone(true);
     } catch (e) {
       setError(e.message || "Failed to create sponsorship");
     } finally {
@@ -233,16 +237,47 @@ const SponsorBeneficiaryModal = ({ beneficiary, onClose, onDone }) => {
     }
   };
 
+  if (done && showContract) return (
+    <ContractModal
+      type="child_sponsorship"
+      data={{
+        sponsorName, sponsorEmail,
+        beneficiaryId: beneficiary.publicId || beneficiary.id,
+        programType: beneficiary.programType,
+        location: beneficiary.publicCity,
+        amount: parseFloat(amount),
+        months: parseInt(commitmentMonths) || 12,
+        paymentMethod: method,
+      }}
+      onClose={onClose}
+      onAccept={() => {}}
+    />
+  );
+
   if (done) return (
     <div style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
       <div style={{ background: "#fff", borderRadius: 20, padding: 40, maxWidth: 440, width: "100%", textAlign: "center" }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
         <h3 style={{ margin: "0 0 12px", color: C.secondary }}>Sponsorship Created!</h3>
-        <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6 }}>
-          Your monthly sponsorship of <strong>${parseFloat(amount)}/month</strong> has been set up.
-          Our admin team will contact you to confirm your first payment. You'll receive monthly progress updates!
+        <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+          Your monthly sponsorship of <strong>${parseFloat(amount)}/month</strong> for <strong>{parseInt(commitmentMonths)} months</strong> has been set up.
         </p>
-        <button onClick={onClose} style={{ marginTop: 20, padding: "12px 32px", background: C.secondary, color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>
-          Close ✓
+        {parseInt(commitmentMonths) >= 12 && (
+          <div style={{ background: "#EFF6FF", border: `1px solid ${C.primary}30`, borderRadius: 12, padding: "14px 16px", marginBottom: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.primary, marginBottom: 6 }}>12-Month Commitment Detected</div>
+            <p style={{ fontSize: 12, color: C.muted, margin: 0, lineHeight: 1.6 }}>Please provide your details to generate a formal sponsorship contract.</p>
+            <input value={sponsorName} onChange={e => setSponsorName(e.target.value)} placeholder="Your full name *"
+              style={{ width: "100%", marginTop: 10, padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, boxSizing: "border-box" }} />
+            <input value={sponsorEmail} onChange={e => setSponsorEmail(e.target.value)} placeholder="Your email address *"
+              style={{ width: "100%", marginTop: 8, padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, boxSizing: "border-box" }} />
+            <button onClick={() => setShowContract(true)} disabled={!sponsorName.trim() || !sponsorEmail.trim()}
+              style={{ width: "100%", marginTop: 12, padding: "11px", background: !sponsorName.trim() || !sponsorEmail.trim() ? "#E5E7EB" : C.primary, color: !sponsorName.trim() || !sponsorEmail.trim() ? C.muted : "#fff", border: "none", borderRadius: 9, cursor: !sponsorName.trim() || !sponsorEmail.trim() ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 800 }}>
+              View & Sign Contract →
+            </button>
+          </div>
+        )}
+        <button onClick={onClose} style={{ padding: "12px 32px", background: parseInt(commitmentMonths) >= 12 ? "#F3F4F6" : C.secondary, color: parseInt(commitmentMonths) >= 12 ? C.muted : "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>
+          {parseInt(commitmentMonths) >= 12 ? "Skip for now" : "Close ✓"}
         </button>
       </div>
     </div>
@@ -356,6 +391,9 @@ const ContributeModal = ({ project, onClose, onDone }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+  const [showContract, setShowContract] = useState(false);
+  const [contributorName, setContributorName] = useState("");
+  const [contributorEmail, setContributorEmail] = useState("");
 
   const PRESETS = [100, 500, 1000, Math.min(remaining, 5000)].filter((v,i,a) => v > 0 && a.indexOf(v) === i).sort((a,b) => a-b);
 
@@ -375,12 +413,47 @@ const ContributeModal = ({ project, onClose, onDone }) => {
     }
   };
 
+  const isFullFunding = parseFloat(amount) >= remaining;
+
+  if (done && showContract) return (
+    <ContractModal
+      type="project_funding"
+      data={{
+        contributorName, contributorEmail,
+        projectTitle: project.title,
+        location: project.location,
+        populationSize: project.populationSize,
+        amount: parseFloat(amount),
+        isFullFunding,
+      }}
+      onClose={onClose}
+      onAccept={() => {}}
+    />
+  );
+
   if (done) return (
     <div style={{ position: "fixed", inset: 0, background: "#0007", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={onClose}>
       <div style={{ background: "#fff", borderRadius: 20, padding: 40, maxWidth: 440, width: "100%", textAlign: "center" }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>🎉</div>
         <h3 style={{ margin: "0 0 12px", color: C.secondary }}>Thank You!</h3>
-        <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6 }}>Your contribution of <strong>${parseFloat(amount)}</strong> to <strong>{project.title}</strong> has been received. You'll be notified as the project progresses.</p>
-        <button onClick={onClose} style={{ marginTop: 20, padding: "12px 32px", background: C.secondary, color: "#fff", border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>Close ✓</button>
+        <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6, marginBottom: 20 }}>
+          Your contribution of <strong>${parseFloat(amount).toLocaleString()}</strong> to <strong>{project.title}</strong> has been received.
+        </p>
+        <div style={{ background: "#EFF6FF", border: `1px solid ${C.primary}30`, borderRadius: 12, padding: "14px 16px", marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.primary, marginBottom: 6 }}>
+            {isFullFunding ? "Full Project Funding — Contract Required" : "Generate Contribution Agreement"}
+          </div>
+          <p style={{ fontSize: 12, color: C.muted, margin: 0, lineHeight: 1.6 }}>A formal agreement documents your commitment and is required for tax receipts.</p>
+          <input value={contributorName} onChange={e => setContributorName(e.target.value)} placeholder="Your full name *"
+            style={{ width: "100%", marginTop: 10, padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, boxSizing: "border-box" }} />
+          <input value={contributorEmail} onChange={e => setContributorEmail(e.target.value)} placeholder="Your email address *"
+            style={{ width: "100%", marginTop: 8, padding: "9px 12px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, boxSizing: "border-box" }} />
+          <button onClick={() => setShowContract(true)} disabled={!contributorName.trim() || !contributorEmail.trim()}
+            style={{ width: "100%", marginTop: 12, padding: "11px", background: !contributorName.trim() || !contributorEmail.trim() ? "#E5E7EB" : C.primary, color: !contributorName.trim() || !contributorEmail.trim() ? C.muted : "#fff", border: "none", borderRadius: 9, cursor: !contributorName.trim() || !contributorEmail.trim() ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 800 }}>
+            View & Sign Agreement →
+          </button>
+        </div>
+        <button onClick={onClose} style={{ padding: "12px 32px", background: "#F3F4F6", color: C.muted, border: "none", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>Skip for now</button>
       </div>
     </div>
   );
